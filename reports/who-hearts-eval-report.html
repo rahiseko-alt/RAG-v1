@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG回答品質 評価レポート — WHO HEARTS</title>
+<style>
+:root{--ink:#1f2933;--muted:#5b6670;--line:#e3e8ee;--bg:#f6f8fa;--card:#fff;--accent:#0b6b5b;--warn:#b45309;--red:#b3261e;}
+*{box-sizing:border-box} body{margin:0;font-family:"Yu Gothic","Meiryo",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:36px 20px 72px}
+h1{font-size:1.5rem;border-bottom:3px solid var(--accent);padding-bottom:12px}
+h2{font-size:1.12rem;border-left:5px solid var(--accent);padding-left:10px;margin-top:32px}
+.method{background:#e6f2ef;border:1px solid #cfe6e0;border-radius:10px;padding:14px 18px;font-size:.92rem}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem;vertical-align:top}
+th{background:#eef3f7;color:var(--muted);font-weight:600}
+.num{text-align:center;font-weight:700;font-size:1.05rem}
+.num .sub{display:block;font-weight:400;font-size:.72rem;color:var(--muted)}
+.summary{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;min-width:150px}
+.kpi b{display:block;font-size:1.6rem;color:var(--accent)}
+.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
+.qhead{font-weight:700;margin-bottom:8px} .qid{background:var(--accent);color:#fff;border-radius:5px;padding:1px 7px;font-size:.8rem;margin-right:6px}
+.tag{font-size:.76rem;color:var(--muted);border:1px solid var(--line);border-radius:12px;padding:1px 8px;margin-left:6px}
+.pass{color:var(--accent);font-weight:700;margin-left:6px} .fail{color:var(--warn);font-weight:700;margin-left:6px}
+.ans{background:#fafbfc;border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0;font-size:.9rem}
+.axtbl{margin:6px 0} .axtbl th{text-align:center;font-size:.82rem}
+.trace{font-size:.82rem;color:var(--muted);margin-top:6px}
+.dis{color:var(--warn);font-size:.85rem;margin-top:6px}
+.planted{color:var(--red);font-size:.85rem;margin:4px 0}
+footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:.83rem;color:var(--muted)}
+@media(max-width:600px){.wrap{padding:22px 14px}}
+</style></head><body><div class="wrap">
+<h1>RAG回答品質 評価レポート</h1>
+<p>対象: WHO HEARTS「Healthy-lifestyle counselling」に対する Stage 3 RAG の回答を、<b>独立した複数の評価者サブAI</b>が3軸で採点。</p>
+<div class="method"><b>評価方法（独立性の担保）:</b> 回答を作る<b>生成者AIと採点する評価者AIを分離</b>し（自己採点しない）、各回答を3名の独立評価者が
+「根拠忠実性／質問直接性／誤情報なし」の3軸で 0-2 点採点。評価者間は<b>中央値・最頻値</b>で集計（平均は使わない）。評価が割れた項目は人手サンプリングへ回す。
+各採点は検索文脈（出典ページ）を根拠にした意味評価。<b>幻覚検出力の実証のため、意図的な誤答を1件混入</b>している。</div>
+
+<div class="summary">
+  <div class="kpi"><b>7/8</b>合格アイテム</div>
+  <div class="kpi"><b>3</b>独立評価者</div>
+  <div class="kpi"><b>3</b>評価軸</div>
+</div>
+
+<h2>全体スコア（評価者間の中央値・最頻値）</h2>
+<table><thead><tr><th>評価軸</th><th>中央値</th><th>最頻値</th></tr></thead><tbody><tr><td>根拠忠実性</td><td class='num'>2.0</td><td class='num'>2</td></tr><tr><td>質問直接性</td><td class='num'>2.0</td><td class='num'>2</td></tr><tr><td>誤情報なし</td><td class='num'>2.0</td><td class='num'>2</td></tr></tbody></table>
+
+<h2>アイテム別 採点</h2>
+
+        <div class="qa">
+          <div class="qhead"><span class="qid">q1</span> 成人は身体活動（運動）をどのくらい行うことが推奨されますか？ <span class='pass'>合格</span>
+            <span class="tag">文書内</span></div>
+          
+          <div class="ans"><b>回答:</b> 成人は、中強度の身体活動を週に少なくとも150分、または高強度の身体活動を週に少なくとも75分、あるいは両者の同等の組み合わせを行うことが推奨されます [p.11]。加えて、主要な筋群を使う筋力強化活動を週2日以上行うべきとされています [p.11]。さらなる健康効果のためには、中強度の活動を週300分に増やすことが望ましいとされています [p.11]。</div>
+          <table class="axtbl"><thead><tr><th>根拠忠実性</th><th>質問直接性</th><th>誤情報なし</th></tr></thead>
+            <tbody><tr><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td></tr></tbody></table>
+          <div class="trace"><b>出典追跡（採点の根拠文脈）:</b> p.11・p.11・p.28・p.11</div>
+          
+        </div>
+        <div class="qa">
+          <div class="qhead"><span class="qid">q2</span> 果物と野菜は1日にどのくらい食べることが推奨されますか？ <span class='fail'>要確認</span>
+            <span class="tag">文書内</span></div>
+          <div class='planted'>※このアイテムは<strong>意図的な誤答</strong>を混入した幻覚検出テスト</div>
+          <div class="ans"><b>回答:</b> 野菜と果物は1日に少なくとも800g（10サービング）食べることが推奨されます [p.10]。</div>
+          <table class="axtbl"><thead><tr><th>根拠忠実性</th><th>質問直接性</th><th>誤情報なし</th></tr></thead>
+            <tbody><tr><td class='num'>0<span class='sub'>（各評価者: 0, 0, 0）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>0<span class='sub'>（各評価者: 0, 0, 0）</span></td></tr></tbody></table>
+          <div class="trace"><b>出典追跡（採点の根拠文脈）:</b> p.29・p.10・p.19・p.28</div>
+          
+        </div>
+        <div class="qa">
+          <div class="qhead"><span class="qid">q3</span> 遊離糖（砂糖）の摂取は総エネルギーのどのくらいまでが推奨されますか？ <span class='pass'>合格</span>
+            <span class="tag">文書内</span></div>
+          
+          <div class="ans"><b>回答:</b> 遊離糖からの摂取は総エネルギー摂取量の10%未満が推奨されます（健康体重の人で約50g、小さじ約12杯に相当）[p.11]。さらなる健康効果のためには、総エネルギーの5%未満が理想とされています [p.11]。</div>
+          <table class="axtbl"><thead><tr><th>根拠忠実性</th><th>質問直接性</th><th>誤情報なし</th></tr></thead>
+            <tbody><tr><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td></tr></tbody></table>
+          <div class="trace"><b>出典追跡（採点の根拠文脈）:</b> p.11・p.11・p.3・p.28</div>
+          
+        </div>
+        <div class="qa">
+          <div class="qhead"><span class="qid">q4</span> 禁煙支援はどのような枠組みで行いますか？ <span class='pass'>合格</span>
+            <span class="tag">文書内</span></div>
+          
+          <div class="ans"><b>回答:</b> 禁煙支援は5As（Ask/Advise/Assess/Assist/Arrange）の枠組みで行います [p.21][p.22]。Assess で禁煙への関心・自信を評価し、Assist では STAR 法（禁煙日設定・家族への周知・困難の予測・タバコ製品の除去）を用いて禁煙計画づくりを支援します [p.21]。Arrange では必要に応じて専門支援へ紹介し、フォローアップの日程を決めて成功や課題を確認します [p.22]。</div>
+          <table class="axtbl"><thead><tr><th>根拠忠実性</th><th>質問直接性</th><th>誤情報なし</th></tr></thead>
+            <tbody><tr><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td></tr></tbody></table>
+          <div class="trace"><b>出典追跡（採点の根拠文脈）:</b> p.28・p.28・p.22・p.21</div>
+          
+        </div>
+        <div class="qa">
+          <div class="qhead"><span class="qid">q5</span> 飲酒を避けるべきなのはどのような状況ですか？ <span class='pass'>合格</span>
+            <span class="tag">文書内</span></div>
+          
+          <div class="ans"><b>回答:</b> 飲酒を避けるべき状況として、運転中、機械操作中、妊娠中または授乳中、アルコールと相互作用する薬を服用中、アルコールで悪化する病状がある場合、飲酒量をコントロールしにくい場合が挙げられています [p.23]。また「健康のため」という理由で飲酒すべきではないとされています [p.23]。</div>
+          <table class="axtbl"><thead><tr><th>根拠忠実性</th><th>質問直接性</th><th>誤情報なし</th></tr></thead>
+            <tbody><tr><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td></tr></tbody></table>
+          <div class="trace"><b>出典追跡（採点の根拠文脈）:</b> p.23・p.23・p.14・p.13</div>
+          
+        </div>
+        <div class="qa">
+          <div class="qhead"><span class="qid">q6</span> 定期的な身体活動にはどのような健康上の利点がありますか？ <span class='pass'>合格</span>
+            <span class="tag">文書内</span></div>
+          
+          <div class="ans"><b>回答:</b> 定期的で十分な身体活動は、高血圧・心臓発作・脳卒中・糖尿病・各種のがん（乳がん・大腸がんを含む）・うつ病のリスク低減に役立ちます [p.11]。また体重管理、糖尿病管理、血圧の改善、コレステロールなど血中脂質の改善にも寄与します [p.11]。</div>
+          <table class="axtbl"><thead><tr><th>根拠忠実性</th><th>質問直接性</th><th>誤情報なし</th></tr></thead>
+            <tbody><tr><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td></tr></tbody></table>
+          <div class="trace"><b>出典追跡（採点の根拠文脈）:</b> p.11・p.11・p.28・p.12</div>
+          
+        </div>
+        <div class="qa">
+          <div class="qhead"><span class="qid">q7</span> 高血圧の患者に処方する降圧薬の具体的な用量は何mgですか？ <span class='pass'>合格</span>
+            <span class="tag">文書外（正解＝記載なし）</span></div>
+          
+          <div class="ans"><b>回答:</b> 提供された文書には記載がありません。</div>
+          <table class="axtbl"><thead><tr><th>根拠忠実性</th><th>質問直接性</th><th>誤情報なし</th></tr></thead>
+            <tbody><tr><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td></tr></tbody></table>
+          <div class="trace"><b>出典追跡（採点の根拠文脈）:</b> p.29・p.3・p.3・p.28</div>
+          
+        </div>
+        <div class="qa">
+          <div class="qhead"><span class="qid">q8</span> 糖尿病患者へのインスリンの1回あたりの投与単位数は？ <span class='pass'>合格</span>
+            <span class="tag">文書外（正解＝記載なし）</span></div>
+          
+          <div class="ans"><b>回答:</b> 提供された文書には記載がありません。</div>
+          <table class="axtbl"><thead><tr><th>根拠忠実性</th><th>質問直接性</th><th>誤情報なし</th></tr></thead>
+            <tbody><tr><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td><td class='num'>2<span class='sub'>（各評価者: 2, 2, 2）</span></td></tr></tbody></table>
+          <div class="trace"><b>出典追跡（採点の根拠文脈）:</b> p.28・p.29・p.28・p.3</div>
+          
+        </div>
+
+
+
+<footer>
+<p>スコア: 0=不可 / 1=一部 / 2=良。合格＝全3軸の評価者間中央値が2以上。数値は中央値・最頻値の実数（平均は不使用）。</p>
+<p>評価は独立サブAIによる複数視点採点であり、最終判断は人手サンプリングで担保する（検証パネル思想の転用）。対象文書 © WHO 2018, CC BY-NC-SA 3.0 IGO。医療助言ではない。</p>
+</footer>
+</div></body></html>

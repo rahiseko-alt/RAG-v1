@@ -1,0 +1,227 @@
+[
+  {
+    "id": "q1",
+    "question": "成人は身体活動（運動）をどのくらい行うことが推奨されますか？",
+    "in_doc": true,
+    "expected_note": "週に中強度150分以上または高強度75分以上（p.11, p.20 付近）",
+    "context": [
+      {
+        "page": 11,
+        "score": 0.863,
+        "text": "amounts of physical activity (even as a part of their normal daily activities) and \ngradually increase duration, frequency and intensity. (5)\nAdults should perform:\n • at least 150 minutes of moderate physical activity (a mild increase in heart rate \nor breathing rate resulting from, for example, brisk walking, climbing stairs, \ndancing, gardening or doing household chores ) spread throughout the week, or\n • at least 75 minutes of vigorous physical activity ( including vigorous gardening, \nrunning, fast cycling, fast swimming, or playing sport) spread throughout the week), or\n • an equivalent combination of moderate and vigorous activity;\n • muscle-strengthening activities involving major muscle groups on two or more \ndays a week. (6)\nFor additional health benefits, moderately intense physical activity should be increased \nto 300 minutes per week, or equivalent. Those with reduced mobility should perform"
+      },
+      {
+        "page": 11,
+        "score": 0.835,
+        "text": "activities of daily life, such as playing, working, walking, household chores and \nrecreational activities. Physical activity includes exercise, a subcategory of physical \nactivity that is planned, structured and repetitive, with the objective of improving or \nmaintaining physical fitness. (5)\nWhat are the benefits of physical activity?\nRegular and adequate levels of physical activity help to reduce the risk of \nhypertension, heart attack, stroke, diabetes, various types of cancer (including \nbreast and colon cancer) and depression. Physical activity also contributes to \nweight control, diabetes control, improved blood pressure and improved levels of \ncholesterol and other blood lipids. (5)\nWhat are healthy levels of physical activity for adults?\nSome physical activity is better than none. Inactive people can start with small \namounts of physical activity (even as a part of their normal daily activities) and \ngradually increase duration, frequency and intensity. (5)"
+      },
+      {
+        "page": 28,
+        "score": 0.83,
+        "text": "who.int/features/factfiles/physical_activity/en/, accessed 31 March 2017).\n6. Global strategy on diet, physical activity and health: What is moderate-intensity and \nvigorous-intensity physical activity?. Geneva: World Health Organization (http://www.\nwho.int/dietphysicalactivity/physical_activity_intensity/en/, accessed 20 April 2017).\n7. Capacity building for tobacco control training package 4: strengthening health systems \nfor treating tobacco dependence in primary care. Geneva: World Health Organization; \n2013 (http://www.who.int/tobacco/publications/building_capacity/training_package/\ntreatingtobaccodependence/en/, accessed 31 March 2017).\n8. Alcohol fact sheet. Geneva: World Health Organization; 2015 (http://www.who.int/\nmediacentre/factsheets/fs349/en/, accessed 31 March 2017).\n9. Global status report on alcohol and health 2014. Geneva: World Health Organization; \n2014\n10. Brief intervention for hazardous and harmful drinking. A manual for use in primary"
+      },
+      {
+        "page": 11,
+        "score": 0.825,
+        "text": "oo  trans-fats are not part of a healthy \ndiet and should be avoided.\ne) total daily energy intake from free \nsugars of less than 10% (Box 2) (4)\noo equivalent to 50 g (or approximately \n12 level teaspoons) for a person of \nhealthy body weight \noo for additional health benefits, less \nthan 5% of total energy intake from \nfree sugars is ideal.\nInsufficient physical activity\nInsufficient physical activity is one of the leading risk factors for premature death \nworldwide. People who are insufficiently active are between 20% and 30% more likely \nto die prematurely than those who are sufficiently active. Insufficient physical activity \nis a key risk factor for CVD, cancer and diabetes.\nWhat is physical activity?\nWHO defines physical activity as any movement produced by the skeletal muscles \nof the human body that uses energy. It covers a range of bodily movements and \nactivities of daily life, such as playing, working, walking, household chores and"
+      }
+    ]
+  },
+  {
+    "id": "q2",
+    "question": "果物と野菜は1日にどのくらい食べることが推奨されますか？",
+    "in_doc": true,
+    "expected_note": "1日5サービング（少なくとも400g）以上（p.10, p.19）",
+    "context": [
+      {
+        "page": 29,
+        "score": 0.822,
+        "text": "2017).\nLexicon of alcohol and drug terms. Geneva: World Health Organization  \n(http://www.who.int/substance_abuse/terminology/who_lexicon/en/, accessed 28 March \n2017).\nPrevention of cardiovascular disease: pocket guidelines for assessment and management \nof CVD risk. Geneva: World Health Organization; 2007  \n(http://www.who.int/cardiovascular_diseases/guidelines/PocketGL.ENGLISH.AFR-D-E.rev1.\npdf, accessed 31 March 2017).\nStrengthening health systems for treating tobacco dependence in primary care. Part III: \nTraining for primary care providers: brief tobacco interventions. Geneva: World Health \nOrganization 2013.\nThe 3 Fives. Five keys to safer food, Five keys to a healthy diet, Five keys to appropriate phys-\nical activity. (http://www.who.int/foodsafety/areas_work/food-hygiene/3_fives/en/, accessed \n31 March 2017).\nTips for eating healthy with diabetes [fact sheet]. Atlanta: Centers for Disease Control"
+      },
+      {
+        "page": 10,
+        "score": 0.817,
+        "text": "adult diet remain constant (2): \na) a variety of foods\noo a range of fruits, vegetables, legumes \n(for example, lentils, beans) and nuts\noo whole grains such as unprocessed \nmaize, millet, oats, wheat and brown \nrice, and starchy tubers or roots such \nas potato, yam, taro or cassava\noo foods from animal sources (for \nexample, meat, fish, eggs and milk).\nb) at least 400 g (five portions) of \nvegetables and fruits per day\noo one portion is equivalent, for example, \nto a single orange, apple, mango, \nbanana, or 3 tablespoons of cooked \nvegetables. (Potatoes, sweet potatoes, \ncassava or other starchy tubers or \nroots do not count as one of these \nportions.)\nc) less than 5 g of salt per day \n(equivalent to approximately 1 level \nteaspoon) (3)\noo including salt added while cooking or \neating, as well as salt contained in foods \nsuch as processed foods and bread.\nd) a total daily energy intake from fats of \nless than 30%\noo unsaturated fats are preferable to \nsaturated fats (Box 1)"
+      },
+      {
+        "page": 19,
+        "score": 0.817,
+        "text": "Table 2: 5As brief intervention for a healthy diet – example fruit and vegetables\n5As Fruit and vegetables\nAsk\nHow many portions of fruit and vegetables do you eat each day?\n1 portion = 1 orange, apple, mango, banana, or 3 tablespoons of cooked vegetables*. \nProvide local examples and equivalent serving sizes.\n*Potatoes, sweet potatoes, cassava or other starchy tubers or roots do not count as one of these portions.\n\nAdvise\nEat at least 5 portions of fruit and vegetables per day. \nEat a variety of fruits, vegetables, legumes (lentils, beans), nuts and whole grains (unprocessed maize, \nmillet, oats, wheat, brown rice), starchy tubers or roots (potato, yam, taro or cassava) and foods from \nanimal sources (meat, fish, eggs and milk). Provide local examples.\nAdvantages:\n • Eating a variety of these foods every day helps you to take in the right amounts of essential nutrients.\n • Eating enough healthy food helps to avoid unhealthy foods that can lead to overweight and obesity,"
+      },
+      {
+        "page": 28,
+        "score": 0.815,
+        "text": "References\n1. HEARTS Technical package for cardiovascular disease management in primary health \ncare. Geneva: World Health Organization; 2016 (http://www.who.int/cardiovascular_\ndiseases/hearts/en/, accessed 31 March 2017).\n2. Healthy diet fact sheet. Geneva: World Health Organization; 2015 \n(http://www.who.int/mediacentre/factsheets/fs394/en/, accessed 7 March 2017).\n3. Guideline: sodium intake for adults and children. Geneva: World Health Organization; \n2012 (http://www.who.int/nutrition/publications/guidelines/sodium_intake/en/, \naccessed 31 March 2017).\n4. Guideline: sugars intake for adults and children. Geneva: World Health Organization; \n2015 (http://www.who.int/nutrition/publications/guidelines/sugars_intake/en/, accessed \n31 March 2017).\n5. 10 facts on physical activity. Geneva: World Health Organization; 2017 (http://www.\nwho.int/features/factfiles/physical_activity/en/, accessed 31 March 2017)."
+      }
+    ],
+    "planted_wrong": true
+  },
+  {
+    "id": "q3",
+    "question": "遊離糖（砂糖）の摂取は総エネルギーのどのくらいまでが推奨されますか？",
+    "in_doc": true,
+    "expected_note": "10%未満、理想は5%未満（p.11）",
+    "context": [
+      {
+        "page": 11,
+        "score": 0.814,
+        "text": "oo  trans-fats are not part of a healthy \ndiet and should be avoided.\ne) total daily energy intake from free \nsugars of less than 10% (Box 2) (4)\noo equivalent to 50 g (or approximately \n12 level teaspoons) for a person of \nhealthy body weight \noo for additional health benefits, less \nthan 5% of total energy intake from \nfree sugars is ideal.\nInsufficient physical activity\nInsufficient physical activity is one of the leading risk factors for premature death \nworldwide. People who are insufficiently active are between 20% and 30% more likely \nto die prematurely than those who are sufficiently active. Insufficient physical activity \nis a key risk factor for CVD, cancer and diabetes.\nWhat is physical activity?\nWHO defines physical activity as any movement produced by the skeletal muscles \nof the human body that uses energy. It covers a range of bodily movements and \nactivities of daily life, such as playing, working, walking, household chores and"
+      },
+      {
+        "page": 11,
+        "score": 0.813,
+        "text": "to 300 minutes per week, or equivalent. Those with reduced mobility should perform \nphysical activity on three or more days per week in order to improve balance and \nprevent falls. These recommendations apply to all adults, including those with CVD \nBox 2: What are free sugars?\nFree sugars are those added to \nfoods such as cakes, cookies and \nsweets or drinks (for example, \nsoda, sweetened milk, fruit juices). \nFree sugars are also naturally \npresent in honey, syrups, fruit \njuices and fruit juice concentrates.\n10\nHEARTS: Healthy-lifestyle counselling"
+      },
+      {
+        "page": 3,
+        "score": 0.81,
+        "text": "WHO/NMH/NVI/18.1 \n© World Health Organization 2018\nSome rights reserved. This work is available under the Creative Commons Attribution-\nNonCommercial-ShareAlike 3.0 IGO licence (CC BY-NC-SA 3.0 IGO;  \nhttps://creativecommons.org/licenses/by-nc-sa/3.0/igo).\nUnder the terms of this licence, you may copy, redistribute and adapt the work for non-\ncommercial purposes, provided the work is appropriately cited, as indicated below. In any \nuse of this work, there should be no suggestion that WHO endorses any specific organization, \nproducts or services. The use of the WHO logo is not permitted. If you adapt the work, then \nyou must license your work under the same or equivalent Creative Commons licence. If \nyou create a translation of this work, you should add the following disclaimer along with the \nsuggested citation: “This translation was not created by the World Health Organization (WHO). \nWHO is not responsible for the content or accuracy of this translation. The original English"
+      },
+      {
+        "page": 28,
+        "score": 0.807,
+        "text": "References\n1. HEARTS Technical package for cardiovascular disease management in primary health \ncare. Geneva: World Health Organization; 2016 (http://www.who.int/cardiovascular_\ndiseases/hearts/en/, accessed 31 March 2017).\n2. Healthy diet fact sheet. Geneva: World Health Organization; 2015 \n(http://www.who.int/mediacentre/factsheets/fs394/en/, accessed 7 March 2017).\n3. Guideline: sodium intake for adults and children. Geneva: World Health Organization; \n2012 (http://www.who.int/nutrition/publications/guidelines/sodium_intake/en/, \naccessed 31 March 2017).\n4. Guideline: sugars intake for adults and children. Geneva: World Health Organization; \n2015 (http://www.who.int/nutrition/publications/guidelines/sugars_intake/en/, accessed \n31 March 2017).\n5. 10 facts on physical activity. Geneva: World Health Organization; 2017 (http://www.\nwho.int/features/factfiles/physical_activity/en/, accessed 31 March 2017)."
+      }
+    ]
+  },
+  {
+    "id": "q4",
+    "question": "禁煙支援はどのような枠組みで行いますか？",
+    "in_doc": true,
+    "expected_note": "5As（Ask/Advise/Assess/Assist/Arrange）（p.18, p.21, p.22）",
+    "context": [
+      {
+        "page": 28,
+        "score": 0.802,
+        "text": "who.int/features/factfiles/physical_activity/en/, accessed 31 March 2017).\n6. Global strategy on diet, physical activity and health: What is moderate-intensity and \nvigorous-intensity physical activity?. Geneva: World Health Organization (http://www.\nwho.int/dietphysicalactivity/physical_activity_intensity/en/, accessed 20 April 2017).\n7. Capacity building for tobacco control training package 4: strengthening health systems \nfor treating tobacco dependence in primary care. Geneva: World Health Organization; \n2013 (http://www.who.int/tobacco/publications/building_capacity/training_package/\ntreatingtobaccodependence/en/, accessed 31 March 2017).\n8. Alcohol fact sheet. Geneva: World Health Organization; 2015 (http://www.who.int/\nmediacentre/factsheets/fs349/en/, accessed 31 March 2017).\n9. Global status report on alcohol and health 2014. Geneva: World Health Organization; \n2014\n10. Brief intervention for hazardous and harmful drinking. A manual for use in primary"
+      },
+      {
+        "page": 28,
+        "score": 0.801,
+        "text": "2014\n10. Brief intervention for hazardous and harmful drinking. A manual for use in primary \ncare. Geneva: World Health Organization; 2001 (http://www.who.int/substance_abuse/\npublications/audit_sbi/en/, accessed 31 March 2017)\n11. Prochaska JO, Velicer WF . The transtheoretical model of health behavior change. \nAmerican Journal of Health Promotion. 1997;12(1):38–48.\n12. Toolkit for delivering the 5A’s and 5R’s brief tobacco interventions in primary care. \nGeneva: World Health Organization; 2014 (http://www.who.int/tobacco/publications/\nsmoking_cessation/9789241506953/en/, accessed 31 March 2017).\n13. Noncommunicable disease education manual for primary health care professionals \nand patients. Healthy lifestyles for patients with hypertension. Western Pacific \nRegion, World Health Organisation 2017 (http://iris.wpro.who.int/bitstream/hand\nle/10665.1/13561/9789290617983-hyp-mod2-eng.pdf, accessed 05 January 2018).\n27\nHEARTS: Healthy-lifestyle counselling"
+      },
+      {
+        "page": 22,
+        "score": 0.797,
+        "text": "5As Tobacco\nArrange\nRefer to specialist support services if needed and available.\nFollow-up:\n • Decide the timeline and method and schedule the next appointment.\n • Ask about successes and challenges.\nFor those who have quit:\n • Congratulate them on their success.\nFor those who have used tobacco again:\n • Remind them to view any failures as a learning experience.\n • Review circumstances and encourage them to recommit to quitting.\n • Link with more intensive support if available.\nFor all patients:\n • Identify problems and discuss ways to address them.\n • Remind them of additional support and resources that are available.\n • Assess use of medications and any problems experienced.\nPlease also refer to the WHO publication Strengthening\thealth\tsystems\tfor\ttreating\ttobacco\tdependence\tin\t\nprimary\tcare.\tPart\tIII:\tTraining\tfor\tprimary\tcare\tproviders:\tBrief\ttobacco\tinterventions, listed in Selected further \nreading.\n21\nHEARTS: Healthy-lifestyle counselling"
+      },
+      {
+        "page": 21,
+        "score": 0.786,
+        "text": "cancers. \n • Tobacco can damage every part of the body. \n • Secondhand smoke damages the health of your family and others around you. \n\nAssess\n1. Are you interested in quitting tobacco use? \n2. Do you think you will succeed in quitting?\nQuestion 1 Yes Not sure No Any answer in the shaded area indicates that the \nperson is not yet ready to change. In this case, \neffort needs to be made to increase  \nmotivation for change.Question 2 Yes Not sure No\nAnswers in the white area suggest that you and the patient can move on to the next step.\n\nAssist\nHelp the patient to develop a quit plan using the STAR method:\nSet a quit date, ideally within 2 weeks.\nTell family and friends about quitting and ask for support.\nAnticipate challenges in the quit attempt.\nRemove tobacco products from personal environment and make home smoke-free.\nProvide practical counselling:\n • Provide basic information about tobacco use and quitting."
+      }
+    ]
+  },
+  {
+    "id": "q5",
+    "question": "飲酒を避けるべきなのはどのような状況ですか？",
+    "in_doc": true,
+    "expected_note": "運転・機械操作・妊娠授乳中・相互作用する薬の服用中等（p.23）",
+    "context": [
+      {
+        "page": 23,
+        "score": 0.824,
+        "text": "Table 5: 5As brief intervention to screen for harmful use of alcohol\n5As Alcohol\nAsk\nDo you ever drink alcohol?       Yes No\nIf Yes:\n • How often do you have an alcoholic drink? \n • How many alcoholic drinks do you have on a usual day when you are drinking? \n\nAdvise\nFor people drinking fewer than 2 units (according to local drink strengths and commonly available sizes) \nper day and drinking on 5 or fewer days per week, inform them of the following:\n • Use of alcohol can increase the risk of having a heart attack or stroke.\n • It also increases the risks of getting certain cancers and can cause damage to other parts of the body.\n • Overall, the best way to avoid the health risks of alcohol use is to abstain.\n • If you do drink alcohol, keep in mind that “less is better”.\n • Avoid having more than two units on any single day and do not drink any alcohol on at least two days \nper week.\n • Do not drink alcohol for “health” reasons.\n • Do not use alcohol when you are:\n o driving"
+      },
+      {
+        "page": 23,
+        "score": 0.822,
+        "text": "per week.\n • Do not drink alcohol for “health” reasons.\n • Do not use alcohol when you are:\n o driving\n o operating machinery\n o pregnant or breastfeeding\n o taking medications that interact with alcohol.\n o living with medical conditions that are made worse by alcohol\n o having difficulties controlling how much you drink.\n\nAssess\nFor people who drink two or more units per day, who drink on more than five days per week and/or have \nany indication that alcohol could potentially be a problem, say:\n • “Your drinking habits could be harmful to your health.  \nMay I ask you a few more questions to have a better idea  \nof the possible risks?”       Yes No\n\nAssist and Arrange\nIf No:\n • Give brief advice. End the discussion positively by saying, “This can be a difficult issue to discuss but \nI am here to help you.” \n • Provide health education materials and information about additional resources such as help lines, \ncounselling, support groups."
+      },
+      {
+        "page": 14,
+        "score": 0.81,
+        "text": "What are the risks of harmful use of alcohol?\nHigh levels of alcohol consumption and regular heavy episodic drinking are clearly \nassociated with increased risk of CVD, since harmful use of alcohol damages the \nheart muscle, increases the risk of stroke and can cause cardiac arrhythmia. There \nmay also be an increased risk among light-to-moderate drinkers who have irregular \nheavy drinking episodes. Whilst low-level consumption without any episodes of \nheavy drinking may be associated with a reduced CVD risk in some cases, overall \nalcohol consumption is associated with multiple health risks that may outweigh \npotential benefits. (9) \nBrief interventions in primary care have been shown to be useful in identifying and \nmanaging people with alcohol problems. (10) However, the 5As brief intervention \non harmful use of alcohol in this module should be used only to screen for potential \nharmful use and to provide basic information to patients on the harmful effects"
+      },
+      {
+        "page": 13,
+        "score": 0.81,
+        "text": "more likely to quit if they smoke already.\nHarmful use of alcohol\nThe harmful use of alcohol is a risk factor for CVD and has many negative health \nand social consequences. Harmful use of alcohol is a causal factor in more than \n200 diseases and injuries. Beyond health consequences, the harmful use of alcohol \nbrings significant social and economic losses to individuals and society at large. \nLike tobacco, alcohol can have a marked impact on the health of people other than \nthe drinker. (8)\nWhat is harmful use of alcohol?\nHarmful use of alcohol, when defined as a public health problem, refers to “drinking \nthat causes detrimental health and social consequences for the drinker, the people \naround the drinker and society at large, as well as patterns of drinking associated \nwith increased risk of adverse health outcomes.” (9)\nHarmful use includes high-level drinking each day, as well as single or repeated \nepisodes of drinking to intoxication."
+      }
+    ]
+  },
+  {
+    "id": "q6",
+    "question": "定期的な身体活動にはどのような健康上の利点がありますか？",
+    "in_doc": true,
+    "expected_note": "高血圧・心臓発作・脳卒中・糖尿病・一部のがんのリスク低減、血圧/コレステロール/糖尿病管理、減量、うつ予防（p.11, p.20）",
+    "context": [
+      {
+        "page": 11,
+        "score": 0.829,
+        "text": "activities of daily life, such as playing, working, walking, household chores and \nrecreational activities. Physical activity includes exercise, a subcategory of physical \nactivity that is planned, structured and repetitive, with the objective of improving or \nmaintaining physical fitness. (5)\nWhat are the benefits of physical activity?\nRegular and adequate levels of physical activity help to reduce the risk of \nhypertension, heart attack, stroke, diabetes, various types of cancer (including \nbreast and colon cancer) and depression. Physical activity also contributes to \nweight control, diabetes control, improved blood pressure and improved levels of \ncholesterol and other blood lipids. (5)\nWhat are healthy levels of physical activity for adults?\nSome physical activity is better than none. Inactive people can start with small \namounts of physical activity (even as a part of their normal daily activities) and \ngradually increase duration, frequency and intensity. (5)"
+      },
+      {
+        "page": 11,
+        "score": 0.825,
+        "text": "amounts of physical activity (even as a part of their normal daily activities) and \ngradually increase duration, frequency and intensity. (5)\nAdults should perform:\n • at least 150 minutes of moderate physical activity (a mild increase in heart rate \nor breathing rate resulting from, for example, brisk walking, climbing stairs, \ndancing, gardening or doing household chores ) spread throughout the week, or\n • at least 75 minutes of vigorous physical activity ( including vigorous gardening, \nrunning, fast cycling, fast swimming, or playing sport) spread throughout the week), or\n • an equivalent combination of moderate and vigorous activity;\n • muscle-strengthening activities involving major muscle groups on two or more \ndays a week. (6)\nFor additional health benefits, moderately intense physical activity should be increased \nto 300 minutes per week, or equivalent. Those with reduced mobility should perform"
+      },
+      {
+        "page": 28,
+        "score": 0.809,
+        "text": "who.int/features/factfiles/physical_activity/en/, accessed 31 March 2017).\n6. Global strategy on diet, physical activity and health: What is moderate-intensity and \nvigorous-intensity physical activity?. Geneva: World Health Organization (http://www.\nwho.int/dietphysicalactivity/physical_activity_intensity/en/, accessed 20 April 2017).\n7. Capacity building for tobacco control training package 4: strengthening health systems \nfor treating tobacco dependence in primary care. Geneva: World Health Organization; \n2013 (http://www.who.int/tobacco/publications/building_capacity/training_package/\ntreatingtobaccodependence/en/, accessed 31 March 2017).\n8. Alcohol fact sheet. Geneva: World Health Organization; 2015 (http://www.who.int/\nmediacentre/factsheets/fs349/en/, accessed 31 March 2017).\n9. Global status report on alcohol and health 2014. Geneva: World Health Organization; \n2014\n10. Brief intervention for hazardous and harmful drinking. A manual for use in primary"
+      },
+      {
+        "page": 12,
+        "score": 0.801,
+        "text": "the same as that of a non-smoker. Additionally, quitting smoking after a heart attack \nreduces the chances of having another heart attack by 50%. \nQuitting tobacco use reduces the likelihood of problems such as impotence, \ndifficulties in getting pregnant, premature births, low birth weight and miscarriage. It \nalso reduces the risk of childhood diseases related to secondhand smoke, such as \nasthma and middle-ear disease.\nOther benefits of quitting smoking include: better ability to taste food, improved \nsense of smell, greater physical well-being, better performance in physical \nactivities, and improved appearance, including reduced wrinkling/ageing of skin \nand whiter teeth. Quitting also improves the health of family members. Quitting \ntobacco use is also likely to slow progressive kidney function loss among those \nwith chronic kidney disease.\nb) Financial benefits (7) \nAt an individual level, there are substantial savings to be made on money previously"
+      }
+    ]
+  },
+  {
+    "id": "q7",
+    "question": "高血圧の患者に処方する降圧薬の具体的な用量は何mgですか？",
+    "in_doc": false,
+    "expected_note": "本文書は生活習慣カウンセリングが対象で薬物用量は扱わない→『記載なし』が正解",
+    "context": [
+      {
+        "page": 29,
+        "score": 0.812,
+        "text": "(http://www.who.int/cardiovascular_diseases/publications/implementation_tools_WHO_\nPEN/en/, accessed 31 March 2017).\nKnow the facts about heart disease [fact sheet]. Atlanta: Centers for Disease Control \nand Prevention (https://www.cdc.gov/heartdisease/docs/consumered_heartdisease.pdf, \naccessed 28 March 2017).\nKnow the facts about high blood pressure [fact sheet]. Atlanta: Centers for Disease Control \nand Prevention (https://www.cdc.gov/bloodpressure/docs/consumered_hbp.pdf, accessed \n28 March 2017).\nKnow the facts about high cholesterol [fact sheet]. Atlanta: Centers for Disease Control and \nPrevention (https://www.cdc.gov/cholesterol/docs/consumered_cholesterol.pdf, accessed \n28 March 2017).\nKnow the facts about stroke [fact sheet]. Atlanta: Centers for Disease Control and \nPrevention (https://www.cdc.gov/stroke/docs/consumered_stroke.pdf, accessed 28 March \n2017).\nLexicon of alcohol and drug terms. Geneva: World Health Organization"
+      },
+      {
+        "page": 3,
+        "score": 0.81,
+        "text": "WHO/NMH/NVI/18.1 \n© World Health Organization 2018\nSome rights reserved. This work is available under the Creative Commons Attribution-\nNonCommercial-ShareAlike 3.0 IGO licence (CC BY-NC-SA 3.0 IGO;  \nhttps://creativecommons.org/licenses/by-nc-sa/3.0/igo).\nUnder the terms of this licence, you may copy, redistribute and adapt the work for non-\ncommercial purposes, provided the work is appropriately cited, as indicated below. In any \nuse of this work, there should be no suggestion that WHO endorses any specific organization, \nproducts or services. The use of the WHO logo is not permitted. If you adapt the work, then \nyou must license your work under the same or equivalent Creative Commons licence. If \nyou create a translation of this work, you should add the following disclaimer along with the \nsuggested citation: “This translation was not created by the World Health Organization (WHO). \nWHO is not responsible for the content or accuracy of this translation. The original English"
+      },
+      {
+        "page": 3,
+        "score": 0.806,
+        "text": "WHO is not responsible for the content or accuracy of this translation. The original English \nedition shall be the binding and authentic edition”. \nAny mediation relating to disputes arising under the licence shall be conducted in accordance \nwith the mediation rules of the World Intellectual Property Organization.\nSuggested citation. HEARTS Technical package for cardiovascular disease management in \nprimary health care: healthy-lifestyle counselling; Geneva: World Health Organization; 2018 \n(WHO/NMH/NVI/18.1). Licence: CC BY-NC-SA 3.0 IGO.\nCataloguing-in-Publication (CIP) data. CIP data are available at http://apps.who.int/iris.\nSales, rights and licensing. To purchase WHO publications, see http://apps.who.int/\nbookorders. To submit requests for commercial use and  queries on rights and licensing, see \nhttp://www.who.int/about/licensing. \nThird-party materials. If you wish to reuse material from this work that is attributed to a"
+      },
+      {
+        "page": 28,
+        "score": 0.806,
+        "text": "2014\n10. Brief intervention for hazardous and harmful drinking. A manual for use in primary \ncare. Geneva: World Health Organization; 2001 (http://www.who.int/substance_abuse/\npublications/audit_sbi/en/, accessed 31 March 2017)\n11. Prochaska JO, Velicer WF . The transtheoretical model of health behavior change. \nAmerican Journal of Health Promotion. 1997;12(1):38–48.\n12. Toolkit for delivering the 5A’s and 5R’s brief tobacco interventions in primary care. \nGeneva: World Health Organization; 2014 (http://www.who.int/tobacco/publications/\nsmoking_cessation/9789241506953/en/, accessed 31 March 2017).\n13. Noncommunicable disease education manual for primary health care professionals \nand patients. Healthy lifestyles for patients with hypertension. Western Pacific \nRegion, World Health Organisation 2017 (http://iris.wpro.who.int/bitstream/hand\nle/10665.1/13561/9789290617983-hyp-mod2-eng.pdf, accessed 05 January 2018).\n27\nHEARTS: Healthy-lifestyle counselling"
+      }
+    ]
+  },
+  {
+    "id": "q8",
+    "question": "糖尿病患者へのインスリンの1回あたりの投与単位数は？",
+    "in_doc": false,
+    "expected_note": "同上、薬物用量は文書対象外→『記載なし』が正解",
+    "context": [
+      {
+        "page": 28,
+        "score": 0.802,
+        "text": "2014\n10. Brief intervention for hazardous and harmful drinking. A manual for use in primary \ncare. Geneva: World Health Organization; 2001 (http://www.who.int/substance_abuse/\npublications/audit_sbi/en/, accessed 31 March 2017)\n11. Prochaska JO, Velicer WF . The transtheoretical model of health behavior change. \nAmerican Journal of Health Promotion. 1997;12(1):38–48.\n12. Toolkit for delivering the 5A’s and 5R’s brief tobacco interventions in primary care. \nGeneva: World Health Organization; 2014 (http://www.who.int/tobacco/publications/\nsmoking_cessation/9789241506953/en/, accessed 31 March 2017).\n13. Noncommunicable disease education manual for primary health care professionals \nand patients. Healthy lifestyles for patients with hypertension. Western Pacific \nRegion, World Health Organisation 2017 (http://iris.wpro.who.int/bitstream/hand\nle/10665.1/13561/9789290617983-hyp-mod2-eng.pdf, accessed 05 January 2018).\n27\nHEARTS: Healthy-lifestyle counselling"
+      },
+      {
+        "page": 29,
+        "score": 0.801,
+        "text": "2017).\nLexicon of alcohol and drug terms. Geneva: World Health Organization  \n(http://www.who.int/substance_abuse/terminology/who_lexicon/en/, accessed 28 March \n2017).\nPrevention of cardiovascular disease: pocket guidelines for assessment and management \nof CVD risk. Geneva: World Health Organization; 2007  \n(http://www.who.int/cardiovascular_diseases/guidelines/PocketGL.ENGLISH.AFR-D-E.rev1.\npdf, accessed 31 March 2017).\nStrengthening health systems for treating tobacco dependence in primary care. Part III: \nTraining for primary care providers: brief tobacco interventions. Geneva: World Health \nOrganization 2013.\nThe 3 Fives. Five keys to safer food, Five keys to a healthy diet, Five keys to appropriate phys-\nical activity. (http://www.who.int/foodsafety/areas_work/food-hygiene/3_fives/en/, accessed \n31 March 2017).\nTips for eating healthy with diabetes [fact sheet]. Atlanta: Centers for Disease Control"
+      },
+      {
+        "page": 28,
+        "score": 0.796,
+        "text": "who.int/features/factfiles/physical_activity/en/, accessed 31 March 2017).\n6. Global strategy on diet, physical activity and health: What is moderate-intensity and \nvigorous-intensity physical activity?. Geneva: World Health Organization (http://www.\nwho.int/dietphysicalactivity/physical_activity_intensity/en/, accessed 20 April 2017).\n7. Capacity building for tobacco control training package 4: strengthening health systems \nfor treating tobacco dependence in primary care. Geneva: World Health Organization; \n2013 (http://www.who.int/tobacco/publications/building_capacity/training_package/\ntreatingtobaccodependence/en/, accessed 31 March 2017).\n8. Alcohol fact sheet. Geneva: World Health Organization; 2015 (http://www.who.int/\nmediacentre/factsheets/fs349/en/, accessed 31 March 2017).\n9. Global status report on alcohol and health 2014. Geneva: World Health Organization; \n2014\n10. Brief intervention for hazardous and harmful drinking. A manual for use in primary"
+      },
+      {
+        "page": 3,
+        "score": 0.795,
+        "text": "WHO/NMH/NVI/18.1 \n© World Health Organization 2018\nSome rights reserved. This work is available under the Creative Commons Attribution-\nNonCommercial-ShareAlike 3.0 IGO licence (CC BY-NC-SA 3.0 IGO;  \nhttps://creativecommons.org/licenses/by-nc-sa/3.0/igo).\nUnder the terms of this licence, you may copy, redistribute and adapt the work for non-\ncommercial purposes, provided the work is appropriately cited, as indicated below. In any \nuse of this work, there should be no suggestion that WHO endorses any specific organization, \nproducts or services. The use of the WHO logo is not permitted. If you adapt the work, then \nyou must license your work under the same or equivalent Creative Commons licence. If \nyou create a translation of this work, you should add the following disclaimer along with the \nsuggested citation: “This translation was not created by the World Health Organization (WHO). \nWHO is not responsible for the content or accuracy of this translation. The original English"
+      }
+    ]
+  }
+]

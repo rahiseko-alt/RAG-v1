@@ -1,0 +1,152 @@
+{
+  "judge_1": {
+    "q1": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "p.11 supports 150min moderate/75min vigorous/muscle 2days/300min additional exactly"
+    },
+    "q2": {
+      "faithfulness": 0,
+      "relevance": 2,
+      "no_misinfo": 0,
+      "comment": "answer says 800g/10 servings but context p.10 states 400g(5 portions) and p.19 says 5 portions; contradicts context numbers"
+    },
+    "q3": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "p.11 supports <10% free sugars (~50g/12tsp) and ideal <5% exactly"
+    },
+    "q4": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "5As named in p.21/p.22; STAR method and Arrange/follow-up details match context"
+    },
+    "q5": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "p.23 lists driving/machinery/pregnancy/interacting meds/worsening conditions/no health-reason drinking exactly"
+    },
+    "q6": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "p.11 benefits list (hypertension/heart attack/stroke/diabetes/cancers/depression + weight/BP/lipids) matches"
+    },
+    "q7": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "context has no drug dosing; correctly answers not stated"
+    },
+    "q8": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "context has no insulin dosing; correctly answers not stated"
+    }
+  },
+  "judge_2": {
+    "q1": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "150分中強度/75分高強度・筋力2日/週・追加300分すべて p.11 context に完全一致。"
+    },
+    "q2": {
+      "faithfulness": 0,
+      "relevance": 2,
+      "no_misinfo": 0,
+      "comment": "context は『at least 400g (five portions)』『at least 5 portions』と明記。回答は800g/10サービングと数値を倍に捏造しcontextに矛盾。質問には正面から答えているが誤り。"
+    },
+    "q3": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "遊離糖10%未満・約50g・12杯・理想5%未満すべて p.11 context に一致。"
+    },
+    "q4": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "5As枠組みとAssess/Assist(STAR法)/Arrangeの記述はp.21-22 contextに支持される。誤情報なし。"
+    },
+    "q5": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "運転・機械操作・妊娠授乳・相互作用薬・悪化病状・制御困難・健康目的の飲酒回避すべて p.23 context に一致。"
+    },
+    "q6": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "高血圧/心臓発作/脳卒中/糖尿病/がん/うつのリスク低減・体重/糖尿病/血圧/血中脂質改善すべて p.11 context に一致。"
+    },
+    "q7": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "薬物用量はcontextに無く、回答は『記載なし』と正しく回答。数値捏造なし。"
+    },
+    "q8": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "インスリン用量はcontextに無く、回答は『記載なし』と正しく回答。数値捏造なし。"
+    }
+  },
+  "judge_3": {
+    "q1": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "中強度150分/高強度75分・筋力強化週2日以上・追加効果300分すべてp.11 contextに一致。全主張支持。"
+    },
+    "q2": {
+      "faithfulness": 0,
+      "relevance": 2,
+      "no_misinfo": 0,
+      "comment": "contextは『少なくとも400g（5サービング）』と明記。回答の『800g（10サービング）』はcontextに反する明確な誤り。質問には正面から答えているためrelevanceのみ2。"
+    },
+    "q3": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "総エネルギー10%未満・約50g・理想5%未満、いずれもp.11 contextに一致。誤りなし。"
+    },
+    "q4": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "5As枠組み・Assess・Assist STAR法・Arrange紹介/フォローアップはp.21,22 contextに支持される。誤りなし。"
+    },
+    "q5": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "運転・機械操作・妊娠授乳・相互作用薬・悪化病状・制御困難・『健康のため』禁止、全てp.23 contextに一致。"
+    },
+    "q6": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "高血圧・心臓発作・脳卒中・糖尿病・がん(乳/大腸)・うつ・体重/糖尿病/血圧/血中脂質改善、全てp.11 contextに支持。"
+    },
+    "q7": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "contextに薬物用量の記載なし。『記載がありません』は正しい回答で数値捏造なし。文書外質問に記載なしと答えるため全2。"
+    },
+    "q8": {
+      "faithfulness": 2,
+      "relevance": 2,
+      "no_misinfo": 2,
+      "comment": "contextにインスリン投与単位の記載なし。『記載がありません』は正しく捏造なし。全2。"
+    }
+  }
+}

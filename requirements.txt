@@ -1,0 +1,32 @@
+# Stage 1 — Python基礎（データ操作・可視化）
+pandas
+numpy
+matplotlib
+
+# Stage 2 — 軽量モデル1本（分類/時系列予測いずれか）
+scikit-learn
+torch
+
+# Stage 3 — 医療文書RAG（LangChain/LangGraph + ベクトルDB）
+langchain
+langchain-text-splitters
+langgraph
+langchain-anthropic
+langchain-chroma
+langchain-huggingface
+sentence-transformers
+chromadb
+pypdf
+
+# Stage 4 — 評価ループ（LLM-as-judge）
+anthropic
+
+# ノートブック（Stage 1・2 の土台作業用）
+jupyter
+nbconvert
+
+# API / 共通
+fastapi
+uvicorn
+python-dotenv
+pytest

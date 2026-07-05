@@ -1,0 +1,14 @@
+{
+  "description": "Stage 4 RAG評価ループの評価質問セット（自作）。WHO HEARTS Healthy-lifestyle counselling を対象。文書内6問＋文書外2問。in_doc=false は『提供文書に記載なし』と答えるのが正解（幻覚抑止の評価）。",
+  "source_doc": "who-hearts-healthy-lifestyle-counselling.pdf",
+  "questions": [
+    {"id": "q1", "question": "成人は身体活動（運動）をどのくらい行うことが推奨されますか？", "in_doc": true, "expected_note": "週に中強度150分以上または高強度75分以上（p.11, p.20 付近）"},
+    {"id": "q2", "question": "果物と野菜は1日にどのくらい食べることが推奨されますか？", "in_doc": true, "expected_note": "1日5サービング（少なくとも400g）以上（p.10, p.19）"},
+    {"id": "q3", "question": "遊離糖（砂糖）の摂取は総エネルギーのどのくらいまでが推奨されますか？", "in_doc": true, "expected_note": "10%未満、理想は5%未満（p.11）"},
+    {"id": "q4", "question": "禁煙支援はどのような枠組みで行いますか？", "in_doc": true, "expected_note": "5As（Ask/Advise/Assess/Assist/Arrange）（p.18, p.21, p.22）"},
+    {"id": "q5", "question": "飲酒を避けるべきなのはどのような状況ですか？", "in_doc": true, "expected_note": "運転・機械操作・妊娠授乳中・相互作用する薬の服用中等（p.23）"},
+    {"id": "q6", "question": "定期的な身体活動にはどのような健康上の利点がありますか？", "in_doc": true, "expected_note": "高血圧・心臓発作・脳卒中・糖尿病・一部のがんのリスク低減、血圧/コレステロール/糖尿病管理、減量、うつ予防（p.11, p.20）"},
+    {"id": "q7", "question": "高血圧の患者に処方する降圧薬の具体的な用量は何mgですか？", "in_doc": false, "expected_note": "本文書は生活習慣カウンセリングが対象で薬物用量は扱わない→『記載なし』が正解"},
+    {"id": "q8", "question": "糖尿病患者へのインスリンの1回あたりの投与単位数は？", "in_doc": false, "expected_note": "同上、薬物用量は文書対象外→『記載なし』が正解"}
+  ]
+}

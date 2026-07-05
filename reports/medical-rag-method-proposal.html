@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>医療文書RAG 構築手法 — 提案</title>
+<style>
+:root{
+  --ink:#16211d;--muted:#5c6a64;--line:#e2e8e4;--bg:#f5f7f5;--card:#fff;
+  --accent:#0b6b5b;--accent2:#0d8a74;--soft:#e7f2ef;--gold:#b07a1a;--goldsoft:#fbf3e2;--red:#b3261e;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",system-ui,sans-serif;
+  color:var(--ink);background:var(--bg);line-height:1.75}
+.wrap{max-width:900px;margin:0 auto;padding:44px 22px 90px}
+.hero{background:linear-gradient(135deg,#0b6b5b,#0d8a74);color:#fff;border-radius:16px;padding:30px 30px 26px;margin-bottom:8px}
+.hero .kicker{font-size:.82rem;letter-spacing:.08em;opacity:.9;margin-bottom:8px}
+.hero h1{font-size:1.5rem;margin:0 0 10px;line-height:1.4}
+.hero p{margin:0;font-size:.98rem;opacity:.96}
+.hero .var{display:inline-block;background:rgba(255,255,255,.18);border-radius:6px;padding:1px 8px;font-weight:700}
+.lead{background:var(--soft);border:1px solid #cfe6e0;border-radius:12px;padding:16px 20px;margin:20px 0;font-size:.95rem}
+h2{font-size:1.18rem;margin:38px 0 8px;padding-left:12px;border-left:5px solid var(--accent)}
+.sub{color:var(--muted);font-size:.9rem;margin:0 0 14px}
+.steps{display:grid;gap:14px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;position:relative;
+  box-shadow:0 1px 2px rgba(16,40,30,.05)}
+.step .n{position:absolute;top:-12px;left:18px;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem;
+  border-radius:20px;padding:3px 12px}
+.step.star{border-color:#e6c98a;background:linear-gradient(180deg,#fffdf7,#fff)}
+.step.star .n{background:var(--gold)}
+.step h3{margin:8px 0 8px;font-size:1.06rem}
+.step .row{display:flex;gap:14px;flex-wrap:wrap;font-size:.9rem;margin-top:6px}
+.step .row .lbl{color:var(--muted);min-width:74px;font-weight:600}
+.step .var{color:var(--accent2);font-weight:600}
+.step .proof{background:#f4f8f6;border:1px dashed var(--line);border-radius:8px;padding:8px 12px;margin-top:10px;font-size:.86rem}
+.step .proof b{color:var(--accent)}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0 4px;font-size:.82rem;color:var(--muted)}
+.flow span{background:#fff;border:1px solid var(--line);border-radius:16px;padding:2px 10px}
+.flow i{color:var(--accent);font-style:normal;font-weight:700}
+.diff{background:var(--goldsoft);border:1px solid #ecd9a8;border-radius:12px;padding:18px 22px;margin:14px 0}
+.diff h3{margin:0 0 8px;color:var(--gold);font-size:1.05rem}
+.diff .hit{color:var(--red);font-weight:700}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:10px 0}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem;vertical-align:top}
+th{background:#eef3f1;color:var(--muted);font-weight:600}
+td .ok{color:var(--accent);font-weight:700}
+.vars{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.vars .chip{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-size:.86rem}
+.close{background:var(--accent);color:#fff;border-radius:12px;padding:18px 22px;margin-top:26px;font-size:1rem}
+.close b{font-size:1.06rem}
+footer{margin-top:26px;font-size:.8rem;color:var(--muted)}
+@media(max-width:600px){.wrap{padding:26px 14px 60px}.hero h1{font-size:1.28rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <div class="kicker">機械学習エンジニア（Python / LLM / RAG）— 手法のご提案</div>
+  <h1>医療文書を根拠に、<u>幻覚を出さない</u>AI質問応答・診療支援を構築する手法</h1>
+  <p>御社の対象文書・想定質問・判定基準は <span class="var">変数</span> です。ヒアリングで差し替えれば、下記の確立した手法がそのまま動きます。本書ではその手法を、<b>WHO公開ガイドライン（模擬データ）</b>で end-to-end に実演しています。</p>
+</div>
+
+<div class="lead">
+  <b>なぜ公開模擬データで示すのか：</b> 御社の機密文書をお預かりする前に、<b>手法そのものの再現性</b>を第三者が検証できる形で示すためです。ドメイン内容（＝変数）が変わっても、手法（STEP 1〜4）は変わりません。医療という題材は、御社の「AI診療支援ツール」領域に合わせています。
+</div>
+
+<h2>確立した手法：4ステップ</h2>
+<p class="sub">各ステップの「変数（案件ごとに差し替える所）」と「実証（WHO公開データでの結果）」を明示します。</p>
+
+<div class="flow">
+  <span>① 取り込み</span><i>→</i><span>② 検索基盤</span><i>→</i><span>③ 根拠付き回答</span><i>→</i><span>④ 独立検証</span>
+</div>
+
+<div class="steps">
+
+  <div class="step">
+    <span class="n">STEP 1</span>
+    <h3>文書の取り込み・構造化（ingest）</h3>
+    <div>医療文書（ガイドライン・院内マニュアル・電子カルテ由来テキスト等）を、検索できる単位に分割し、各断片に<b>出典（ページ）</b>を保持します。後段の「根拠追跡」の土台です。</div>
+    <div class="row"><span class="lbl">変数</span><span class="var">対象文書・形式（PDF/HTML/テキスト）・分割粒度</span></div>
+    <div class="proof">実証（WHO公開データ）: 30ページのガイドラインを <b>71チャンク</b>に分割、全断片に出典ページを付与。</div>
+  </div>
+
+  <div class="step">
+    <span class="n">STEP 2</span>
+    <h3>検索基盤の構築（埋め込み＋ベクトルDB）</h3>
+    <div>各断片を意味ベクトル化してベクトルDBに格納。<b>日本語の質問で英語文書も検索できる</b>クロスリンガル検索に対応します。</div>
+    <div class="row"><span class="lbl">変数</span><span class="var">ドメイン用語・言語・検索件数・DB選定（ローカル/クラウド）</span></div>
+    <div class="proof">実証: 多言語埋め込み＋Chroma。日本語質問「運動はどのくらい？」→英語文書の該当箇所を上位ヒット（<b>類似度 0.86</b>）。</div>
+  </div>
+
+  <div class="step">
+    <span class="n">STEP 3</span>
+    <h3>根拠付き回答生成（RAG）</h3>
+    <div>質問に対し、<b>検索した文脈"のみ"を根拠</b>に回答し、出典を引用。<b>文書に無いことは「記載なし」と答え、作り話（幻覚）をしません</b>。</div>
+    <div class="row"><span class="lbl">変数</span><span class="var">想定質問・回答トーン・回答可否の範囲・利用LLM</span></div>
+    <div class="proof">実証: 8問に出典付きで回答／文書外の質問（例「降圧薬の用量」）は<b>「記載なし」</b>と正しく拒否。</div>
+  </div>
+
+  <div class="step star">
+    <span class="n">★ STEP 4</span>
+    <h3>品質の独立検証（LLM-as-judge・幻覚検出）— 本手法の差別化</h3>
+    <div>回答を作るAIとは<b>別の独立したAI評価者を複数</b>用意し、「根拠忠実性／質問直接性／誤情報なし」を採点します。<b>生成と評価を分離</b>し、幻覚を機械的に炙り出します。</div>
+    <div class="row"><span class="lbl">変数</span><span class="var">合格基準・重視軸・人手確認の頻度</span></div>
+    <div class="proof">実証: <span style="color:var(--red);font-weight:700">意図的な誤答を1件混入</span>→ <b>独立3評価者が全員「根拠忠実性0」で検出</b>（要確認判定）。文書外の適切な拒否は高評価。</div>
+  </div>
+
+</div>
+
+<div class="diff">
+  <h3>なぜこの手法が刺さるのか（差別化）</h3>
+  <p>医療現場では、<span class="hit">AIの幻覚（もっともらしい嘘）は命取り</span>です。多くのRAG提案は「作れます」で止まりますが、本手法は <b>「幻覚しないことを、独立した検証で示す」</b>ところまでを標準工程（STEP 4）に含みます。さらに、根拠→一次出典→独立チェックを納品物に強制する<b>信頼性の機械ゲート</b>を横断的に設計済みです。</p>
+</div>
+
+<h2>本求人の要件との対応</h2>
+<table>
+  <thead><tr><th>求人の要件</th><th>本手法での対応</th></tr></thead>
+  <tbody>
+    <tr><td>必須：Python による ML/DL 開発</td><td><span class="ok">✓</span> 前処理〜分類モデル〜評価まで Python で実装</td></tr>
+    <tr><td>必須：LLM・生成AIの利用</td><td><span class="ok">✓</span> STEP 3 の根拠付き回答生成</td></tr>
+    <tr><td>必須：プロンプトエンジニアリング</td><td><span class="ok">✓</span> 「文脈のみ根拠・文書外は記載なし」の回答規律を設計</td></tr>
+    <tr><td>歓迎：RAG 構築経験</td><td><span class="ok">✓</span> STEP 1〜3 がまさに RAG</td></tr>
+    <tr><td>歓迎：LangChain / LangGraph</td><td><span class="ok">✓</span> LangGraph で「検索→生成」フローを構築</td></tr>
+    <tr><td>（医療特有の要）幻覚を出さない品質保証</td><td><span class="ok">✓✓</span> STEP 4 の独立検証＝<b>最大の差別化</b></td></tr>
+  </tbody>
+</table>
+
+<h2>ヒアリングで埋める「変数」</h2>
+<p class="sub">手法は確立済み。以下を擦り合わせれば、御社の案件に適用できます（ここが双方のポイント）。</p>
+<div class="vars">
+  <span class="chip">対象文書（種類・量・形式）</span>
+  <span class="chip">想定する質問・ユースケース</span>
+  <span class="chip">ドメイン用語・略語</span>
+  <span class="chip">回答の可否範囲・トーン</span>
+  <span class="chip">合格基準（何を良しとするか）</span>
+  <span class="chip">言語（日/英）</span>
+  <span class="chip">セキュリティ要件（オンプレ/クラウド）</span>
+  <span class="chip">既存システム連携（電子カルテ等）</span>
+</div>
+
+<div class="close">
+  <b>手法は確立しています。</b> 御社案件との違いは"変数"だけです。変数をヒアリングで擦り合わせれば、上記 STEP 1〜4 がそのまま御社の文書・質問に適用でき、<b>「幻覚しないこと」を検証付きで</b>お出しできます。
+</div>
+
+<footer>
+  実証に用いた文書：WHO, HEARTS technical package: Healthy-lifestyle counselling (2018)。© World Health Organization 2018, CC BY-NC-SA 3.0 IGO。本書のQ&A・評価は同文書の該当箇所を根拠にした要約であり、医療上の助言ではありません。実証の詳細（RAG回答・独立評価レポート）は別添で提示可能です。
+</footer>
+
+</div>
+</body>
+</html>
