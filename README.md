@@ -1,12 +1,14 @@
 # medguide-rag
 
-医療ガイドライン文書に対する質問応答システム（RAG）と、その回答品質を複数視点のLLMで自動評価する仕組みを組み合わせたプロジェクトです。
+医療ガイドライン文書に対する質問応答システム（RAG）と、その回答品質評価結果を集計・可視化する仕組みを組み合わせたプロジェクトです。
 
-> **現在の状態: スキャフォールド段階。** ディレクトリ構成とドキュメントのみ用意した状態で、RAGパイプライン・モデル学習・評価ループの実装はこれから行います。進捗は [docs/progress.md](docs/progress.md) に記録します。
+> **現在の状態: 実証プロトタイプ。** OpenAI対応RAG、FastAPI最小API、Langfuse連携経路、評価結果の集計/HTML化まで実装済みです。CLIでのOpenAI回答生成とLangfuse認証は確認済みですが、Langfuse画面でのtrace着弾確認、実uvicorn経由の `/ask` E2E、非エンジニア向けUI、工程診断、調整台帳は未実装です。現在地と計画は [docs/current-plan-report.md](docs/current-plan-report.md) にまとめています。
+
+> **注意:** このプロジェクトは学習・ポートフォリオ用デモです。医療判断、診断、治療、投薬、緊急時対応には使用できません。
 
 ## 1. これは何をするものか
 
-公開されている医療ガイドライン文書を検索対象にして、「この症状にはどんな対応が推奨されているか」といった質問に対し、根拠となる文書箇所を示しながら回答するシステムです。回答の品質は人手だけでなく、複数の異なる視点を持つLLMに自動で採点させる評価ループでチェックします。
+公開されている医療ガイドライン文書を検索対象にして、文書内に書かれている内容を根拠ページ付きで要約するシステムです。個別症状への医療助言ではなく、「登録済み文書のどこに何が書かれているか」を確認する学習用デモとして扱います。回答品質については、外部で作成した複数評価者の verdict JSON を集計し、HTMLレポートとして確認できる仕組みを備えています。
 
 ## 2. 作った理由
 
@@ -15,11 +17,11 @@
 ## 3. 何ができるか
 
 - [x] サンプル文書（WHO HEARTS 生活習慣カウンセリング）に対する質問応答のCLIデモ
-  - 実行: `python -m src.rag.cli "成人は運動をどのくらい行うべきですか？"`（要 `.env` の `ANTHROPIC_API_KEY`）
+  - 実行: `python -m src.rag.cli "成人は運動をどのくらい行うべきですか？"`（要 `.env` の `ANTHROPIC_API_KEY` または `OPENAI_API_KEY`）
   - 出力: 質問 → 出典追跡パネル（検索チャンクの出典ページ・類似度）→ 文書を根拠にした日本語回答（引用付き）
   - 日本語質問→英語文書のクロスリンガル検索。文書に無い質問は「記載なし」と答え幻覚を抑止
 - [x] 教材ノート `notebooks/03-rag-walkthrough.ipynb`（RAGの流れを解説付きで体験）
-- [ ] FastAPI経由でローカル起動して質問できるデモ（Stage 3 後続サブステップ）
+- [x] FastAPI経由でローカル起動して質問できるデモ
 - [ ] デモのスクリーンショット / GIF
 
 ## 4. アーキテクチャ
@@ -34,19 +36,20 @@
 | RAGフレームワーク | LangChain / LangGraph |
 | ベクトル検索 | Chroma |
 | API | FastAPI |
-| 評価 | LLM-as-judge（Anthropic Claude API） |
+| 評価 | verdict JSON の集計/HTML化（LLM-as-judge運用は外部/手動プロセス） |
 | 基礎データ処理 | pandas / numpy |
 | 軽量モデル | scikit-learn / PyTorch |
 
-## 6. 評価結果（Stage4完了後に追記）
+## 6. 評価結果
 
-- [ ] 評価データセットの件数・作り方
-- [ ] LLM-as-judgeスコアの分布
-- [ ] 人手サンプリングとの一致率
+- 評価データセット: `data/eval/eval_questions.json`（8問。文書内6問、文書外2問）
+- 集計軸: 根拠忠実性／質問直接性／誤情報なし
+- 実装済み: 外部で作成した `reports/eval/verdicts.json` を集計し、`reports/who-hearts-eval-report.html` にHTMLレポート化
+- 未実装/未確認: 評価者LLMを呼び出す完全自動採点、評価者と人手サンプリングの一致率確認
 
 ## 7. 設計で工夫した点
 
-このプロジェクトの核は、RAGそのものより「回答品質をどう継続的に検証するか」の部分です。既存の業務（Claude Codeのマルチエージェント基盤）で、実装物を正当性・セキュリティ・仕様適合・UXの4視点を持つ複数のLLMに反証させ、重大な問題があればコミット前にブロックする仕組みを運用してきました。この考え方を、RAGの回答品質評価（LLM-as-judgeによる自動評価＋人手サンプリングの二段構え）に転用します。詳細は実装後に [docs/architecture.md](docs/architecture.md) に追記します。
+このプロジェクトの核は、RAGそのものより「回答品質をどう検証可能にするか」の部分です。現時点では、出典追跡、監査トレース経路、評価結果の集計/HTML化まで実装しています。今後は、非エンジニア向けUI、工程別診断、調整台帳、before/after比較を追加し、回答品質を継続改善できる形へ発展させます。
 
 ## 8. セットアップ手順
 
@@ -59,8 +62,25 @@ pip install -r requirements.txt
 環境変数はリポジトリ直下に `.env` を作成し、以下を設定してください（`.env` はgitignore対象・コミットしない）。Stage 3・4（RAG・評価）で使用します。
 
 ```
+LLM_PROVIDER=openai
 ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_MODEL=claude-opus-4-8
+OPENAI_MODEL=gpt-5.6-sol
 ```
+
+回答生成は `LLM_PROVIDER=openai` または `LLM_PROVIDER=anthropic` で切り替えられます。既定はOpenAIです。
+
+Langfuse Cloud でRAGの監査ログ（質問・検索/生成トレース・モデル呼び出し）を残す場合は、同じ `.env` に以下も設定します。未設定なら監査送信は無効のまま通常実行できます。
+
+```
+LANGFUSE_PUBLIC_KEY=
+LANGFUSE_SECRET_KEY=
+LANGFUSE_BASE_URL=https://cloud.langfuse.com
+LANGFUSE_ENABLED=true
+```
+
+日本リージョンのプロジェクトを作った場合は `LANGFUSE_BASE_URL=https://jp.cloud.langfuse.com` に変更します。
 
 ### Stage 1 の実行（Python基礎固めノート）
 
@@ -77,7 +97,20 @@ jupyter nbconvert --to html --execute 01-foundations.ipynb
 
 初回実行時に UCI Heart Disease データを `data/sample/` へ自動取得します（既に存在すれば再取得しません）。生成される図は `notebooks/outputs/` に保存されます。
 
-Stage 2 以降の実行コマンドは、`src/` の実装が進み次第この節に追記します。
+Stage 3 のRAG CLIは以下で実行できます。
+
+```bash
+python -m src.rag.cli "成人は運動をどのくらい行うべきですか？"
+```
+
+FastAPIデモは以下で起動できます。
+
+```bash
+uvicorn src.api:app --reload
+```
+
+- `GET /health`: 設定状態の確認
+- `POST /ask`: 質問応答（回答・出典・監査ON/OFFを返す）
 
 ## 進捗
 
@@ -86,9 +119,15 @@ Stage 2 以降の実行コマンドは、`src/` の実装が進み次第この�
 | Stage | 内容 | 状態 |
 |---|---|---|
 | 1 | Python基礎固め（pandas/numpy） | 完了 |
-| 2 | 軽量モデルを1本完走（scikit-learn/PyTorch） | 未着手 |
-| 3 | 医療文書RAG構築（LangChain/LangGraph/Chroma） | 未着手 |
-| 4 | 評価ループ移植（LLM-as-judge） | 未着手 |
+| 2 | 軽量モデルを1本完走（scikit-learn/PyTorch） | 完了 |
+| 3 | 医療文書RAG構築（LangChain/LangGraph/Chroma） | 完了 |
+| 4 | 評価ループ移植（LLM-as-judge） | 完了 |
+| 5 | Langfuse監査ログ連携 | 任意連携追加済（認証確認済み・画面着弾確認は未記録） |
+| 6 | LLMプロバイダ切替 | Anthropic / OpenAI 切替対応 |
+
+## 監査ログ
+
+Langfuse の環境変数が正しく設定されている場合、CLI実行時に LangGraph / LangChain の callback 経路でトレース送信を試みます。`src/observability.py` が任意連携を担当し、キー未設定時やキー形式不正時はローカルのみで動きます。Langfuse認証チェックは通過済みですが、画面上でのtrace着弾確認は別途記録が必要です。
 
 ## ライセンス
 

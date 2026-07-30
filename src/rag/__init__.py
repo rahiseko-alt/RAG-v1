@@ -10,7 +10,7 @@
 - なぜ LangGraph か: 検索(retrieve)→生成(generate) を State を持つ 2 ノードのグラフにし、
   検索した Document（出典 metadata 付き）を state に載せて回答へ引用させる。単純な chain より
   「回答根拠の出典追跡」を state で明示的に扱え、将来 根拠不足時の再検索ノート追加に拡張しやすい。
-- 生成 LLM: Anthropic Claude（既定 claude-opus-4-8・env `ANTHROPIC_MODEL` で上書き可）。
+- 生成 LLM: env `LLM_PROVIDER` で OpenAI / Anthropic を切替。既定は OpenAI。
   文脈のみを根拠に日本語で答え、文脈に無ければ「記載なし」と答えさせる（幻覚抑止）。
 """
 from __future__ import annotations
@@ -27,6 +27,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langgraph.graph import END, START, StateGraph
 
 from src.ingest import load_and_chunk
+from src.observability import build_langfuse_runnable_config
 
 load_dotenv()  # リポジトリ直下 .env の ANTHROPIC_API_KEY 等を環境変数へ
 
@@ -37,6 +38,8 @@ CHROMA_DIR = PRODUCT_ROOT / "chroma"
 COLLECTION = "who-hearts"
 EMBED_MODEL = os.getenv("EMBED_MODEL", "intfloat/multilingual-e5-small")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-4-8")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.6-sol")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").strip().lower()
 TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 
 SYSTEM_PROMPT = (
@@ -92,6 +95,42 @@ def get_or_build_index(
     return vs, count
 
 
+def get_llm_provider() -> str:
+    """回答生成に使うLLMプロバイダ名を返す。"""
+    if LLM_PROVIDER not in {"anthropic", "openai"}:
+        raise ValueError("LLM_PROVIDER must be 'anthropic' or 'openai'")
+    return LLM_PROVIDER
+
+
+def get_generation_model() -> str:
+    """現在のLLMプロバイダに対応するモデル名を返す。"""
+    return OPENAI_MODEL if get_llm_provider() == "openai" else ANTHROPIC_MODEL
+
+
+def is_generation_configured() -> bool:
+    """現在のLLMプロバイダで回答生成できるAPIキーがあるかを返す。"""
+    if get_llm_provider() == "openai":
+        return bool(os.getenv("OPENAI_API_KEY"))
+    return bool(os.getenv("ANTHROPIC_API_KEY"))
+
+
+def build_chat_model(model: str | None = None):
+    """設定されたプロバイダの LangChain chat model を作る。"""
+    provider = get_llm_provider()
+    model = model or get_generation_model()
+    if provider == "openai":
+        try:
+            from langchain_openai import ChatOpenAI
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "LLM_PROVIDER=openai is configured, but 'langchain-openai' is not installed. "
+                "Run: pip install langchain-openai"
+            ) from exc
+        return ChatOpenAI(model=model, timeout=60)
+    # temperature 等のサンプリング引数は渡さない（opus-4-8 等では 400 になるため）
+    return ChatAnthropic(model=model, max_tokens=1024, timeout=60, stop=None)
+
+
 # ---- LangGraph: retrieve → generate ----
 class RAGState(TypedDict):
     question: str
@@ -109,10 +148,9 @@ def _format_context(docs: list[tuple[Document, float]]) -> str:
     return "\n\n".join(blocks)
 
 
-def build_graph(vs: Chroma, model: str = ANTHROPIC_MODEL, top_k: int = TOP_K):
+def build_graph(vs: Chroma, model: str | None = None, top_k: int = TOP_K):
     """検索→生成の LangGraph をコンパイルして返す。"""
-    # temperature 等のサンプリング引数は渡さない（opus-4-8 等では 400 になるため）
-    llm = ChatAnthropic(model=model, max_tokens=1024, timeout=60, stop=None)
+    llm = build_chat_model(model=model)
 
     def retrieve(state: RAGState) -> dict[str, Any]:
         results = vs.similarity_search_with_relevance_scores(state["question"], k=top_k)
@@ -140,7 +178,7 @@ def build_graph(vs: Chroma, model: str = ANTHROPIC_MODEL, top_k: int = TOP_K):
 def make_rag(
     pdf_path: str | Path = DEFAULT_PDF,
     persist_dir: str | Path = CHROMA_DIR,
-    model: str = ANTHROPIC_MODEL,
+    model: str | None = None,
     top_k: int = TOP_K,
 ):
     """索引（無ければ構築）＋グラフを用意して返す。
@@ -152,6 +190,25 @@ def make_rag(
     return graph, vs, n
 
 
-def ask(graph, question: str) -> RAGState:
-    """1 問を投げ、question / docs（出典追跡用）/ answer を含む state を返す。"""
-    return graph.invoke({"question": question})
+def ask(
+    graph,
+    question: str,
+    *,
+    session_id: str | None = None,
+    user_id: str | None = None,
+    trace_tags: list[str] | None = None,
+) -> RAGState:
+    """1 問を投げ、question / docs（出典追跡用）/ answer を含む state を返す。
+
+    Langfuse の環境変数が設定されている場合は、LangChain callback 経由で検索・生成の
+    トレースを送信する。未設定なら config なしで従来通り実行する。
+    """
+    config = build_langfuse_runnable_config(
+        question=question,
+        session_id=session_id,
+        user_id=user_id,
+        tags=trace_tags,
+    )
+    if config is None:
+        return graph.invoke({"question": question})
+    return graph.invoke({"question": question}, config=config)

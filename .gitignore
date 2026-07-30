@@ -71,4 +71,5 @@ ga4-*.json
 
 # logs
 .claude/logs/
+tmp-api*.log
 # === end vibe-base migration standard ===

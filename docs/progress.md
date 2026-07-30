@@ -27,33 +27,48 @@
 
 ## Stage 3 — 医療文書RAGを構築する
 
-状態: コアRAG＋CLI＋教材ノート 完了（2026-07-04）。FastAPI は後続サブステップ
+状態: コアRAG＋CLI＋教材ノート＋FastAPI 完了（2026-07-30）
 
 - [x] 対象文書を選定: **WHO HEARTS「Healthy-lifestyle counselling」**（30ページ・CC BY-NC-SA 3.0 IGO・再配布可をライセンス検証）。`data/sample/who-hearts-healthy-lifestyle-counselling.pdf`（データカードは data/sample/README.md）
 - [x] チャンク分割・埋め込み・Chroma格納: `src/ingest`（pypdf＋RecursiveCharacterTextSplitter・30ページ→71チャンク・出典metadata付き）／`src/rag`（多言語埋め込み intfloat/multilingual-e5-small・Chroma cosine・`chroma/`に永続化）
-- [x] LangGraphで検索→生成フロー: `src/rag` の StateGraph（retrieve→generate）。生成は Claude（langchain-anthropic・既定 claude-opus-4-8・env上書き可）で文脈のみ根拠に日本語回答＋引用
+- [x] LangGraphで検索→生成フロー: `src/rag` の StateGraph（retrieve→generate）。生成は OpenAI / Anthropic を `LLM_PROVIDER` で切替可能。既定は OpenAI（`gpt-5.6-sol`）で、文脈のみ根拠に日本語回答＋引用
 - [x] CLIデモ: `src/rag/cli.py`（`python -m src.rag.cli "質問"`）。質問→出典追跡パネル→日本語回答
 - [x] 教材ノート: `notebooks/03-rag-walkthrough.ipynb`（解説→コード→出力・出典追跡パネル＝Stage1-2「定説照合」のRAG版）
 - [x] 軽量テスト: `tests/test_rag.py`（チャンク化・クロスリンガル検索）3 passed
-- [ ] FastAPI エンドポイント（`src/api/`・後続サブステップ）
+- [x] FastAPI エンドポイント（`src/api/`）。`GET /health` と `POST /ask` を実装し、Langfuse監査もRAG実行経由で連携
 - [ ] 教材ノートの nbconvert 実行＋HTML化＋スクショ（生成セルは `.env` の ANTHROPIC_API_KEY 設定時に実行）
 
-### 検証（生成以外は自動検証済み）
+### 検証
 - ingest: 30ページ→71チャンク・metadata（source/page/chunk_id）正常・英語抽出クリーン
 - 埋め込み＋Chroma＋検索: **日本語質問→英語文書のクロスリンガル検索が成立**（「運動はどのくらい」→p.11 physical activity・類似度0.859）
-- 生成: APIキー無しのため、担当AI（Claude）が生成ノードとして実物検索チャンクから回答を作り end-to-end を実演（マスター確認済み）:
-  - Q「運動量の推奨」→ p.11根拠で「週150分中強度 or 75分高強度」と回答
-  - Q「禁煙の助言」→ p.21根拠で 5As・実践的カウンセリングを回答
-  - **Q「インスリン投与量」→「提供された文書には記載がありません」（文書対象外を正しく拒否＝幻覚を出さない健全性を実証）**
-  - → コード（ChatAnthropic）は本物のRAGプログラムとして残置。ノートの自動実行・HTML化はキー設定時に回す
+- 生成: 2026-07-30 に OpenAI `gpt-5.6-sol` で CLI 実行し、WHO p.11 を根拠に運動量の推奨回答が生成されることを確認済み
+- FastAPI: `GET /health` はローカル確認済み。`POST /ask` の実uvicorn経由E2Eは未記録（テストはモック中心）
 
 ## Stage 4 — 評価ループを移植する
 
 状態: 完了（2026-07-04）
 
 - [x] 評価データセット作成: `data/eval/eval_questions.json`（8問・文書内6＋文書外2・期待付き）
-- [x] LLM-as-judge 自動評価: `src/eval`（prepare＝検索でアイテム化／aggregate＝評価者間の中央値・最頻値・pass率・割れ集計／HTMLレポート）。**生成者サブAIと独立評価者サブAI3体を分離**（自己採点しない）。3軸＝根拠忠実性/質問直接性/誤情報なし
+- [x] 評価結果の集計/HTML化: `src/eval`（prepare＝検索でアイテム化／aggregate＝評価者間の中央値・最頻値・pass率・割れ集計／HTMLレポート）。評価者LLMの呼び出し自体はこのモジュール内で完全自動化しておらず、外部で作成した verdict JSON を集計する
 - [x] **幻覚検出の実証**: 意図的な誤答を1件混入→独立3評価者が全員「根拠忠実性0」で検出（要確認判定）。文書外の適切な拒否は高評価。pass 7/8・全体中央値2.0
 - [x] 評価結果を信頼物レポート化: `reports/who-hearts-eval-report.html`（出典付き）＋実行記録 `reports/eval/`
 - [ ] 人手サンプリングとの一致率（評価者満場一致＝割れ0のため未実施・任意）
 - 受注証明の手法提案書: `reports/medical-rag-method-proposal.html`（Stage1-4を「確立した手法」として提案・ココナラ医療AI案件向け）
+
+## 監査ログ — Langfuse Cloud 任意連携
+
+状態: 経路実装・認証確認済み（2026-07-30）。画面上のtrace着弾確認は未記録
+
+- [x] `src/observability.py` を追加し、`LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` が設定されている時だけ Langfuse CallbackHandler を有効化
+- [x] `src/rag.ask()` から LangGraph / LangChain 実行時の callback config を渡すように変更
+- [x] `.env.example` と README に Langfuse Cloud 用の環境変数を追記
+- [x] Langfuse SDK `auth_check=True` を確認
+- [ ] Langfuse画面でtraceが着弾していることをスクショ/記録で確認
+
+## LLMプロバイダ切替 — OpenAI対応
+
+状態: 追加（2026-07-30）
+
+- [x] `LLM_PROVIDER=openai|anthropic` で回答生成モデルを切替可能にした
+- [x] OpenAI利用時は `OPENAI_API_KEY` / `OPENAI_MODEL` を使用
+- [x] 既定はOpenAI（`gpt-5.6-sol`）

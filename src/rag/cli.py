@@ -18,7 +18,9 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from src.rag import ANTHROPIC_MODEL, ask, make_rag  # noqa: E402
+from src.rag import ask, get_generation_model, get_llm_provider, is_generation_configured, make_rag  # noqa: E402
+from src.observability import flush_langfuse, get_langfuse_config_error, is_langfuse_configured  # noqa: E402
+from src.runtime_errors import safe_error_message  # noqa: E402
 
 
 def _print_sources(docs: list) -> None:
@@ -33,22 +35,38 @@ def _print_sources(docs: list) -> None:
 
 
 def _answer_one(graph, question: str) -> None:
-    state = ask(graph, question)
+    try:
+        state = ask(graph, question)
+    except Exception as exc:
+        print("エラー: 回答生成に失敗しました。", file=sys.stderr)
+        print(f"詳細: {safe_error_message(exc)}", file=sys.stderr)
+        raise SystemExit(1) from None
     _print_sources(state["docs"])
     print("\n  【回答】")
     print("  " + state["answer"].replace("\n", "\n  "))
     print()
+    flush_langfuse()
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
 
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        print("エラー: ANTHROPIC_API_KEY が未設定です。リポジトリ直下に .env を作成し "
-              "ANTHROPIC_API_KEY=... を設定してください（回答生成に必要）。", file=sys.stderr)
+    if not is_generation_configured():
+        provider = get_llm_provider()
+        key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
+        print(f"エラー: {key_name} が未設定です。リポジトリ直下に .env を作成し "
+              f"{key_name}=... を設定してください（回答生成に必要）。", file=sys.stderr)
         return 2
 
-    print(f"索引を準備しています（初回はモデル/文書の読み込みに時間がかかります・モデル={ANTHROPIC_MODEL}）...")
+    audit = "ON（Langfuse）" if is_langfuse_configured() else "OFF"
+    langfuse_error = get_langfuse_config_error()
+    if langfuse_error and langfuse_error != "LANGFUSE_ENABLED is disabled":
+        print(f"警告: Langfuse監査は無効です（{langfuse_error}）。", file=sys.stderr)
+    print(
+        "索引を準備しています"
+        f"（初回はモデル/文書の読み込みに時間がかかります・provider={get_llm_provider()}・"
+        f"モデル={get_generation_model()}・監査={audit}）..."
+    )
     graph, _vs, n = make_rag()
     print(f"準備完了: {n} チャンクを検索対象にしています。\n")
 

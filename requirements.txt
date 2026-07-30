@@ -12,6 +12,7 @@ langchain
 langchain-text-splitters
 langgraph
 langchain-anthropic
+langchain-openai
 langchain-chroma
 langchain-huggingface
 sentence-transformers
@@ -20,6 +21,7 @@ pypdf
 
 # Stage 4 — 評価ループ（LLM-as-judge）
 anthropic
+langfuse
 
 # ノートブック（Stage 1・2 の土台作業用）
 jupyter
