@@ -114,6 +114,15 @@
               <textarea id="question" name="question" rows="4" required>東堂葵の術式は何？</textarea>
               <p class="field-help">回答は登録済み文書の範囲だけで生成されます。</p>
             </div>
+            <div class="field">
+              <label for="answer-mode">回答モード</label>
+              <select id="answer-mode" name="answer_mode">
+                <option value="standard" selected>通常QA</option>
+                <option value="strict">厳格検品</option>
+                <option value="explore">探索</option>
+              </select>
+              <p class="field-help">通常QAは根拠あり・矛盾なしを重視します。厳格検品は全条件満点だけを表示します。</p>
+            </div>
             <div class="form-actions">
               <button id="ask-button" class="button button-primary" type="submit">
                 <span aria-hidden="true">▶</span> 回答を作成

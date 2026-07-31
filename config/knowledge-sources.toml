@@ -1,0 +1,198 @@
+[build]
+output_path = "data/runtime/knowledge-build/jujutsu-kaisen-current-sources.md"
+report_path = "data/runtime/knowledge-build/jujutsu-kaisen-current-sources-report.json"
+minimum_paragraph_characters = 20
+minimum_sources_fetched = 20
+minimum_external_sources_fetched = 15
+
+[[sources]]
+id = "curated-baseline"
+title = "既存の編集済み呪術廻戦ナレッジ"
+url = "data/sample/jujutsu-kaisen-wikipedia.md"
+strategy = "local"
+authority = "curated"
+
+[[sources]]
+id = "wikipedia-main"
+title = "Wikipedia 呪術廻戦"
+url = "https://ja.wikipedia.org/wiki/%E5%91%AA%E8%A1%93%E5%BB%BB%E6%88%A6"
+strategy = "wikipedia"
+authority = "reference"
+
+[[sources]]
+id = "wikipedia-anime"
+title = "Wikipedia 呪術廻戦 アニメ"
+url = "https://ja.wikipedia.org/wiki/%E5%91%AA%E8%A1%93%E5%BB%BB%E6%88%A6_(%E3%82%A2%E3%83%8B%E3%83%A1)"
+strategy = "wikipedia"
+authority = "reference"
+
+[[sources]]
+id = "shonen-jump"
+title = "少年ジャンプ公式 呪術廻戦"
+url = "https://www.shonenjump.com/j/rensai/jujutsu/"
+strategy = "web"
+authority = "official"
+
+[[sources]]
+id = "anime-official"
+title = "TVアニメ 呪術廻戦 公式サイト"
+url = "https://jujutsukaisen.jp/"
+strategy = "crawl"
+authority = "official"
+max_pages = 300
+
+[[sources]]
+id = "fanbook-official"
+title = "集英社 呪術廻戦 公式ファンブック"
+url = "https://books.shueisha.co.jp/items/contents.html?isbn=978-4-08-882636-3"
+strategy = "web"
+authority = "official"
+
+[[sources]]
+id = "reddit-culling-reaction"
+title = "Reddit Culling Games reaction"
+url = "https://www.reddit.com/r/JuJutsuKaisen/comments/12hzri7/how_do_yall_feel_about_the_culling_games_so_far/"
+strategy = "reddit"
+authority = "fan"
+
+[[sources]]
+id = "reddit-binding-vows"
+title = "Reddit Binding vows discussion"
+url = "https://www.reddit.com/r/Jujutsushi/comments/1c2h3uf/binding_vows_bullshit_or_not/"
+strategy = "reddit"
+authority = "fan"
+
+[[sources]]
+id = "reddit-domain-clash"
+title = "Reddit Gojo vs Sukuna domain clash"
+url = "https://www.reddit.com/r/Jujutsushi/comments/1b7p4da/gojo_vs_sukuna_domain_clash_explained/"
+strategy = "reddit"
+authority = "fan"
+
+[[sources]]
+id = "reddit-culling-explanation"
+title = "Reddit Culling Game explanation"
+url = "https://www.reddit.com/r/JuJutsuKaisen/comments/pmv60p/culling_game_explanation/"
+strategy = "reddit"
+authority = "fan"
+
+[[sources]]
+id = "five-channel"
+title = "5ちゃんねる 呪術廻戦関連スレッド"
+url = "https://itest.5ch.io/kizuna/test/read.cgi/wcomic/1724639294"
+strategy = "web"
+authority = "fan"
+include_terms = ["呪術", "JJK", "jujutsu", "虎杖", "五条", "宿儺", "死滅", "術式"]
+
+[[sources]]
+id = "yahoo-chiebukuro"
+title = "Yahoo!知恵袋 呪術廻戦質問"
+url = "https://detail.chiebukuro.yahoo.co.jp/qa/question_detail/q12291831007"
+strategy = "web"
+authority = "fan"
+include_terms = ["呪術", "JJK", "jujutsu", "虎杖", "五条", "宿儺", "死滅", "術式"]
+
+[[sources]]
+id = "youtube-binding-vows-1"
+title = "YouTube Binding Vows 1"
+url = "https://www.youtube.com/watch?v=FZjC-veXgN4"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-binding-vows-2"
+title = "YouTube Binding Vows 2"
+url = "https://www.youtube.com/watch?v=X5-RApW36so"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-binding-vows-3"
+title = "YouTube Binding Vows 3"
+url = "https://www.youtube.com/watch?v=PaqI-5puDyM"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-culling-1"
+title = "YouTube Culling Game 1"
+url = "https://www.youtube.com/watch?v=Jg6L0_UPxlw"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-culling-2"
+title = "YouTube Culling Game 2"
+url = "https://www.youtube.com/watch?v=OJ5o8QZYjMM"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-culling-3"
+title = "YouTube Culling Game 3"
+url = "https://www.youtube.com/watch?v=GKiiBwU6M4A"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-power-system-1"
+title = "YouTube JJK Power System 1"
+url = "https://www.youtube.com/watch?v=nHtOszmVtgs"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-power-system-2"
+title = "YouTube JJK Power System 2"
+url = "https://www.youtube.com/watch?v=VXshhBxUweY"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-power-system-3"
+title = "YouTube JJK Power System 3"
+url = "https://www.youtube.com/watch?v=yAXPGxbIUa4"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-ending-1"
+title = "YouTube Ending explanation 1"
+url = "https://www.youtube.com/watch?v=xRAPMHYIQnA"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-ending-2"
+title = "YouTube Ending explanation 2"
+url = "https://www.youtube.com/watch?v=YmO5_5_I5Ik"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-ending-3"
+title = "YouTube Ending explanation 3"
+url = "https://www.youtube.com/watch?v=Yw0c03RQ7Oc"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-jp-analysis-1"
+title = "YouTube 日本語考察 1"
+url = "https://www.youtube.com/watch?v=2_RE9jWubgU"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-jp-analysis-2"
+title = "YouTube 日本語考察 2"
+url = "https://www.youtube.com/watch?v=lz0XzNo7gQc"
+strategy = "youtube"
+authority = "fan"
+
+[[sources]]
+id = "youtube-jp-analysis-3"
+title = "YouTube 日本語考察 3"
+url = "https://www.youtube.com/watch?v=cLTrSRnWcHM"
+strategy = "youtube"
+authority = "fan"

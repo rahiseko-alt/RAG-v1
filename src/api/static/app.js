@@ -16,6 +16,7 @@ const elements = {
   refreshHealth: $("#refresh-health"),
   askForm: $("#ask-form"),
   question: $("#question"),
+  answerMode: $("#answer-mode"),
   askButton: $("#ask-button"),
   answerRegion: $("#answer-region"),
   answer: $("#answer"),
@@ -397,17 +398,45 @@ function verdictDefinition(value) {
   return [value || "不明", "verdict-warn"];
 }
 
+function retrievalRelationLabel(value) {
+  const raw = String(value || "direct");
+  const labels = {
+    direct: "ベクトル検索",
+    neighbor: "隣接補完",
+    bm25_rescue: "BM25補完",
+    vector_bm25: "ベクトル+BM25",
+    keyword_rescue: "キーワード補完",
+    vector_keyword: "ベクトル+キーワード",
+  };
+  return labels[raw] || raw;
+}
+
+function retrievalScoreText(item) {
+  const parts = [];
+  const similarity = firstValue(item.similarity, item.score);
+  if (similarity !== undefined && similarity !== null) parts.push(`類似度 ${formatValue(similarity)}`);
+  if (item.bm25_score !== undefined && item.bm25_score !== null) parts.push(`BM25 ${formatValue(item.bm25_score)}`);
+  if (item.rerank_score !== undefined && item.rerank_score !== null) parts.push(`統合 ${formatValue(item.rerank_score)}`);
+  return parts.join(" · ") || "スコア未設定";
+}
+
 function candidateMarkup(candidate, index) {
   const rank = firstValue(candidate.rank, candidate.source_rank, index + 1);
   const chunk = firstValue(candidate.chunk_id, candidate.chunk, "—");
   const snippet = firstValue(candidate.snippet, candidate.text, candidate.content, "抜粋なし");
-  const similarity = firstValue(candidate.similarity, candidate.score, "—");
   const source = firstValue(candidate.source, candidate.title, "出典未設定");
+  const sourceUrl = safeUrl(candidate.source_url);
+  const sourceId = firstValue(candidate.source_id, "ID未設定");
+  const sourceType = firstValue(candidate.source_type, "種別未設定");
+  const authority = firstValue(candidate.authority, "区分未設定");
+  const fetchedAt = firstValue(candidate.fetched_at, "取得日時未設定");
+  const relation = retrievalRelationLabel(candidate.retrieval_relation);
+  const scores = retrievalScoreText(candidate);
   return `
     <li>
-      <div><strong>候補 ${escapeHtml(rank)}</strong> · ${escapeHtml(source)} · chunk ${escapeHtml(chunk)}</div>
+      <div><strong>候補 ${escapeHtml(rank)}</strong> · ${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(source)}</a>` : escapeHtml(source)} · ${escapeHtml(sourceId)} · ${escapeHtml(sourceType)} · ${escapeHtml(authority)} · ${escapeHtml(relation)} · chunk ${escapeHtml(chunk)}</div>
       <p>${escapeHtml(snippet)}</p>
-      <span>類似度 ${escapeHtml(similarity)}</span>
+      <span>${escapeHtml(scores)} · 取得 ${escapeHtml(fetchedAt)}</span>
     </li>
   `;
 }
@@ -417,7 +446,13 @@ function evidenceMarkup(evidence, index, claimCandidates = []) {
   const chunk = firstValue(evidence.chunk_id, evidence.chunk, "—");
   const snippet = firstValue(evidence.snippet, evidence.text, evidence.content, "抜粋なし");
   const source = firstValue(evidence.source, evidence.title, "出典未設定");
-  const similarity = firstValue(evidence.similarity, evidence.score);
+  const sourceUrl = safeUrl(evidence.source_url);
+  const sourceId = firstValue(evidence.source_id, "ID未設定");
+  const sourceType = firstValue(evidence.source_type, "種別未設定");
+  const authority = firstValue(evidence.authority, "区分未設定");
+  const fetchedAt = firstValue(evidence.fetched_at, "取得日時未設定");
+  const relation = retrievalRelationLabel(evidence.retrieval_relation);
+  const scores = retrievalScoreText(evidence);
   const candidates = asArray(firstValue(evidence.retrieved_candidates, evidence.candidates, claimCandidates));
   const candidateDetails = candidates.length
     ? `
@@ -432,9 +467,14 @@ function evidenceMarkup(evidence, index, claimCandidates = []) {
     <div class="evidence">
       <div class="evidence-meta">
         <strong>出典順位 ${escapeHtml(rank)}</strong>
-        <span>${escapeHtml(source)}</span>
+        <span>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(source)}</a>` : escapeHtml(source)}</span>
+        <span>${escapeHtml(sourceId)}</span>
+        <span>${escapeHtml(sourceType)}</span>
+        <span>${escapeHtml(authority)}</span>
+        <span>${escapeHtml(relation)}</span>
         <span>chunk ${escapeHtml(chunk)}</span>
-        ${similarity !== undefined && similarity !== null ? `<span>類似度 ${escapeHtml(similarity)}</span>` : ""}
+        <span>取得 ${escapeHtml(fetchedAt)}</span>
+        <span>${escapeHtml(scores)}</span>
       </div>
       <blockquote>${escapeHtml(snippet)}</blockquote>
       ${candidateDetails}
@@ -563,6 +603,7 @@ async function askQuestion(question) {
       method: "POST",
       body: JSON.stringify({
         question,
+        answer_mode: elements.answerMode?.value || "standard",
         session_id: `workbench-${Date.now()}`,
         trace_tags: ["workbench", "non-engineer-review"],
       }),
@@ -573,6 +614,8 @@ async function askQuestion(question) {
       setAnswerState("blocked");
       const blockedMessages = {
         quality_gate_failed: "回答中に根拠で確認できない主張があるため、出荷を停止しました。",
+        standard_gate_failed: "通常QAの条件を満たしませんでした。矛盾、根拠不足、または誤情報の可能性があります。",
+        explore_gate_failed: "探索モードでも表示できない矛盾または根拠不備があるため、出荷を停止しました。",
         verifier_timeout: "回答照合が時間内に完了しなかったため、出荷を停止しました。",
         verifier_error: "回答照合に失敗したため、安全側に倒して出荷を停止しました。",
         verifier_initialization_error: "回答照合を開始できなかったため、出荷を停止しました。",

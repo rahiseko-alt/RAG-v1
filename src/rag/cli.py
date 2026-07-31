@@ -36,9 +36,9 @@ def _print_sources(sources: list[dict]) -> None:
     print("  ─────────────────────────────────────────────")
 
 
-def _answer_one(workbench: QualityWorkbench, question: str) -> None:
+def _answer_one(workbench: QualityWorkbench, question: str, *, answer_mode: str = "strict") -> None:
     try:
-        outcome = workbench.answer_question(question=question)
+        outcome = workbench.answer_question(question=question, answer_mode=answer_mode)
     except Exception as exc:
         print("エラー: 回答生成に失敗しました。", file=sys.stderr)
         print(f"詳細: {safe_error_message(exc)}", file=sys.stderr)
@@ -56,6 +56,18 @@ def _answer_one(workbench: QualityWorkbench, question: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    answer_mode = "strict"
+    if "--mode" in argv:
+        index = argv.index("--mode")
+        try:
+            answer_mode = argv[index + 1]
+        except IndexError:
+            print("エラー: --mode には strict / standard / explore を指定してください。", file=sys.stderr)
+            return 2
+        del argv[index : index + 2]
+    if answer_mode not in {"strict", "standard", "explore"}:
+        print("エラー: --mode は strict / standard / explore のいずれかです。", file=sys.stderr)
+        return 2
 
     if not is_generation_configured():
         provider = get_llm_provider()
@@ -71,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     print(
         "索引を準備しています"
         f"（初回はモデル/文書の読み込みに時間がかかります・provider={get_llm_provider()}・"
-        f"モデル={get_generation_model()}・監査={audit}）..."
+        f"モデル={get_generation_model()}・回答モード={answer_mode}・監査={audit}）..."
     )
     workbench = QualityWorkbench(
         WorkbenchStore(engine_fingerprint=engine_fingerprint())
@@ -80,7 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"準備完了: {n} チャンクを検索対象にしています。\n")
 
     if argv:  # 1問モード
-        _answer_one(workbench, " ".join(argv))
+        _answer_one(workbench, " ".join(argv), answer_mode=answer_mode)
         return 0
 
     # 対話モード
@@ -93,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
             break
         if not q or q.lower() in {"quit", "exit"}:
             break
-        _answer_one(workbench, q)
+        _answer_one(workbench, q, answer_mode=answer_mode)
     return 0
 
 

@@ -18,7 +18,7 @@ from src.rag import engine_fingerprint, make_rag
 from src.runtime_errors import safe_error_message
 
 from .store import WorkbenchStore, sha256_file
-from .verifier import OnlineVerifier, public_verification
+from .verifier import CANONICAL_ABSTENTION, AnswerMode, OnlineVerifier, public_verification
 
 
 class QualityWorkbench:
@@ -88,6 +88,15 @@ class QualityWorkbench:
                 "page": document.metadata.get("page", "?"),
                 "chunk_id": document.metadata.get("chunk_id"),
                 "score": round(float(score), 3),
+                "source_id": document.metadata.get("source_id"),
+                "source_url": document.metadata.get("source_url"),
+                "source_type": document.metadata.get("source_type"),
+                "authority": document.metadata.get("authority"),
+                "fetched_at": document.metadata.get("fetched_at"),
+                "retrieval_relation": document.metadata.get("retrieval_relation", "direct"),
+                "anchor_chunk_id": document.metadata.get("anchor_chunk_id"),
+                "bm25_score": document.metadata.get("bm25_score"),
+                "rerank_score": document.metadata.get("rerank_score"),
             }
             private.append({**base, "text": text})
             public.append({**base, "snippet": text[:240]})
@@ -102,6 +111,7 @@ class QualityWorkbench:
         user_id: str | None = None,
         trace_tags: list[str] | None = None,
         job_id: str | None = None,
+        answer_mode: AnswerMode = "strict",
     ) -> dict[str, Any]:
         revision = (
             self.store.get_revision(revision_id)
@@ -117,6 +127,7 @@ class QualityWorkbench:
             user_id=user_id,
             trace_tags=trace_tags,
             trace_id=trace_id,
+            answer_mode=answer_mode,
         )
         candidate = str(state.get("answer") or "")
         private_evidence, public_sources = self._evidence(list(state.get("docs") or []))
@@ -124,6 +135,7 @@ class QualityWorkbench:
             question=question,
             candidate_answer=candidate,
             evidence=private_evidence,
+            answer_mode=answer_mode,
         )
         released = verification.get("release_allowed") is True
         delivery_status = "released" if released else "blocked"
@@ -155,6 +167,7 @@ class QualityWorkbench:
         return {
             "run_id": run_id,
             "revision": revision,
+            "answer_mode": answer_mode,
             "delivery_status": delivery_status,
             "answer": candidate if released else None,
             "blocked_reason": blocked_reason,
@@ -250,6 +263,12 @@ class QualityWorkbench:
                 {
                     "id": str(item.get("id") or index + 1),
                     "question": str(item["question"]).strip(),
+                    "in_doc": item.get("in_doc"),
+                    "expected_terms": [
+                        str(term)
+                        for term in item.get("expected_terms", [])
+                        if str(term).strip()
+                    ],
                 }
             )
         return normalized, sha256_file(path)
@@ -270,6 +289,21 @@ class QualityWorkbench:
                     trace_tags=["quality-job", job_id],
                     job_id=job_id,
                 )
+                answer = str(outcome.get("answer") or "")
+                expected_terms = item.get("expected_terms", [])
+                normalized_answer = " ".join(answer.split()).strip().rstrip("。.!！")
+                expectation_pass = (
+                    outcome["delivery_status"] == "released"
+                    and (
+                        normalized_answer == CANONICAL_ABSTENTION
+                        if item.get("in_doc") is False
+                        else (
+                            all(term.casefold() in answer.casefold() for term in expected_terms)
+                            if expected_terms
+                            else True
+                        )
+                    )
+                )
                 items.append(
                     {
                         "id": item["id"],
@@ -277,6 +311,9 @@ class QualityWorkbench:
                         "run_id": outcome["run_id"],
                         "delivery_status": outcome["delivery_status"],
                         "answer": outcome["answer"],
+                        "in_doc": item.get("in_doc"),
+                        "expected_terms": expected_terms,
+                        "expectation_pass": expectation_pass,
                         "blocked_reason": outcome["blocked_reason"],
                         "verification_status": outcome["verification"]["status"],
                         "axes": outcome["verification"]["axes"],
@@ -291,16 +328,22 @@ class QualityWorkbench:
                         "question": item["question"],
                         "delivery_status": "blocked",
                         "verification_status": "error",
+                        "in_doc": item.get("in_doc"),
+                        "expected_terms": item.get("expected_terms", []),
+                        "expectation_pass": False,
                         "axes": {},
                         "error": safe_error_message(exc),
                     }
                 )
         released = sum(item["delivery_status"] == "released" for item in items)
+        accepted = sum(item["expectation_pass"] for item in items)
         errors = sum(item["verification_status"] == "error" for item in items)
         return {
             "total": len(items),
             "released": released,
+            "accepted": accepted,
             "blocked": len(items) - released,
+            "expectation_failures": len(items) - accepted,
             "errors": errors,
             "items": items,
         }
@@ -331,13 +374,13 @@ class QualityWorkbench:
             regressions = [
                 item["id"]
                 for item in after["items"]
-                if before_by_id.get(item["id"], {}).get("delivery_status") == "released"
-                and item["delivery_status"] != "released"
+                if before_by_id.get(item["id"], {}).get("expectation_pass") is True
+                and item["expectation_pass"] is not True
             ]
-            no_regression = not regressions and after["released"] >= before["released"]
+            no_regression = not regressions and after["accepted"] >= before["accepted"]
             full_pass = (
                 after["total"] > 0
-                and after["released"] == after["total"]
+                and after["accepted"] == after["total"]
                 and after["errors"] == 0
             )
             result = {

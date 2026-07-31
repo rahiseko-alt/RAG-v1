@@ -129,6 +129,34 @@ def test_decimal_point_does_not_break_citation_coverage():
     assert result["release_allowed"] is True
 
 
+def test_japanese_sentence_punctuation_does_not_break_claim_coverage():
+    class JapaneseVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "author",
+                        "claim": "『呪術廻戦』の作者は芥見下々です",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    }
+                ],
+            }
+
+    result = OnlineVerifier(JapaneseVerifier(), timeout_seconds=1).evaluate(
+        question="作者は？",
+        candidate_answer="『呪術廻戦』の作者は芥見下々です [1]。",
+        evidence=EVIDENCE,
+    )
+
+    assert result["claim_coverage"] is True
+    assert result["release_allowed"] is True
+
+
 def test_unknown_claim_blocks_and_public_result_removes_private_reason():
     verifier = OnlineVerifier(StaticVerifier(status="unclear"), timeout_seconds=1)
     result = verifier.evaluate(
@@ -145,6 +173,72 @@ def test_unknown_claim_blocks_and_public_result_removes_private_reason():
     assert "private model explanation" not in str(public)
 
 
+def test_standard_mode_can_release_supported_answer_without_strict_claim_coverage():
+    class LooseCoverageVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 1,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "c1",
+                        "claim": "Supported answer",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    }
+                ],
+            }
+
+    strict = OnlineVerifier(LooseCoverageVerifier(), timeout_seconds=1).evaluate(
+        question="What?",
+        candidate_answer="Supported answer with extra wording [1].",
+        evidence=EVIDENCE,
+        answer_mode="strict",
+    )
+    standard = OnlineVerifier(LooseCoverageVerifier(), timeout_seconds=1).evaluate(
+        question="What?",
+        candidate_answer="Supported answer with extra wording [1].",
+        evidence=EVIDENCE,
+        answer_mode="standard",
+    )
+
+    assert strict["release_allowed"] is False
+    assert strict["reason_code"] == "quality_gate_failed"
+    assert standard["release_allowed"] is True
+    assert standard["answer_mode"] == "standard"
+
+
+def test_standard_mode_still_blocks_contradictions():
+    class ContradictingVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "c1",
+                        "claim": "Supported answer.",
+                        "status": "contradicted",
+                        "evidence": [{"rank": 1, "reason": "contradicted"}],
+                        "reason": "contradicted",
+                    }
+                ],
+            }
+
+    result = OnlineVerifier(ContradictingVerifier(), timeout_seconds=1).evaluate(
+        question="What?",
+        candidate_answer="Supported answer [1].",
+        evidence=EVIDENCE,
+        answer_mode="standard",
+    )
+
+    assert result["release_allowed"] is False
+    assert result["reason_code"] == "standard_gate_failed"
+
+
 def test_verifier_error_fails_closed():
     verifier = OnlineVerifier(RaisingVerifier(), timeout_seconds=1)
 
@@ -156,4 +250,204 @@ def test_verifier_error_fails_closed():
 
     assert result["status"] == "error"
     assert result["reason_code"] == "verifier_error"
+    assert result["release_allowed"] is False
+
+
+def test_exact_canonical_abstention_can_release_without_citation():
+    class AbstentionVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "abstention",
+                        "claim": "提供された文書には記載がありません。",
+                        "status": "supported",
+                        "evidence": [],
+                        "reason": "the retrieved evidence does not answer the question",
+                    }
+                ],
+            }
+
+    result = OnlineVerifier(AbstentionVerifier(), timeout_seconds=1).evaluate(
+        question="文書に存在しない情報は？",
+        candidate_answer="提供された文書には記載がありません。",
+        evidence=EVIDENCE,
+    )
+
+    assert result["answer_type"] == "abstention"
+    assert result["deterministic"]["all_pass"] is True
+    assert result["claim_evidence_valid"] is True
+    assert result["release_allowed"] is True
+
+
+def test_arbitrary_uncited_answer_still_blocks():
+    result = OnlineVerifier(StaticVerifier(), timeout_seconds=1).evaluate(
+        question="What?",
+        candidate_answer="Supported answer.",
+        evidence=EVIDENCE,
+    )
+
+    assert result["deterministic"]["all_pass"] is False
+    assert result["release_allowed"] is False
+
+
+def test_multiple_verified_claims_can_cover_one_compound_sentence():
+    class CompoundVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "techniques",
+                        "claim": "虎杖悠仁は御廚子と赤血操術を使用します。",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    },
+                ],
+            }
+
+    result = OnlineVerifier(CompoundVerifier(), timeout_seconds=1).evaluate(
+        question="虎杖悠仁の術式は？",
+        candidate_answer="虎杖悠仁は御廚子と赤血操術を使用します [1]。",
+        evidence=EVIDENCE,
+    )
+
+    assert result["claim_coverage"] is True
+    assert result["release_allowed"] is True
+
+
+def test_fragmented_claims_cannot_collectively_cover_candidate():
+    class FragmentedVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "fragment-1",
+                        "claim": "abcdef",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    },
+                    {
+                        "claim_id": "fragment-2",
+                        "claim": "efghij",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    },
+                ],
+            }
+
+    result = OnlineVerifier(FragmentedVerifier(), timeout_seconds=1).evaluate(
+        question="What?",
+        candidate_answer="abcdefghij [1].",
+        evidence=EVIDENCE,
+    )
+
+    assert result["claim_coverage"] is False
+    assert result["release_allowed"] is False
+
+
+def test_fan_only_evidence_cannot_be_presented_as_official_fact():
+    evidence = [{**EVIDENCE[0], "authority": "fan"}]
+    result = OnlineVerifier(StaticVerifier(), timeout_seconds=1).evaluate(
+        question="What?",
+        candidate_answer="Supported answer [1].",
+        evidence=evidence,
+    )
+
+    assert result["authority_alignment"] is False
+    assert result["release_allowed"] is False
+
+
+def test_fan_only_evidence_can_release_when_labeled_as_fan_interpretation():
+    class FanVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "fan-claim",
+                        "claim": "ファンの考察ではこの解釈が支持されています。",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    }
+                ],
+            }
+
+    result = OnlineVerifier(FanVerifier(), timeout_seconds=1).evaluate(
+        question="ファンの見方は？",
+        candidate_answer="ファンの考察ではこの解釈が支持されています [1]。",
+        evidence=[{**EVIDENCE[0], "authority": "fan"}],
+    )
+
+    assert result["authority_alignment"] is True
+    assert result["release_allowed"] is True
+
+
+def test_word_explanation_does_not_count_as_fan_theory_label():
+    class ExplanationVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "claim",
+                        "claim": "これは公式設定の説明です。",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    }
+                ],
+            }
+
+    result = OnlineVerifier(ExplanationVerifier(), timeout_seconds=1).evaluate(
+        question="公式設定ですか？",
+        candidate_answer="これは公式設定の説明です [1]。",
+        evidence=[{**EVIDENCE[0], "authority": "fan"}],
+    )
+
+    assert result["authority_alignment"] is False
+    assert result["release_allowed"] is False
+
+
+def test_word_novel_does_not_count_as_fan_theory_label():
+    class NovelVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "claim",
+                        "claim": "この小説が原作です。",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    }
+                ],
+            }
+
+    result = OnlineVerifier(NovelVerifier(), timeout_seconds=1).evaluate(
+        question="原作は？",
+        candidate_answer="この小説が原作です [1]。",
+        evidence=[{**EVIDENCE[0], "authority": "fan"}],
+    )
+
+    assert result["authority_alignment"] is False
     assert result["release_allowed"] is False

@@ -6,7 +6,7 @@ import binascii
 import os
 import re
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
@@ -14,7 +14,6 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field, model_validator
 
-from src.knowledge_config import get_active_knowledge
 from src.observability import (
     check_langfuse_trace,
     get_langfuse_config_error,
@@ -48,6 +47,7 @@ class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=4000)
     session_id: str | None = Field(default=None, max_length=128)
     user_id: str | None = Field(default=None, max_length=128)
+    answer_mode: Literal["strict", "standard", "explore"] = "standard"
     trace_tags: list[Annotated[str, Field(min_length=1, max_length=64)]] | None = Field(
         default=None,
         max_length=20,
@@ -63,6 +63,15 @@ class SourceHit(BaseModel):
     chunk_id: int | None = None
     score: float
     snippet: str
+    source_id: str | None = None
+    source_url: str | None = None
+    source_type: str | None = None
+    authority: str | None = None
+    fetched_at: str | None = None
+    retrieval_relation: str = "direct"
+    anchor_chunk_id: int | None = None
+    bm25_score: float | None = None
+    rerank_score: float | None = None
 
 
 class ProcessStep(BaseModel):
@@ -85,6 +94,7 @@ class AskResponse(BaseModel):
     run_id: str
     delivery_status: str
     answer: str | None
+    answer_mode: str
     blocked_reason: str | None
     verification: dict[str, Any]
     audit: dict[str, Any]
@@ -212,6 +222,15 @@ def _format_sources(docs: list[tuple[Any, float]]) -> list[SourceHit]:
                 chunk_id=doc.metadata.get("chunk_id"),
                 score=round(float(score), 3),
                 snippet=text[:240],
+                source_id=doc.metadata.get("source_id"),
+                source_url=doc.metadata.get("source_url"),
+                source_type=doc.metadata.get("source_type"),
+                authority=doc.metadata.get("authority"),
+                fetched_at=doc.metadata.get("fetched_at"),
+                retrieval_relation=doc.metadata.get("retrieval_relation", "direct"),
+                anchor_chunk_id=doc.metadata.get("anchor_chunk_id"),
+                bm25_score=doc.metadata.get("bm25_score"),
+                rerank_score=doc.metadata.get("rerank_score"),
             )
         )
     return hits
@@ -287,6 +306,7 @@ def _build_process_steps(
     blocked_reason: str | None,
     verification: dict[str, Any],
     audit: dict[str, Any],
+    answer_mode: str,
     vs: Any = None,
     answer: str | None = "",
 ) -> list[ProcessStep]:
@@ -359,7 +379,7 @@ def _build_process_steps(
             title="回答生成",
             status="完了",
             purpose="確認済みの候補抜粋だけを根拠に、今回の回答を生成した。",
-            input=f"モデル: {model} / LLMへ渡した根拠候補数: {len(sources)}\n渡した候補:\n{source_names}",
+            input=f"モード: {answer_mode} / モデル: {model} / LLMへ渡した根拠候補数: {len(sources)}\n渡した候補:\n{source_names}",
             process="システムプロンプトで『提供された抜粋だけを根拠にする』『抜粋にない情報は記載なし』と制約し、抜粋番号付きで回答させた。",
             output=f"生成後の回答:\n{_answer_excerpt(answer)}",
             check="回答中の固有名詞、術式名、時系列、数値が上の取得候補に含まれているかを照合する。",
@@ -370,14 +390,15 @@ def _build_process_steps(
             status="完了" if verification.get("status") == "pass" else "NG",
             purpose="回答中の各主張が、取得した根拠に実際に支持されるかを公開前に検品した。",
             input=f"機械検査と別LLM照合へ、回答候補と根拠候補 {len(sources)}件を渡した。",
-            process="引用形式を機械検査し、別LLMが主張単位で支持・矛盾・判断不能と3評価軸を判定した。",
+            process=f"引用形式を機械検査し、別LLMが主張単位で支持・矛盾・判断不能と3評価軸を判定した。最後に {answer_mode} モードのゲート条件を適用した。",
             output=(
                 f"検証状態: {verification.get('status', 'error')} / "
                 f"根拠忠実性: {verification.get('axes', {}).get('faithfulness', 0)} / "
                 f"質問直接性: {verification.get('axes', {}).get('relevance', 0)} / "
-                f"誤情報なし: {verification.get('axes', {}).get('no_misinfo', 0)}"
+                f"誤情報なし: {verification.get('axes', {}).get('no_misinfo', 0)} / "
+                f"ゲート: {', '.join(verification.get('gate_checks', [])) or '-'}"
             ),
-            check="全機械検査、全主張の支持、3評価軸すべて2点を満たした場合だけ出荷可能。",
+            check="厳格は全条件満点、通常は矛盾なし・根拠あり、探索は候補提示を優先する。危険な矛盾や壊れた引用はどのモードでも止める。",
         ),
         ProcessStep(
             id="release",
@@ -449,6 +470,16 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
 
     @app.get("/health")
     def health() -> dict[str, Any]:
+        active_revision = wb.store.get_active_revision()
+        knowledge = dict(active_revision.get("config") or {})
+        knowledge.pop("source_path", None)
+        knowledge.update(
+            {
+                "source": active_revision["source_name"],
+                "source_sha256": active_revision["source_sha256"],
+                "revision_id": active_revision["id"],
+            }
+        )
         return {
             "status": "ok",
             "provider": get_llm_provider(),
@@ -459,9 +490,10 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             "langfuse_config_error": get_langfuse_config_error(),
             "model": get_generation_model(),
             "top_k": TOP_K,
-            "knowledge": get_active_knowledge().public_dict(),
-            "active_revision_id": wb.store.get_active_revision()["id"],
+            "knowledge": knowledge,
+            "active_revision_id": active_revision["id"],
             "auth_mode": "single_pc_none",
+            "answer_modes": ["strict", "standard", "explore"],
         }
 
     @app.post("/ask", response_model=AskResponse)
@@ -483,6 +515,7 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
                 session_id=payload.session_id,
                 user_id=payload.user_id,
                 trace_tags=payload.trace_tags,
+                answer_mode=payload.answer_mode,
             )
         except HTTPException:
             raise
@@ -497,6 +530,7 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             run_id=outcome["run_id"],
             delivery_status=outcome["delivery_status"],
             answer=outcome["answer"],
+            answer_mode=outcome["answer_mode"],
             blocked_reason=outcome["blocked_reason"],
             verification=outcome["verification"],
             audit=outcome["audit"],
@@ -517,6 +551,7 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
                 blocked_reason=outcome["blocked_reason"],
                 verification=outcome["verification"],
                 audit=outcome["audit"],
+                answer_mode=outcome["answer_mode"],
                 vs=outcome["vectorstore"],
                 answer=outcome["answer"],
             ),

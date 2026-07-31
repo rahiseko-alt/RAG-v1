@@ -7,6 +7,7 @@ from .store import (
     WorkbenchStore,
 )
 from .verifier import (
+    AnswerMode,
     LLMStructuredVerifier,
     OnlineVerifier,
     StructuredVerification,
@@ -16,6 +17,7 @@ from .workbench import QualityWorkbench
 
 __all__ = [
     "DEFAULT_DB_PATH",
+    "AnswerMode",
     "LLMStructuredVerifier",
     "OnlineVerifier",
     "QualityWorkbench",

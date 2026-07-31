@@ -23,9 +23,9 @@
     },
     {
       "id": "jjk-004",
-      "question": "この文書に、各アニメ話数ごとのサブタイトル一覧はありますか？",
-      "in_doc": false,
-      "expected_terms": ["記載がありません"]
+      "question": "アニメのサブタイトル一覧はありますか？全話分ですか？",
+      "in_doc": true,
+      "expected_terms": ["#48", "#54", "全話"]
     },
     {
       "id": "jjk-005",
@@ -89,9 +89,9 @@
     },
     {
       "id": "jjk-015",
-      "question": "SNSや掲示板の投稿本文をそのまま保存していますか？",
+      "question": "SNSや掲示板から取得した情報はどのように管理しますか？",
       "in_doc": true,
-      "expected_terms": ["保存しない", "論点", "観測"]
+      "expected_terms": ["内部保存", "出典URL", "ファン情報"]
     },
     {
       "id": "jjk-016",

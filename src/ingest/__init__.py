@@ -5,12 +5,14 @@ Stage 3。入力は `data/sample/` 配下の PDF / Markdown / Text、出力は m
 
 チャンク戦略（architecture.md の未決事項をここで確定）:
   RecursiveCharacterTextSplitter を用い、段落 → 行 → 文 → 語の順で「意味の切れ目」を
-  優先して chunk_size≈1000 文字・overlap≈150 文字に分割する。見出し単位だと章の長さの
+  優先して chunk_size≈500 文字・overlap≈75 文字に分割する。見出し単位だと章の長さの
   ばらつきが大きく検索粒度が不均一になるため、固定サイズ＋境界優先の標準手法を採る。
 """
 from __future__ import annotations
 
 import hashlib
+import json
+import re
 from pathlib import Path
 
 from langchain_core.documents import Document
@@ -18,10 +20,15 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pypdf import PdfReader
 
 # チャンク分割の既定値（意味の切れ目を優先しつつ、埋め込みに載る長さに収める）
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 150
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 75
 MAX_PDF_PAGES = 200
 MAX_EXTRACTED_CHARACTERS = 5_000_000
+KNOWLEDGE_SOURCE_MARKER = re.compile(
+    r"^<!-- KNOWLEDGE_SOURCE (?P<metadata>\{.*\}) -->\s*$",
+    re.MULTILINE,
+)
+MARKDOWN_SECTION_HEADING = re.compile(r"^#{2,6}\s+.+$", re.MULTILINE)
 
 
 def source_sha256(source_path: str | Path) -> str:
@@ -61,6 +68,40 @@ def load_text(text_path: str | Path) -> list[Document]:
     if not text_path.exists():
         raise FileNotFoundError(f"テキスト文書が見つかりません: {text_path}")
     text = text_path.read_text(encoding="utf-8")
+    markers = list(KNOWLEDGE_SOURCE_MARKER.finditer(text))
+    if markers:
+        documents: list[Document] = []
+        for index, marker in enumerate(markers):
+            start = marker.end()
+            end = markers[index + 1].start() if index + 1 < len(markers) else len(text)
+            content = text[start:end].strip()
+            if not content:
+                continue
+            metadata = json.loads(marker.group("metadata"))
+            safe_metadata = {
+                str(key): value
+                for key, value in metadata.items()
+                if isinstance(value, (str, int, float, bool))
+            }
+            safe_metadata.setdefault("source", text_path.name)
+            headings = list(MARKDOWN_SECTION_HEADING.finditer(content))
+            starts = [0, *(match.start() for match in headings)]
+            starts = sorted(set(starts))
+            for section_index, section_start in enumerate(starts):
+                section_end = (
+                    starts[section_index + 1]
+                    if section_index + 1 < len(starts)
+                    else len(content)
+                )
+                section = content[section_start:section_end].strip()
+                if not section:
+                    continue
+                section_metadata = dict(safe_metadata)
+                section_metadata["page"] = f"{index}:{section_index}"
+                documents.append(
+                    Document(page_content=section, metadata=section_metadata)
+                )
+        return documents
     return [Document(page_content=text, metadata={"source": text_path.name, "page": 0})]
 
 

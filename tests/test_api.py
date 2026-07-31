@@ -2,6 +2,8 @@ import os
 import sqlite3
 import sys
 import base64
+import json
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 from langchain_core.documents import Document
@@ -16,7 +18,7 @@ from src.rag import engine_fingerprint  # noqa: E402
 
 
 class PassingStructuredVerifier:
-    def verify(self, **_kwargs):
+    def verify(self, **kwargs):
         return {
             "faithfulness": 2,
             "relevance": 2,
@@ -24,7 +26,7 @@ class PassingStructuredVerifier:
             "claims": [
                 {
                     "claim_id": "claim-1",
-                    "claim": "非公開候補の根拠回答です。",
+                    "claim": kwargs["candidate_answer"],
                     "status": "supported",
                     "evidence": [{"rank": 1, "reason": "The cited excerpt supports the claim."}],
                     "reason": "Supported by evidence rank 1.",
@@ -61,13 +63,30 @@ def _make_workbench(tmp_path, *, blocked=False):
     def fake_factory(**_kwargs):
         return "graph", None, 71
 
+    evaluation = json.loads(
+        (Path(_ROOT) / "data" / "eval" / "jujutsu-kaisen-questions.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    evaluation_by_question = {
+        item["question"]: item
+        for item in evaluation["questions"]
+    }
+
     def fake_ask(graph, question, **kwargs):
         assert graph == "graph"
         assert question
         assert kwargs["trace_id"]
+        evaluation_item = evaluation_by_question.get(question)
+        if evaluation_item is None:
+            answer = "非公開候補の根拠回答です [1]。"
+        elif evaluation_item["in_doc"]:
+            answer = f"{' '.join(evaluation_item['expected_terms'])} [1]。"
+        else:
+            answer = "提供された文書には記載がありません。"
         return {
             "question": question,
-            "answer": "非公開候補の根拠回答です [1]。",
+            "answer": answer,
             "docs": [
                 (
                     Document(
@@ -89,7 +108,8 @@ def _make_workbench(tmp_path, *, blocked=False):
 
 
 def test_index_serves_workbench_ui(tmp_path):
-    client = TestClient(api.create_app(_make_workbench(tmp_path)))
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
     res = client.get("/")
 
     assert res.status_code == 200
@@ -106,7 +126,9 @@ def test_health_reports_configuration(monkeypatch, tmp_path):
     monkeypatch.setattr(api, "get_llm_provider", lambda: "anthropic")
     monkeypatch.setattr(api, "is_generation_configured", lambda: False)
 
-    client = TestClient(api.create_app(_make_workbench(tmp_path)))
+    workbench = _make_workbench(tmp_path)
+    active_revision = workbench.store.get_active_revision()
+    client = TestClient(api.create_app(workbench))
     res = client.get("/health")
 
     assert res.status_code == 200
@@ -114,7 +136,10 @@ def test_health_reports_configuration(monkeypatch, tmp_path):
     assert body["status"] == "ok"
     assert body["provider"] == "anthropic"
     assert body["generation_configured"] is False
-    assert body["active_revision_id"]
+    assert body["active_revision_id"] == active_revision["id"]
+    assert body["knowledge"]["revision_id"] == active_revision["id"]
+    assert body["knowledge"]["source"] == active_revision["source_name"]
+    assert body["knowledge"]["source_sha256"] == active_revision["source_sha256"]
     assert body["auth_mode"] == "single_pc_none"
     assert body["anthropic_configured"] is False
     assert body["openai_configured"] is False
@@ -165,6 +190,23 @@ def test_ask_releases_verified_answer(monkeypatch, tmp_path):
     assert trace.json()["run_id"] == body["run_id"]
 
 
+def test_ask_accepts_answer_mode(monkeypatch, tmp_path):
+    monkeypatch.setattr(api, "is_generation_configured", lambda: True)
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+
+    res = client.post(
+        "/ask",
+        json={"question": "呪術廻戦の作者は誰ですか？", "answer_mode": "standard"},
+    )
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["answer_mode"] == "standard"
+    assert body["verification"]["answer_mode"] == "standard"
+    assert "standard" in body["process_steps"][4]["input"]
+
+
 def test_blocked_candidate_is_not_returned_but_is_saved(monkeypatch, tmp_path):
     monkeypatch.setattr(api, "is_generation_configured", lambda: True)
     workbench = _make_workbench(tmp_path, blocked=True)
@@ -179,7 +221,7 @@ def test_blocked_candidate_is_not_returned_but_is_saved(monkeypatch, tmp_path):
     assert "非公開候補" not in res.text
     assert "private candidate wording" not in res.text
     assert body["verification"]["status"] == "block"
-    assert body["blocked_reason"] == "quality_gate_failed"
+    assert body["blocked_reason"] == "standard_gate_failed"
 
     with sqlite3.connect(workbench.store.db_path) as connection:
         saved = connection.execute(
@@ -234,6 +276,39 @@ def test_revision_validation_and_atomic_approval(monkeypatch, tmp_path):
     assert approved.status_code == 200
     assert approved.json()["active"] is True
     assert workbench.store.get_active_revision()["id"] == revision_id
+
+
+def test_out_of_document_eval_requires_canonical_abstention(tmp_path, monkeypatch):
+    workbench = _make_workbench(tmp_path)
+    monkeypatch.setattr(
+        workbench,
+        "answer_question",
+        lambda **_kwargs: {
+            "run_id": "run",
+            "delivery_status": "released",
+            "answer": "根拠のない任意回答です。",
+            "blocked_reason": None,
+            "verification": {"status": "pass", "axes": {}},
+            "sources": [],
+        },
+    )
+
+    result = workbench._evaluate_revision(
+        workbench.store.get_active_revision(),
+        questions=[
+            {
+                "id": "out-of-doc",
+                "question": "文書外の質問",
+                "in_doc": False,
+                "expected_terms": [],
+            }
+        ],
+        job_id="offline-test",
+    )
+
+    assert result["released"] == 1
+    assert result["accepted"] == 0
+    assert result["items"][0]["expectation_pass"] is False
 
 
 def test_validation_cannot_be_reduced_to_a_question_or_limit(tmp_path):
