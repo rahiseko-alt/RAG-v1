@@ -59,13 +59,27 @@
 
 ## 監査ログ — Langfuse Cloud 任意連携
 
-状態: 経路実装・認証確認済み（2026-07-30）。画面上のtrace着弾確認は未記録
+状態: 同一trace送信・Cloud着弾確認済み（2026-07-31）
 
 - [x] `src/observability.py` を追加し、`LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` が設定されている時だけ Langfuse CallbackHandler を有効化
 - [x] `src/rag.ask()` から LangGraph / LangChain 実行時の callback config を渡すように変更
 - [x] `.env.example` と README に Langfuse Cloud 用の環境変数を追記
 - [x] Langfuse SDK `auth_check=True` を確認
-- [ ] Langfuse画面でtraceが着弾していることをスクショ/記録で確認
+- [x] 実run `25cf3bb75e6d425c82d63785ab25276d` とtrace `d7c8d9a3c3fc4d3fb2d62b70e139a13d`を照合し、Cloud APIの`confirmed`を確認
+- [x] `retrieve` / `generate` / `verify` / `gate`を同一trace IDで記録する実装を追加
+
+## Stage 5 — RAG品質改善ワークベンチ
+
+状態: 単一PC向け初期納品範囲を実装（2026-07-31）
+
+- [x] SQLiteへrevision、run、job、event、adjustment、traceを永続化
+- [x] 決定論的引用検査と別LLMの主張別・3軸照合
+- [x] NG、判断不能、検証障害をfail-closedで出荷停止
+- [x] ナレッジ下書き、却下、全件検査、承認、有効化
+- [x] before/afterと既存PASS質問の回帰検査
+- [x] 4タブUI、質問直下の回答欄、8工程アコーディオン
+- [x] 調整台帳とLangfuse着弾poll
+- [x] 非エンジニア向け [workbench-guide.md](workbench-guide.md)
 
 ## LLMプロバイダ切替 — OpenAI対応
 

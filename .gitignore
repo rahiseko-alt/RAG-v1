@@ -9,6 +9,7 @@ __pycache__/
 
 # データ・生成物
 data/raw/
+data/runtime/
 *.db
 *.sqlite3
 chroma/

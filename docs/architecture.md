@@ -1,78 +1,57 @@
 # アーキテクチャ
 
-> 現時点の実装実態に合わせた概要。UI、工程診断、調整台帳、before/after改善管理は未実装。
+## 全体フロー
 
-## 全体の流れ
-
-```
-医療ガイドライン文書 (PDF/テキスト)
-        │
-        │ src/ingest/  … 文書を読み込み、意味の切れ目でチャンク分割
-        ▼
-   チャンク群（1件ごとにベクトル化）
-        │
-        │ src/rag/     … Chroma に埋め込みベクトルを保存
-        ▼
-   ベクトルDB（Chroma）
-        │
-        │ ユーザーの質問
-        ▼
-   類似チャンクを検索 → LangGraph で「検索→根拠付き回答生成」を1フローに
-        ▼
-   回答＋根拠となった文書箇所
-        │
-        │ src/observability.py … 任意で Langfuse Cloud へ監査トレース送信
-        │
-        │ src/eval/    … 回答品質を評価
-        ▼
-   ┌─────────────────────────────┐
-   │ verdict JSON の集計/HTML化             │
-   │  軸: 根拠忠実性 / 質問直接性 / 誤情報なし │
-   │  注: 評価者LLM呼び出しは外部/手動運用     │
-   └─────────────────────────────┘
-        │
-        │ 一定件数を人手サンプリングで突き合わせ
-        ▼
-   評価結果（docs/progress.md・README「評価結果」に記録）
+```mermaid
+flowchart TD
+    A["質問"] --> B["有効revisionを選択"]
+    B --> C["Chroma意味検索"]
+    C --> D["取得チャンクを番号付き根拠へ変換"]
+    D --> E["生成LLMが回答候補を作成"]
+    E --> F["機械検査: 引用・空回答・根拠有無・全主張範囲"]
+    F --> G["別LLM照合: 主張別支持・3軸採点"]
+    G --> H{"全条件PASS?"}
+    H -- Yes --> I["answerを公開"]
+    H -- No --> J["answer=nullで出荷停止"]
+    I --> K["SQLite run/event/adjustment"]
+    J --> K
+    K --> L["Langfuse同一trace: retrieve/generate/verify/gate"]
 ```
 
-## 設計判断（実装しながら更新する）
+## コンポーネント
 
-### なぜLangGraphか（Stage 3 で確定）
-検索(retrieve)→生成(generate) を、状態(State)を持つ2ノードのグラフとして組んだ（`src/rag` の StateGraph）。
-State に検索した Document（出典 metadata 付き）を載せることで、回答生成に「どのチャンクを根拠にしたか」を
-明示的に引き渡せる＝**回答根拠の出典追跡**を state で自然に扱える。単純な chain でも現状は組めるが、
-将来「根拠不足なら質問を言い換えて再検索するループ」「複数文書の統合」等に拡張する際、
-分岐・ループを持てる LangGraph の方が発展させやすいため採用（歓迎スキルの実体験獲得も兼ねる）。
+| 層 | 役割 |
+|---|---|
+| `src/ingest` | Markdown/Text/PDFの検査、読込、チャンク分割 |
+| `src/rag` | E5埋め込み、Chroma検索、LangGraph retrieve/generate |
+| `src/quality/verifier.py` | 決定論的検査、独立LLM照合、公開用サニタイズ |
+| `src/quality/store.py` | SQLite schema、revision、run、job、event、adjustment |
+| `src/quality/workbench.py` | revision別RAG、質問処理、比較・回帰job |
+| `src/observability.py` | Langfuse trace ID、callback、verify/gate observation、着弾確認 |
+| `src/api` | localhost向けAPIと4タブ業務UI |
 
-### 生成LLMプロバイダ
+## 永続化
 
-回答生成は `LLM_PROVIDER` で OpenAI / Anthropic を切り替えられる。既定は
-`openai`。OpenAI利用時は `OPENAI_API_KEY` と `OPENAI_MODEL` を使用し、既定モデルは
-公式の最新モデル解決結果に合わせて `gpt-5.6-sol` とする。どちらのプロバイダでもプロンプト方針は同じで、
-文脈のみを根拠に日本語で答え、文脈に無ければ「記載なし」と答える。
+`config/knowledge.toml`は初回登録に使う。運用開始後の有効ナレッジはSQLiteの`workbench_state`が指すrevisionで決まる。
 
-### 評価ループの設計思想（既存の検証パネル経験の転用）
+revision本文は`data/runtime/revisions/{revision_id}/source/`へ不変スナップショットとして保存し、SHA-256で検査する。承認時には本文SHA、評価セットSHA、エンジンfingerprint、最新validation、却下状態を再確認する。
 
-vibe-base のマルチエージェント開発基盤では、実装物を「正当性」「セキュリティ」「仕様適合」「UX」の4つの異なる視点を持つLLMに反証させ、重大な問題が1件でもあればコミットをブロックする仕組みを本番運用してきた。この考え方を、RAGの回答評価に転用する。
+`events`はDB triggerでUPDATE/DELETEを拒否する。`runs`と`revisions`も不変。
 
-設計思想としては、1つの回答に対して単一の評価だけでなく、根拠忠実性／質問直接性／誤情報なしの複数軸で確認する。ただし現実装の `src/eval` は、評価者LLMを直接呼び出す完全自動採点器ではない。外部で作成した verdict JSON を集計し、HTMLレポート化するところまでを担当する。評価者LLMの実行、人手サンプリング、採用/却下判断は今後の運用設計が必要。
+## 品質ゲート
 
-### 監査ログ（Langfuse Cloud）
+第一層は引用番号、引用網羅、根拠の存在、回答形式を検査する。第二層は生成とは別のLLM呼び出しで主張単位の支持・矛盾・判断不能と、根拠忠実性・質問直接性・誤情報なしを0〜2点で判定する。
 
-運用監査の入口として Langfuse の LangChain CallbackHandler を任意連携する。`.env` に
-`LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` がある場合だけ、
-`ask()` 実行時に LangGraph / LangChain のトレースを Langfuse へ送る。キー未設定時は
-ローカル実行・テスト・ポートフォリオ閲覧を壊さないため無効化される。
+全主張が支持され、主張範囲が回答全文を覆い、3軸すべて2点の場合だけ`released`。それ以外は`blocked`。
 
-これにより、後から質問、検索/生成の流れ、モデル呼び出し、エラーを Langfuse 側で追跡する経路を持てる。
-CLIのような短命プロセスでは、回答後に `flush()` して未送信トレースを送り切る。Langfuse SDK の `auth_check=True` は確認済みだが、画面上でのtrace着弾確認は別途記録が必要。
-ただし、顧客納品レベルでは保存期間、個人情報マスキング、アクセス権限、削除手順、ログ保全方針を
-別途決める必要がある。
+## 比較・承認
 
-### 未決定事項
+比較jobは1問、validation jobは設定済み評価セット全件を同じエンジン条件でbefore/after実行する。beforeは実行時点の有効revision、afterは候補revision。
 
-- ~~チャンク分割の単位~~ → **確定（Stage 3）**: RecursiveCharacterTextSplitter で段落→行→文→語の順に「意味の切れ目」を優先し chunk_size≈1000 / overlap≈150。見出し単位は章長のばらつきで検索粒度が不均一になるため不採用（`src/ingest`）
-- 評価データセットの作り方 → 現時点は自作8問（`data/eval/eval_questions.json`）。本格運用では30〜100問程度への拡充と、評価者/人手サンプリングの一致率確認が必要
-- 類似度の許容範囲 → 未校正。類似度は正確性ではなく検索候補の近さであり、UIでは根拠カバレッジと回答照合を主判定にする
-- 品質改善ワークベンチ → 未実装。調整台帳、before/after比較、回帰確認、採用/却下理由の記録が必要
+既存released質問が1件でもblocked化した場合、全件がreleasedでない場合、評価セット・本文・エンジン設定が検証後に変わった場合は承認できない。
+
+## セキュリティ境界
+
+初期運用は`127.0.0.1`限定・1名・認証なし。Trusted Host、10MiBファイル上限、PDFページ/抽出文字上限、同時job上限、プロンプト内データ境界を実装している。
+
+Langfuse有効時は監査情報がCloudへ送信される。個人情報・機密情報を扱う導入では、マスキング、保存地域・期間、権限、削除手順を別途実装する。

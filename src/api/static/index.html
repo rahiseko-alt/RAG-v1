@@ -3,87 +3,360 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>medguide-rag</title>
+    <meta name="color-scheme" content="light" />
+    <title>medguide-rag 運用ワークベンチ</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <main class="app-shell">
-      <section class="query-panel" aria-labelledby="app-title">
+    <a class="skip-link" href="#workspace">メイン操作へ移動</a>
+
+    <header class="app-header">
+      <div class="header-inner">
         <div>
-          <p class="eyebrow">登録済みナレッジQAデモ</p>
-          <h1 id="app-title">根拠追跡ビュー</h1>
-          <p class="notice">学習用デモです。回答は登録済みナレッジの要約であり、原典の確認を置き換えるものではありません。</p>
+          <p class="eyebrow">medguide-rag</p>
+          <h1>運用ワークベンチ</h1>
         </div>
+        <p class="header-note">回答・根拠・変更履歴を、非エンジニアが同じ画面で検品するための操作画面です。</p>
+      </div>
+    </header>
 
-        <form id="ask-form" class="ask-form">
-          <label for="question">質問</label>
-          <textarea id="question" name="question" rows="4" required>東堂葵の術式は何？</textarea>
-          <button type="submit" id="ask-button">
-            <span aria-hidden="true">▶</span>
-            質問する
-          </button>
-        </form>
+    <nav class="tab-bar" aria-label="ワークベンチ">
+      <div class="tab-list" role="tablist" aria-label="作業領域">
+        <button
+          id="tab-question"
+          class="tab-button"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-question"
+          tabindex="0"
+        >
+          質問・検品
+        </button>
+        <button
+          id="tab-knowledge"
+          class="tab-button"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-knowledge"
+          tabindex="-1"
+        >
+          ナレッジ調整
+        </button>
+        <button
+          id="tab-comparison"
+          class="tab-button"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-comparison"
+          tabindex="-1"
+        >
+          比較・承認
+        </button>
+        <button
+          id="tab-ledger"
+          class="tab-button"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-ledger"
+          tabindex="-1"
+        >
+          台帳・監査
+        </button>
+      </div>
+    </nav>
 
-        <div class="status-strip" aria-live="polite">
-          <span id="provider-status">provider: -</span>
-          <span id="audit-status">監査: -</span>
-          <span id="model-status">model: -</span>
-        </div>
+    <main id="workspace" class="workspace">
+      <section
+        id="panel-question"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-question"
+        tabindex="0"
+      >
+        <section class="panel status-panel" aria-labelledby="service-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">現在の接続先</p>
+              <h2 id="service-title">サービス・ナレッジ状態</h2>
+            </div>
+            <button id="refresh-health" class="button button-secondary button-compact" type="button">
+              <span aria-hidden="true">↻</span> 状態を更新
+            </button>
+          </div>
+          <div id="service-status" class="status-grid" aria-live="polite" aria-busy="true">
+            <div><span>サービス</span><strong id="health-status">確認中</strong></div>
+            <div><span>プロバイダー</span><strong id="provider-status">—</strong></div>
+            <div><span>モデル</span><strong id="model-status">—</strong></div>
+            <div><span>監査</span><strong id="audit-status">—</strong></div>
+            <div><span>ナレッジ</span><strong id="knowledge-title">—</strong></div>
+            <div><span>検索設定</span><code id="knowledge-config">—</code></div>
+          </div>
+          <p class="source-line">
+            <span>原典:</span>
+            <a id="knowledge-source">未確認</a>
+          </p>
+        </section>
 
-        <div class="knowledge-strip" aria-live="polite">
-          <div>
-            <span>ナレッジ</span>
-            <strong id="knowledge-title">未確認</strong>
+        <section class="panel" aria-labelledby="question-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">1. 質問する</p>
+              <h2 id="question-title">登録済みナレッジへの質問</h2>
+            </div>
           </div>
-          <div>
-            <span>出典</span>
-            <a id="knowledge-source" href="#" target="_blank" rel="noreferrer">未確認</a>
+          <form id="ask-form" class="stack-form">
+            <div class="field">
+              <label for="question">質問</label>
+              <textarea id="question" name="question" rows="4" required>東堂葵の術式は何？</textarea>
+              <p class="field-help">回答は登録済み文書の範囲だけで生成されます。</p>
+            </div>
+            <div class="form-actions">
+              <button id="ask-button" class="button button-primary" type="submit">
+                <span aria-hidden="true">▶</span> 回答を作成
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel" aria-labelledby="answer-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">2. 回答を確認</p>
+              <h2 id="answer-title">回答</h2>
+            </div>
+            <span id="answer-state" class="state-badge state-idle">待機中</span>
           </div>
-          <div>
-            <span>設定</span>
-            <code id="knowledge-config">-</code>
+          <div id="answer-region" class="answer-region" aria-live="polite" aria-busy="false">
+            <p id="answer" class="empty-message">質問すると、回答または出荷停止理由がここに表示されます。</p>
+            <div id="blocked-action" class="blocked-action" hidden>
+              <button id="open-knowledge-tab" class="button button-secondary" type="button">
+                <span aria-hidden="true">→</span> ナレッジ調整へ
+              </button>
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section class="panel" aria-labelledby="verification-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">3. 機械検品</p>
+              <h2 id="verification-title">検証スコアカード</h2>
+            </div>
+          </div>
+          <div id="verification" class="verification-grid" aria-live="polite">
+            <p class="empty-message">回答後に、評価軸とクレーム集計を表示します。</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="claims-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">4. 根拠を照合</p>
+              <h2 id="claims-title">主張と根拠</h2>
+            </div>
+          </div>
+          <p class="section-note">
+            類似度は質問と検索候補の「近さ」であり、内容の正しさではありません。判定は主張と抜粋の一致で確認します。
+          </p>
+          <div id="claims" class="claim-list" aria-live="polite">
+            <p class="empty-message">回答後に、主張ごとの判定と支持する出典を表示します。</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="process-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">5. 処理を追跡</p>
+              <h2 id="process-title">処理工程</h2>
+            </div>
+          </div>
+          <p class="section-note">通常は工程名と状態だけを表示します。必要な工程だけ開いて詳細を確認できます。</p>
+          <div id="process-steps" class="process-list" aria-live="polite">
+            <p class="empty-message">質問すると、処理工程がここに表示されます。</p>
+          </div>
+        </section>
       </section>
 
-      <section class="timeline-panel" aria-labelledby="timeline-title">
-        <h2 id="timeline-title">処理工程</h2>
-        <ol id="timeline" class="timeline">
-          <li data-step="received"><span></span>質問受付</li>
-          <li data-step="knowledge"><span></span>ナレッジ選択</li>
-          <li data-step="searching"><span></span>登録済みナレッジを意味検索</li>
-          <li data-step="sources"><span></span>関連箇所を抽出</li>
-          <li data-step="generating"><span></span>根拠だけを渡して回答生成</li>
-          <li data-step="audit"><span></span>監査ログへ記録</li>
-          <li data-step="complete"><span></span>回答表示</li>
-        </ol>
-        <div id="process-details" class="process-details">
-          <div class="process-placeholder">質問すると、各工程の目的・入力・処理・出力・判断目安がここに表示されます。</div>
-        </div>
+      <section
+        id="panel-knowledge"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-knowledge"
+        tabindex="0"
+        hidden
+      >
+        <section class="panel" aria-labelledby="draft-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">変更案を保存</p>
+              <h2 id="draft-title">ナレッジ改訂ドラフト</h2>
+            </div>
+          </div>
+          <form id="revision-form" class="stack-form">
+            <div class="form-grid">
+              <div class="field">
+                <label for="revision-operator">操作者</label>
+                <input id="revision-operator" name="operator" autocomplete="name" required />
+              </div>
+              <div class="field">
+                <label for="revision-summary">変更概要</label>
+                <input id="revision-summary" name="change_summary" required />
+              </div>
+              <div class="field">
+                <label for="revision-title">文書タイトル</label>
+                <input id="revision-title" name="title" required />
+              </div>
+              <div class="field">
+                <label for="revision-source-url">原典URL</label>
+                <input id="revision-source-url" name="source_url" type="url" inputmode="url" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="revision-file">文書ファイル（任意）</label>
+              <input id="revision-file" name="file" type="file" accept=".md,.txt,.pdf,text/markdown,text/plain,application/pdf" />
+              <p class="field-help">Markdown/Textは下の編集欄へ読み込みます。PDFはファイルをそのまま改訂版として保存します。</p>
+            </div>
+            <div class="field">
+              <label for="revision-content">文書内容</label>
+              <textarea id="revision-content" name="content" rows="14"></textarea>
+              <p class="field-help">保存後すぐには本番ナレッジへ反映されません。比較・検証・承認を経て反映します。</p>
+            </div>
+            <div class="form-actions">
+              <button id="create-revision" class="button button-primary" type="submit">
+                <span aria-hidden="true">＋</span> ドラフトを作成
+              </button>
+            </div>
+            <p id="revision-form-status" class="form-status" role="status"></p>
+          </form>
+        </section>
+
+        <section class="panel" aria-labelledby="revisions-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">保存済みの変更案</p>
+              <h2 id="revisions-title">改訂一覧</h2>
+            </div>
+            <button id="refresh-revisions" class="button button-secondary button-compact" type="button">
+              <span aria-hidden="true">↻</span> 一覧を更新
+            </button>
+          </div>
+          <div id="revision-list" class="revision-list" aria-live="polite" aria-busy="false">
+            <p class="empty-message">改訂一覧を読み込んでいます。</p>
+          </div>
+        </section>
       </section>
 
-      <section class="answer-panel" aria-labelledby="answer-title">
-        <div class="panel-heading">
-          <h2 id="answer-title">回答</h2>
-          <span id="answer-state" class="state-pill">待機中</span>
-        </div>
-        <div id="answer" class="answer empty">質問すると、ここに回答が表示されます。</div>
+      <section
+        id="panel-comparison"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-comparison"
+        tabindex="0"
+        hidden
+      >
+        <section class="panel" aria-labelledby="comparison-controls-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">変更前後を検証</p>
+              <h2 id="comparison-controls-title">比較・全件検証</h2>
+            </div>
+          </div>
+          <form id="comparison-form" class="stack-form">
+            <div class="form-grid">
+              <div class="field">
+                <label for="comparison-revision">改訂</label>
+                <select id="comparison-revision" required>
+                  <option value="">改訂を選択</option>
+                </select>
+              </div>
+              <div class="field field-wide">
+                <label for="comparison-question">比較する質問</label>
+                <input id="comparison-question" required />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button id="start-comparison" class="button button-primary" type="submit">
+                <span aria-hidden="true">▶</span> 比較を開始
+              </button>
+              <button id="start-validation" class="button button-secondary" type="button">
+                <span aria-hidden="true">✓</span> 全件検証を開始
+              </button>
+            </div>
+            <p id="comparison-form-status" class="form-status" role="status"></p>
+          </form>
+        </section>
+
+        <section class="panel" aria-labelledby="jobs-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">非同期処理</p>
+              <h2 id="jobs-title">ジョブ状態</h2>
+            </div>
+          </div>
+          <div id="job-list" class="job-list" aria-live="polite">
+            <p class="empty-message">この画面で開始したジョブがここに表示されます。</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="comparison-result-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">回答と評価の差分</p>
+              <h2 id="comparison-result-title">変更前 / 変更後</h2>
+            </div>
+            <button id="approve-revision" class="button button-success button-compact" type="button" disabled>
+              <span aria-hidden="true">✓</span> 改訂を承認
+            </button>
+          </div>
+          <p id="approval-note" class="section-note">バックエンドの検証結果が承認可能になるまで、承認操作は無効です。</p>
+          <div id="comparison-result" class="comparison-grid" aria-live="polite">
+            <p class="empty-message">比較ジョブが完了すると、変更前後を並べて表示します。</p>
+          </div>
+        </section>
       </section>
 
-      <section class="sources-panel" aria-labelledby="sources-title">
-        <div class="panel-heading">
-          <h2 id="sources-title">根拠パネル</h2>
-          <span class="state-pill muted">検索スコアは正確性ではありません</span>
-        </div>
-        <p class="score-note">
-          検索スコアは、質問と文書候補の近さです。回答の正しさは、根拠に必要情報が含まれるか、回答の数値や条件が根拠と一致するかで確認します。
-        </p>
-        <div id="sources" class="sources-list">
-          <div class="source-placeholder">検索された文書箇所がここに表示されます。</div>
-        </div>
+      <section
+        id="panel-ledger"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-ledger"
+        tabindex="0"
+        hidden
+      >
+        <section class="panel" aria-labelledby="ledger-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">変更と実行の記録</p>
+              <h2 id="ledger-title">調整・イベント・実行台帳</h2>
+            </div>
+            <button id="refresh-ledger" class="button button-secondary button-compact" type="button">
+              <span aria-hidden="true">↻</span> 台帳を更新
+            </button>
+          </div>
+          <div id="ledger-summary" class="ledger-summary" aria-live="polite">
+            <p class="empty-message">台帳を読み込んでいます。</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="trace-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">監査トレース</p>
+              <h2 id="trace-title">トレース詳細</h2>
+            </div>
+          </div>
+          <div id="trace-detail" class="trace-detail" aria-live="polite">
+            <p class="empty-message">台帳の「トレース確認」から監査情報を表示できます。</p>
+          </div>
+        </section>
       </section>
     </main>
 
+    <div id="global-status" class="sr-only" role="status" aria-live="polite"></div>
     <script src="/static/app.js"></script>
   </body>
 </html>

@@ -2,7 +2,7 @@
 
 登録済みナレッジ文書に対する質問応答システム（RAG）と、その回答品質評価結果を集計・可視化する仕組みを組み合わせたプロジェクトです。
 
-> **現在の状態: 実証プロトタイプ。** OpenAI対応RAG、FastAPI API、工程詳細付き透明型RAG UI、Langfuse連携経路、評価結果の集計/HTML化まで実装済みです。CLIでのOpenAI回答生成、Langfuse認証、実uvicorn経由の `/ask` E2E は確認済みですが、Langfuse画面でのtrace着弾確認、工程診断スコアカード、調整台帳は未実装です。現在地と計画は [docs/current-plan-report.md](docs/current-plan-report.md) にまとめています。
+> **現在の状態: 単一PC向け品質改善ワークベンチ。** 回答照合、fail-closed出荷停止、SQLite版管理、before/after、全件回帰検査、承認・却下、調整台帳、Langfuse着弾確認、非エンジニア向け4タブUIまで実装済みです。現在地は [docs/current-plan-report.md](docs/current-plan-report.md)、操作と判断基準は [docs/workbench-guide.md](docs/workbench-guide.md) にまとめています。
 
 > **注意:** このプロジェクトは学習・ポートフォリオ用デモです。現在の既定ナレッジは `config/knowledge.toml` で指定されています。原典確認や専門判断を置き換えるものではありません。
 
@@ -23,7 +23,9 @@
 - [x] 教材ノート `notebooks/03-rag-walkthrough.ipynb`（RAGの流れを解説付きで体験）
 - [x] FastAPI経由でローカル起動して質問できるデモ
 - [x] ブラウザで回答・根拠・工程詳細・監査状態を見られる透明型RAG UI
-- [ ] デモのスクリーンショット / GIF
+- [x] 別LLM照合と、NG・判断不能・障害時の出荷停止
+- [x] UIだけでナレッジ下書き、比較、回帰検査、承認・却下
+- [x] SQLite調整台帳とLangfuse trace着弾確認
 
 ## 4. アーキテクチャ
 
@@ -37,7 +39,9 @@
 | RAGフレームワーク | LangChain / LangGraph |
 | ベクトル検索 | Chroma |
 | API | FastAPI |
-| 評価 | verdict JSON の集計/HTML化（LLM-as-judge運用は外部/手動プロセス） |
+| 評価 | 決定論的検査 + 別LLM照合 + 回帰評価 |
+| 永続化 | SQLite + 不変revisionスナップショット |
+| 監査 | Langfuse Cloud + ローカルrun/event台帳 |
 | 基礎データ処理 | pandas / numpy |
 | 軽量モデル | scikit-learn / PyTorch |
 
@@ -50,7 +54,7 @@
 
 ## 7. 設計で工夫した点
 
-このプロジェクトの核は、RAGそのものより「回答品質をどう検証可能にするか」の部分です。現時点では、出典追跡、工程別の目的・入力・処理・出力・判断目安の表示、監査トレース経路、評価結果の集計/HTML化まで実装しています。今後は、工程診断スコアカード、調整台帳、before/after比較を追加し、回答品質を継続改善できる形へ発展させます。
+このプロジェクトの核は、RAGそのものより「回答を表示前に検品し、悪ければ止め、調整効果を記録する」部分です。回答全文の引用検査、主張別根拠照合、別LLMの3軸判定、before/after、既存PASS質問の回帰確認を通過したrevisionだけを承認できます。
 
 ## 8. セットアップ手順
 
@@ -124,12 +128,18 @@ expected_terms = ["期待される語"]
 FastAPIデモは以下で起動できます。
 
 ```bash
-uvicorn src.api:app --reload
+uvicorn src.api:app --host 127.0.0.1 --port 8010
 ```
 
-- `GET /health`: 設定状態の確認
-- `POST /ask`: 質問応答（回答・出典・監査ON/OFFを返す）
-- `GET /`: 透明型RAG UI
+- `GET /`: 4タブ品質改善ワークベンチ
+- `POST /ask`: 質問、回答照合、出荷判定、監査記録
+- 品質管理API一覧: [src/api/README.md](src/api/README.md)
+
+主要UIフローのPlaywright E2Eは、サーバー起動中に次で実行する。
+
+```bash
+node tests/e2e/workbench-e2e.cjs
+```
 
 ## 進捗
 
@@ -144,10 +154,11 @@ uvicorn src.api:app --reload
 | 5 | Langfuse監査ログ連携 | 任意連携追加済（認証確認済み・画面着弾確認は未記録） |
 | 6 | LLMプロバイダ切替 | Anthropic / OpenAI 切替対応 |
 | 7 | ナレッジ設定分離 | `config/knowledge.toml` で本文・出典・評価セット・collectionを管理 |
+| 8 | 品質改善ワークベンチ | 回答照合、出荷停止、版管理、比較・回帰、承認、台帳、非エンジニアUI |
 
 ## 監査ログ
 
-Langfuse の環境変数が正しく設定されている場合、CLI実行時に LangGraph / LangChain の callback 経路でトレース送信を試みます。`src/observability.py` が任意連携を担当し、キー未設定時やキー形式不正時はローカルのみで動きます。Langfuse認証チェックは通過済みですが、画面上でのtrace着弾確認は別途記録が必要です。
+Langfuse の環境変数が正しく設定されている場合、`retrieve`、`generate`、`verify`、`gate`を同じtrace IDへ送信し、flush後にCloud APIで着弾確認します。キー未設定時やキー形式不正時はローカルのみで動きます。2026-07-31に実runとCloud traceの`confirmed`照合を確認済みです。
 
 ## ライセンス
 

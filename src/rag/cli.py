@@ -18,34 +18,40 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from src.rag import ask, get_generation_model, get_llm_provider, is_generation_configured, make_rag  # noqa: E402
-from src.observability import flush_langfuse, get_langfuse_config_error, is_langfuse_configured  # noqa: E402
+from src.quality import QualityWorkbench, WorkbenchStore  # noqa: E402
+from src.rag import engine_fingerprint, get_generation_model, get_llm_provider, is_generation_configured  # noqa: E402
+from src.observability import get_langfuse_config_error, is_langfuse_configured  # noqa: E402
 from src.runtime_errors import safe_error_message  # noqa: E402
 
 
-def _print_sources(docs: list) -> None:
+def _print_sources(sources: list[dict]) -> None:
     print("  ── 出典追跡（検索された文書箇所）─────────────")
-    for i, (d, score) in enumerate(docs, start=1):
-        page = d.metadata.get("page", "?")
-        src = d.metadata.get("source", "?")
-        snippet = " ".join(d.page_content.split())[:90]
-        print(f"  [{i}] 類似度 {score:.3f} | {src} p.{page}")
+    for item in sources:
+        snippet = " ".join(str(item["snippet"]).split())[:90]
+        print(
+            f"  [{item['rank']}] 類似度 {item['score']:.3f} | "
+            f"{item['source']} p.{item['page']}"
+        )
         print(f"      {snippet}…")
     print("  ─────────────────────────────────────────────")
 
 
-def _answer_one(graph, question: str) -> None:
+def _answer_one(workbench: QualityWorkbench, question: str) -> None:
     try:
-        state = ask(graph, question)
+        outcome = workbench.answer_question(question=question)
     except Exception as exc:
         print("エラー: 回答生成に失敗しました。", file=sys.stderr)
         print(f"詳細: {safe_error_message(exc)}", file=sys.stderr)
         raise SystemExit(1) from None
-    _print_sources(state["docs"])
-    print("\n  【回答】")
-    print("  " + state["answer"].replace("\n", "\n  "))
+    _print_sources(outcome["sources"])
+    if outcome["delivery_status"] == "released":
+        print("\n  【回答】")
+        print("  " + str(outcome["answer"]).replace("\n", "\n  "))
+    else:
+        print("\n  【回答保留】")
+        print("  品質検証を通過しなかったため、候補回答は表示しません。")
+        print(f"  run_id: {outcome['run_id']}")
     print()
-    flush_langfuse()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -67,11 +73,14 @@ def main(argv: list[str] | None = None) -> int:
         f"（初回はモデル/文書の読み込みに時間がかかります・provider={get_llm_provider()}・"
         f"モデル={get_generation_model()}・監査={audit}）..."
     )
-    graph, _vs, n = make_rag()
+    workbench = QualityWorkbench(
+        WorkbenchStore(engine_fingerprint=engine_fingerprint())
+    )
+    _graph, _vs, n = workbench.prepare_revision()
     print(f"準備完了: {n} チャンクを検索対象にしています。\n")
 
     if argv:  # 1問モード
-        _answer_one(graph, " ".join(argv))
+        _answer_one(workbench, " ".join(argv))
         return 0
 
     # 対話モード
@@ -84,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
             break
         if not q or q.lower() in {"quit", "exit"}:
             break
-        _answer_one(graph, q)
+        _answer_one(workbench, q)
     return 0
 
 

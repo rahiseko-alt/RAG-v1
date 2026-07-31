@@ -1,5 +1,7 @@
 import os
+import sqlite3
 import sys
+import base64
 
 from fastapi.testclient import TestClient
 from langchain_core.documents import Document
@@ -9,80 +11,67 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 import src.api as api  # noqa: E402
+from src.quality import OnlineVerifier, QualityWorkbench, WorkbenchStore  # noqa: E402
+from src.rag import engine_fingerprint  # noqa: E402
 
 
-def test_index_serves_transparent_ui():
-    client = TestClient(api.create_app())
-    res = client.get("/")
-
-    assert res.status_code == 200
-    assert "根拠追跡ビュー" in res.text
-    assert "検索スコアは正確性ではありません" in res.text
-    assert "process-details" in res.text
-    assert "目的・入力・処理・出力・判断目安" in res.text
-
-
-def test_health_reports_configuration(monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.delenv("LANGFUSE_PUBLIC_KEY", raising=False)
-    monkeypatch.delenv("LANGFUSE_SECRET_KEY", raising=False)
-    monkeypatch.setattr(api, "get_llm_provider", lambda: "anthropic")
-    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
-
-    client = TestClient(api.create_app())
-    res = client.get("/health")
-
-    assert res.status_code == 200
-    body = res.json()
-    assert body["status"] == "ok"
-    assert body["provider"] == "anthropic"
-    assert body["generation_configured"] is False
-    assert body["knowledge"]["id"]
-    assert body["knowledge"]["source"]
-    assert body["anthropic_configured"] is False
-    assert body["openai_configured"] is False
-    assert body["langfuse_configured"] is False
+class PassingStructuredVerifier:
+    def verify(self, **_kwargs):
+        return {
+            "faithfulness": 2,
+            "relevance": 2,
+            "no_misinfo": 2,
+            "claims": [
+                {
+                    "claim_id": "claim-1",
+                    "claim": "非公開候補の根拠回答です。",
+                    "status": "supported",
+                    "evidence": [{"rank": 1, "reason": "The cited excerpt supports the claim."}],
+                    "reason": "Supported by evidence rank 1.",
+                }
+            ],
+        }
 
 
-def test_ask_requires_anthropic_key(monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.setattr(api, "get_llm_provider", lambda: "anthropic")
-    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
-
-    client = TestClient(api.create_app())
-    res = client.post("/ask", json={"question": "運動はどのくらい？"})
-
-    assert res.status_code == 503
-    assert "ANTHROPIC_API_KEY" in res.json()["detail"]
-
-
-def test_ask_requires_openai_key_when_provider_is_openai(monkeypatch):
-    monkeypatch.setattr(api, "get_llm_provider", lambda: "openai")
-    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
-
-    client = TestClient(api.create_app())
-    res = client.post("/ask", json={"question": "運動はどのくらい？"})
-
-    assert res.status_code == 503
-    assert "OPENAI_API_KEY" in res.json()["detail"]
+class BlockingStructuredVerifier:
+    def verify(self, **_kwargs):
+        return {
+            "faithfulness": 0,
+            "relevance": 1,
+            "no_misinfo": 0,
+            "claims": [
+                {
+                    "claim_id": "claim-1",
+                    "claim": "非公開候補の根拠回答です。",
+                    "status": "unclear",
+                    "evidence": [{"rank": 1, "reason": "private candidate wording"}],
+                    "reason": "private candidate wording",
+                }
+            ],
+        }
 
 
-def test_ask_returns_answer_and_sources(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-    monkeypatch.setattr(api, "get_rag", lambda: ("graph", None, 71))
+def _make_workbench(tmp_path, *, blocked=False):
+    store = WorkbenchStore(
+        tmp_path / "workbench.sqlite3",
+        runtime_root=tmp_path / "runtime",
+        engine_fingerprint=engine_fingerprint(),
+    )
+
+    def fake_factory(**_kwargs):
+        return "graph", None, 71
 
     def fake_ask(graph, question, **kwargs):
         assert graph == "graph"
-        assert question == "運動はどのくらい？"
-        assert kwargs["session_id"] == "session-1"
+        assert question
+        assert kwargs["trace_id"]
         return {
             "question": question,
-            "answer": "週150分の中強度活動が推奨されています [1]。",
+            "answer": "非公開候補の根拠回答です [1]。",
             "docs": [
                 (
                     Document(
-                        page_content="この文書は、登録済みナレッジの内容を根拠付きで要約するためのものです。",
+                        page_content="登録済みナレッジに含まれる根拠の抜粋です。",
                         metadata={"source": "sample.md", "page": 0, "chunk_id": 3},
                     ),
                     0.859,
@@ -90,9 +79,63 @@ def test_ask_returns_answer_and_sources(monkeypatch):
             ],
         }
 
-    monkeypatch.setattr(api, "ask", fake_ask)
+    verifier = BlockingStructuredVerifier() if blocked else PassingStructuredVerifier()
+    return QualityWorkbench(
+        store,
+        verifier=OnlineVerifier(verifier, timeout_seconds=1),
+        rag_factory=fake_factory,
+        ask_fn=fake_ask,
+    )
 
-    client = TestClient(api.create_app())
+
+def test_index_serves_workbench_ui(tmp_path):
+    client = TestClient(api.create_app(_make_workbench(tmp_path)))
+    res = client.get("/")
+
+    assert res.status_code == 200
+    assert "medguide-rag 運用ワークベンチ" in res.text
+    assert "<main" in res.text
+
+
+def test_health_reports_configuration(monkeypatch, tmp_path):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("LANGFUSE_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("LANGFUSE_SECRET_KEY", raising=False)
+    monkeypatch.setattr(api, "get_llm_provider", lambda: "anthropic")
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+
+    client = TestClient(api.create_app(_make_workbench(tmp_path)))
+    res = client.get("/health")
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "ok"
+    assert body["provider"] == "anthropic"
+    assert body["generation_configured"] is False
+    assert body["active_revision_id"]
+    assert body["auth_mode"] == "single_pc_none"
+    assert body["anthropic_configured"] is False
+    assert body["openai_configured"] is False
+    assert body["langfuse_configured"] is False
+
+
+def test_ask_requires_configured_provider(monkeypatch, tmp_path):
+    monkeypatch.setattr(api, "get_llm_provider", lambda: "anthropic")
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    client = TestClient(api.create_app(_make_workbench(tmp_path)))
+
+    res = client.post("/ask", json={"question": "運動はどのくらい？"})
+
+    assert res.status_code == 503
+    assert "ANTHROPIC_API_KEY" in res.json()["detail"]
+
+
+def test_ask_releases_verified_answer(monkeypatch, tmp_path):
+    monkeypatch.setattr(api, "is_generation_configured", lambda: True)
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+
     res = client.post(
         "/ask",
         json={"question": " 運動はどのくらい？ ", "session_id": "session-1"},
@@ -101,17 +144,189 @@ def test_ask_returns_answer_and_sources(monkeypatch):
     assert res.status_code == 200
     body = res.json()
     assert body["question"] == "運動はどのくらい？"
-    assert body["answer"].startswith("週150分")
+    assert body["run_id"]
+    assert body["delivery_status"] == "released"
+    assert body["answer"].startswith("非公開候補")
+    assert body["blocked_reason"] is None
+    assert body["verification"]["status"] == "pass"
+    assert body["audit"]["trace_id"]
     assert body["chunks_indexed"] == 71
-    assert body["sources"][0]["source"] == "sample.md"
-    assert body["sources"][0]["page"] == 0
     assert body["sources"][0]["score"] == 0.859
-    assert body["knowledge"]["id"]
-    assert len(body["process_steps"]) >= 6
     assert body["process_steps"][0]["title"] == "質問受付"
-    assert "処理後の質問: 運動はどのくらい？" in body["process_steps"][0]["output"]
-    assert body["process_steps"][2]["title"] == "意味検索"
-    assert "実際に取得した 1件" in body["process_steps"][2]["output"]
-    assert "query: 運動はどのくらい？" in body["process_steps"][2]["process"]
-    assert "検索スコアは正確性ではなく近さ" in body["process_steps"][2]["check"]
-    assert "生成後の回答" in body["process_steps"][4]["output"]
+    assert [step["title"] for step in body["process_steps"]][-3:] == [
+        "回答照合",
+        "出荷判定",
+        "監査記録",
+    ]
+
+    trace = client.get(f"/audit/traces/{body['audit']['trace_id']}")
+    assert trace.status_code == 200
+    assert trace.json()["run_id"] == body["run_id"]
+
+
+def test_blocked_candidate_is_not_returned_but_is_saved(monkeypatch, tmp_path):
+    monkeypatch.setattr(api, "is_generation_configured", lambda: True)
+    workbench = _make_workbench(tmp_path, blocked=True)
+    client = TestClient(api.create_app(workbench))
+
+    res = client.post("/ask", json={"question": "危険な質問"})
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["delivery_status"] == "blocked"
+    assert body["answer"] is None
+    assert "非公開候補" not in res.text
+    assert "private candidate wording" not in res.text
+    assert body["verification"]["status"] == "block"
+    assert body["blocked_reason"] == "quality_gate_failed"
+
+    with sqlite3.connect(workbench.store.db_path) as connection:
+        saved = connection.execute(
+            "SELECT candidate_answer FROM runs WHERE id = ?", (body["run_id"],)
+        ).fetchone()
+    assert saved[0].startswith("非公開候補")
+    adjustments = client.get("/workbench/adjustments").json()["items"]
+    assert adjustments[0]["run_id"] == body["run_id"]
+
+
+def test_revision_validation_and_atomic_approval(monkeypatch, tmp_path):
+    monkeypatch.setattr(api, "is_generation_configured", lambda: True)
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+    original_active = workbench.store.get_active_revision()["id"]
+
+    created = client.post(
+        "/workbench/revisions",
+        json={
+            "source_path": "data/sample/jujutsu-kaisen-wikipedia.md",
+            "label": "candidate",
+        },
+    )
+    assert created.status_code == 201
+    revision_id = created.json()["id"]
+    assert created.json()["source_sha256"]
+
+    premature = client.post(f"/workbench/revisions/{revision_id}/approve", json={})
+    assert premature.status_code == 409
+    assert workbench.store.get_active_revision()["id"] == original_active
+
+    queued = client.post(
+        f"/workbench/revisions/{revision_id}/validation-jobs",
+        json={},
+    )
+    assert queued.status_code == 202
+    job = client.get(f"/workbench/jobs/{queued.json()['id']}").json()
+    assert job["status"] == "succeeded"
+    assert job["persistence_status"] == "passed"
+    assert job["approval_allowed"] is True
+    assert job["result"]["full_pass"] is True
+    assert job["result"]["no_regression"] is True
+    assert job["result"]["engine_fingerprint"]
+    assert set(job["result"]["source_hashes"]) == {"before", "after"}
+    assert job["result"]["before"]["items"][0]["answer"]
+    assert job["result"]["after"]["items"][0]["verification"]["status"] == "pass"
+
+    approved = client.post(
+        f"/workbench/revisions/{revision_id}/approve",
+        json={"reason": "full validation passed"},
+    )
+    assert approved.status_code == 200
+    assert approved.json()["active"] is True
+    assert workbench.store.get_active_revision()["id"] == revision_id
+
+
+def test_validation_cannot_be_reduced_to_a_question_or_limit(tmp_path):
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+    revision = client.post(
+        "/workbench/revisions",
+        json={"content": "# Candidate\n\nKnowledge.", "label": "candidate"},
+    ).json()
+
+    limited = client.post(
+        f"/workbench/revisions/{revision['id']}/validation-jobs",
+        json={"question_limit": 1},
+    )
+    targeted = client.post(
+        f"/workbench/revisions/{revision['id']}/validation-jobs",
+        json={"question": "one question"},
+    )
+    missing_comparison_question = client.post(
+        f"/workbench/revisions/{revision['id']}/comparison-jobs",
+        json={},
+    )
+
+    assert limited.status_code == 400
+    assert targeted.status_code == 400
+    assert missing_comparison_question.status_code == 400
+
+
+def test_rejecting_active_revision_is_conflict(tmp_path):
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+    active_id = workbench.store.get_active_revision()["id"]
+
+    response = client.post(
+        f"/workbench/revisions/{active_id}/reject",
+        json={"reason": "should fail"},
+    )
+
+    assert response.status_code == 409
+
+
+def test_revision_source_path_rejects_workspace_escape(tmp_path):
+    client = TestClient(api.create_app(_make_workbench(tmp_path)))
+
+    res = client.post(
+        "/workbench/revisions",
+        json={"source_path": str(tmp_path / "outside.md"), "label": "escape"},
+    )
+
+    assert res.status_code == 400
+
+
+def test_revision_accepts_workbench_content_contract(tmp_path):
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+
+    res = client.post(
+        "/workbench/revisions",
+        json={
+            "operator": "local-reviewer",
+            "change_summary": "用語を明確化",
+            "title": "改訂ナレッジ",
+            "source_url": "https://example.com/source",
+            "content": "# 改訂\n\n根拠となる本文です。",
+        },
+    )
+
+    assert res.status_code == 201
+    body = res.json()
+    assert body["status"] == "draft"
+    assert body["change_summary"] == "用語を明確化"
+    assert body["title"] == "改訂ナレッジ"
+    assert "source_path" not in body
+    internal = workbench.store.get_revision(body["id"])
+    assert open(internal["source_path"], encoding="utf-8").read().startswith("# 改訂")
+
+
+def test_revision_accepts_pdf_replacement_upload(tmp_path):
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+    pdf_bytes = b"%PDF-1.4\n% local replacement fixture\n"
+
+    response = client.post(
+        "/workbench/revisions",
+        json={
+            "operator": "local-reviewer",
+            "change_summary": "PDF差し替え",
+            "title": "PDF改訂",
+            "filename": "replacement.pdf",
+            "content_base64": base64.b64encode(pdf_bytes).decode("ascii"),
+        },
+    )
+
+    assert response.status_code == 201
+    internal = workbench.store.get_revision(response.json()["id"])
+    assert internal["source_name"] == "replacement.pdf"
+    assert open(internal["source_path"], "rb").read() == pdf_bytes

@@ -20,6 +20,8 @@ from pypdf import PdfReader
 # チャンク分割の既定値（意味の切れ目を優先しつつ、埋め込みに載る長さに収める）
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
+MAX_PDF_PAGES = 200
+MAX_EXTRACTED_CHARACTERS = 5_000_000
 
 
 def source_sha256(source_path: str | Path) -> str:
@@ -36,10 +38,18 @@ def load_pdf(pdf_path: str | Path) -> list[Document]:
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF が見つかりません: {pdf_path}")
+    if not pdf_path.read_bytes()[:5].startswith(b"%PDF-"):
+        raise ValueError("PDF header is invalid")
     reader = PdfReader(str(pdf_path))
+    if len(reader.pages) > MAX_PDF_PAGES:
+        raise ValueError(f"PDF exceeds the {MAX_PDF_PAGES}-page local-workbench limit")
     pages: list[Document] = []
+    extracted_characters = 0
     for i, page in enumerate(reader.pages):
         text = page.extract_text() or ""
+        extracted_characters += len(text)
+        if extracted_characters > MAX_EXTRACTED_CHARACTERS:
+            raise ValueError("PDF extracted text exceeds the local-workbench limit")
         # metadata: source=ファイル名（可搬性）, page=0始まりのページ番号
         pages.append(Document(page_content=text, metadata={"source": pdf_path.name, "page": i}))
     return pages

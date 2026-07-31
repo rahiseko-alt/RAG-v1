@@ -17,15 +17,16 @@ if _ROOT not in sys.path:
 
 from src.ingest import load_and_chunk  # noqa: E402
 from src.knowledge_config import get_active_knowledge  # noqa: E402
-from src.rag import DEFAULT_SOURCE, get_or_build_index  # noqa: E402
+from src.rag import get_default_source, get_or_build_index  # noqa: E402
 
 
 def test_document_present():
-    assert DEFAULT_SOURCE.exists(), f"題材文書が無い: {DEFAULT_SOURCE}"
+    source = get_default_source()
+    assert source.exists(), f"題材文書が無い: {source}"
 
 
 def test_chunking():
-    chunks = load_and_chunk(DEFAULT_SOURCE)
+    chunks = load_and_chunk(get_default_source())
     assert len(chunks) >= 3, f"チャンク数が想定より少ない: {len(chunks)}"
     # 出典追跡に必要な metadata が全チャンクに付いていること
     for c in chunks:

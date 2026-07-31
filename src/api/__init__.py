@@ -1,31 +1,57 @@
 """FastAPI entrypoint for the medguide-rag question answering demo."""
 from __future__ import annotations
 
+import base64
+import binascii
 import os
+import re
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from pydantic import BaseModel, Field, model_validator
 
 from src.knowledge_config import get_active_knowledge
-from src.observability import get_langfuse_config_error, is_langfuse_configured
-from src.rag import EMBED_MODEL, TOP_K, ask, get_generation_model, get_llm_provider, is_generation_configured, make_rag
+from src.observability import (
+    check_langfuse_trace,
+    get_langfuse_config_error,
+    is_langfuse_configured,
+)
+from src.quality import (
+    QualityWorkbench,
+    WorkbenchConflictError,
+    WorkbenchNotFoundError,
+    WorkbenchStore,
+)
+from src.rag import (
+    EMBED_MODEL,
+    TOP_K,
+    engine_fingerprint,
+    get_generation_model,
+    get_llm_provider,
+    is_generation_configured,
+    make_rag,
+)
 from src.runtime_errors import safe_error_message
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+MAX_REQUEST_BYTES = 15 * 1024 * 1024
 
 
 class AskRequest(BaseModel):
     """HTTP request body for one RAG question."""
 
-    question: str = Field(..., min_length=1)
-    session_id: str | None = None
-    user_id: str | None = None
-    trace_tags: list[str] | None = None
+    question: str = Field(..., min_length=1, max_length=4000)
+    session_id: str | None = Field(default=None, max_length=128)
+    user_id: str | None = Field(default=None, max_length=128)
+    trace_tags: list[Annotated[str, Field(min_length=1, max_length=64)]] | None = Field(
+        default=None,
+        max_length=20,
+    )
 
 
 class SourceHit(BaseModel):
@@ -56,7 +82,12 @@ class AskResponse(BaseModel):
     """RAG answer with source-tracking metadata."""
 
     question: str
-    answer: str
+    run_id: str
+    delivery_status: str
+    answer: str | None
+    blocked_reason: str | None
+    verification: dict[str, Any]
+    audit: dict[str, Any]
     sources: list[SourceHit]
     chunks_indexed: int
     model: str
@@ -65,7 +96,43 @@ class AskResponse(BaseModel):
     process_steps: list[ProcessStep]
 
 
+class RevisionCreateRequest(BaseModel):
+    source_path: str | None = Field(default=None, min_length=1, max_length=512)
+    content: str | None = Field(default=None, min_length=1, max_length=5_000_000)
+    content_base64: str | None = Field(default=None, min_length=1, max_length=14_000_000)
+    filename: str | None = Field(default=None, min_length=1, max_length=255)
+    label: str | None = Field(default=None, min_length=1, max_length=120)
+    operator: str | None = Field(default=None, max_length=120)
+    change_summary: str | None = Field(default=None, max_length=500)
+    title: str | None = Field(default=None, max_length=200)
+    source_url: str | None = Field(default=None, max_length=2000)
+
+    @model_validator(mode="after")
+    def require_source(self) -> "RevisionCreateRequest":
+        choices = [
+            self.source_path is not None,
+            self.content is not None,
+            self.content_base64 is not None,
+        ]
+        if sum(choices) != 1:
+            raise ValueError("provide exactly one of source_path, content, or content_base64")
+        if self.content_base64 is not None and self.filename is None:
+            raise ValueError("filename is required with content_base64")
+        return self
+
+
+class JobCreateRequest(BaseModel):
+    question_limit: int | None = Field(default=None, ge=1, le=200)
+    question: str | None = Field(default=None, min_length=1, max_length=4000)
+
+
+class DecisionRequest(BaseModel):
+    reason: str = Field(default="", max_length=500)
+    operator: str | None = Field(default=None, max_length=120)
+
+
 _RAG_CACHE: dict[str, Any] = {}
+_DEFAULT_WORKBENCH: QualityWorkbench | None = None
 
 
 def reset_rag_cache() -> None:
@@ -79,6 +146,58 @@ def get_rag() -> tuple[Any, Any, int]:
         graph, vs, chunks_indexed = make_rag()
         _RAG_CACHE.update({"graph": graph, "vectorstore": vs, "chunks_indexed": chunks_indexed})
     return _RAG_CACHE["graph"], _RAG_CACHE.get("vectorstore"), int(_RAG_CACHE["chunks_indexed"])
+
+
+def get_default_workbench() -> QualityWorkbench:
+    global _DEFAULT_WORKBENCH
+    if _DEFAULT_WORKBENCH is None:
+        store = WorkbenchStore(engine_fingerprint=engine_fingerprint())
+        _DEFAULT_WORKBENCH = QualityWorkbench(store)
+    return _DEFAULT_WORKBENCH
+
+
+def _public_revision(revision: dict[str, Any]) -> dict[str, Any]:
+    result = {
+        key: value
+        for key, value in revision.items()
+        if key not in {"source_path", "config"}
+    }
+    config = dict(revision.get("config") or {})
+    config.pop("source_path", None)
+    result["config"] = config
+    result["title"] = config.get("title") or revision.get("label")
+    result["change_summary"] = config.get("change_summary") or revision.get("label")
+    result["operator"] = config.get("operator")
+    result["source_url"] = config.get("source_url")
+    result["status"] = (
+        "active"
+        if revision.get("active")
+        else revision.get("decision") or "draft"
+    )
+    return result
+
+
+def _public_job(job: dict[str, Any]) -> dict[str, Any]:
+    result = dict(job)
+    internal_status = str(result["status"])
+    result["persistence_status"] = internal_status
+    result["status"] = {
+        "pending": "queued",
+        "passed": "succeeded",
+        "interrupted": "cancelled",
+    }.get(internal_status, internal_status)
+    job_result = dict(result.get("result") or {})
+    approval_allowed = (
+        result.get("kind") == "validation"
+        and internal_status == "passed"
+        and job_result.get("full_pass") is True
+        and job_result.get("no_regression") is True
+    )
+    result["approval_allowed"] = approval_allowed
+    if job_result:
+        job_result["approval_allowed"] = approval_allowed
+        result["result"] = job_result
+    return result
 
 
 def _format_sources(docs: list[tuple[Any, float]]) -> list[SourceHit]:
@@ -148,7 +267,9 @@ def _summarize_retrieved_sources(sources: list[SourceHit]) -> str:
     )
 
 
-def _answer_excerpt(answer: str) -> str:
+def _answer_excerpt(answer: str | None) -> str:
+    if answer is None:
+        return "品質ゲートで保留。候補回答はローカル監査記録にのみ保存。"
     compact = " ".join(answer.split())
     return compact[:360] + ("..." if len(compact) > 360 else "")
 
@@ -162,8 +283,12 @@ def _build_process_steps(
     model: str,
     audit_enabled: bool,
     knowledge: dict[str, Any],
+    delivery_status: str,
+    blocked_reason: str | None,
+    verification: dict[str, Any],
+    audit: dict[str, Any],
     vs: Any = None,
-    answer: str = "",
+    answer: str | None = "",
 ) -> list[ProcessStep]:
     top = sources[0] if sources else None
     top_summary = (
@@ -240,24 +365,82 @@ def _build_process_steps(
             check="回答中の固有名詞、術式名、時系列、数値が上の取得候補に含まれているかを照合する。",
         ),
         ProcessStep(
+            id="verification",
+            title="回答照合",
+            status="完了" if verification.get("status") == "pass" else "NG",
+            purpose="回答中の各主張が、取得した根拠に実際に支持されるかを公開前に検品した。",
+            input=f"機械検査と別LLM照合へ、回答候補と根拠候補 {len(sources)}件を渡した。",
+            process="引用形式を機械検査し、別LLMが主張単位で支持・矛盾・判断不能と3評価軸を判定した。",
+            output=(
+                f"検証状態: {verification.get('status', 'error')} / "
+                f"根拠忠実性: {verification.get('axes', {}).get('faithfulness', 0)} / "
+                f"質問直接性: {verification.get('axes', {}).get('relevance', 0)} / "
+                f"誤情報なし: {verification.get('axes', {}).get('no_misinfo', 0)}"
+            ),
+            check="全機械検査、全主張の支持、3評価軸すべて2点を満たした場合だけ出荷可能。",
+        ),
+        ProcessStep(
+            id="release",
+            title="出荷判定",
+            status="完了" if delivery_status == "released" else "出荷停止",
+            purpose="検品済み回答を利用者へ表示してよいかをサーバー側で最終決定した。",
+            input=f"回答照合結果: {verification.get('status', 'error')}",
+            process="fail-closedで判定し、NG・判断不能・検品エラー時は候補回答を公開レスポンスから除外した。",
+            output=(
+                "回答を公開した。"
+                if delivery_status == "released"
+                else f"候補回答を隔離した。理由: {blocked_reason or 'quality_gate_failed'}"
+            ),
+            check="出荷停止時は回答欄、APIのanswer、CLI標準出力のいずれにも候補本文を出さない。",
+        ),
+        ProcessStep(
             id="audit",
-            title="監査ログ",
-            status="完了" if audit_enabled else "未送信",
+            title="監査記録",
+            status="完了" if audit.get("status") == "confirmed" else audit.get("status", "未送信"),
             purpose="今回の実行を後から追跡できる状態にした。",
             input=f"Langfuse監査設定: {'ON' if audit_enabled else 'OFF'} / session trace tags はリクエスト値を使用。",
             process="有効時はLangChain callback経由で検索・生成のトレース送信を試みた。無効時はAPIレスポンス内の工程詳細をローカル証跡として返した。",
-            output=f"APIレスポンスに knowledge、sources、process_steps を含めて返却。外部監査: {'送信対象' if audit_enabled else '未送信'}。",
+            output=(
+                "APIレスポンスに knowledge、sources、process_steps を含めて返却。"
+                f"外部監査状態: {audit.get('status', 'disabled')} / trace_id: {audit.get('trace_id', '-')}"
+            ),
             check="問題調査では、この工程詳細とLangfuse traceを突き合わせる。ログは修正せず、ナレッジ・設定・評価セットを変えて再実行する。",
         ),
     ]
 
 
-def create_app() -> FastAPI:
+def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
+    wb = workbench or get_default_workbench()
     app = FastAPI(
         title="medguide-rag API",
-        description="Medical guideline RAG demo with source tracking and optional Langfuse audit traces.",
-        version="0.1.0",
+        description=(
+            "Single-PC RAG quality workbench with source tracking and optional Langfuse traces. "
+            "Authentication is intentionally disabled for local-only use."
+        ),
+        version="0.2.0",
     )
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["127.0.0.1", "localhost", "[::1]", "testserver"],
+    )
+
+    @app.middleware("http")
+    async def reject_oversized_requests(request, call_next):
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > MAX_REQUEST_BYTES:
+                    return JSONResponse(
+                        status_code=413,
+                        content={"detail": "request body exceeds the 15 MiB local-workbench limit"},
+                    )
+            except ValueError:
+                return JSONResponse(
+                    status_code=400,
+                    content={"detail": "invalid content-length header"},
+                )
+        return await call_next(request)
+
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.get("/", response_class=FileResponse)
@@ -277,6 +460,8 @@ def create_app() -> FastAPI:
             "model": get_generation_model(),
             "top_k": TOP_K,
             "knowledge": get_active_knowledge().public_dict(),
+            "active_revision_id": wb.store.get_active_revision()["id"],
+            "auth_mode": "single_pc_none",
         }
 
     @app.post("/ask", response_model=AskResponse)
@@ -293,10 +478,8 @@ def create_app() -> FastAPI:
             )
 
         try:
-            graph, vs, chunks_indexed = get_rag()
-            state = ask(
-                graph,
-                question,
+            outcome = wb.answer_question(
+                question=question,
                 session_id=payload.session_id,
                 user_id=payload.user_id,
                 trace_tags=payload.trace_tags,
@@ -306,28 +489,214 @@ def create_app() -> FastAPI:
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"RAG execution failed: {safe_error_message(exc)}") from exc
 
-        knowledge = get_active_knowledge().public_dict()
-        sources = _format_sources(state["docs"])
+        knowledge = dict(outcome["revision"]["config"])
+        knowledge.pop("source_path", None)
+        sources = [SourceHit.model_validate(item) for item in outcome["sources"]]
         return AskResponse(
             question=question,
-            answer=state["answer"],
+            run_id=outcome["run_id"],
+            delivery_status=outcome["delivery_status"],
+            answer=outcome["answer"],
+            blocked_reason=outcome["blocked_reason"],
+            verification=outcome["verification"],
+            audit=outcome["audit"],
             sources=sources,
-            chunks_indexed=chunks_indexed,
+            chunks_indexed=outcome["chunks_indexed"],
             model=get_generation_model(),
-            audit_enabled=is_langfuse_configured(),
+            audit_enabled=outcome["audit"]["status"] != "disabled",
             knowledge=knowledge,
             process_steps=_build_process_steps(
                 raw_question=payload.question,
                 question=question,
                 sources=sources,
-                chunks_indexed=chunks_indexed,
+                chunks_indexed=outcome["chunks_indexed"],
                 model=get_generation_model(),
-                audit_enabled=is_langfuse_configured(),
+                audit_enabled=outcome["audit"]["status"] != "disabled",
                 knowledge=knowledge,
-                vs=vs,
-                answer=state["answer"],
+                delivery_status=outcome["delivery_status"],
+                blocked_reason=outcome["blocked_reason"],
+                verification=outcome["verification"],
+                audit=outcome["audit"],
+                vs=outcome["vectorstore"],
+                answer=outcome["answer"],
             ),
         )
+
+    @app.get("/workbench/revisions")
+    def list_revisions() -> dict[str, Any]:
+        return {
+            "items": [_public_revision(item) for item in wb.store.list_revisions()],
+            "active_revision_id": wb.store.get_active_revision()["id"],
+        }
+
+    @app.post("/workbench/revisions", status_code=201)
+    def create_revision(payload: RevisionCreateRequest) -> dict[str, Any]:
+        try:
+            label = (
+                payload.label
+                or payload.change_summary
+                or payload.title
+                or "workbench revision"
+            ).strip()
+            if not label:
+                raise ValueError("revision label must not be blank")
+            if payload.source_url and not payload.source_url.startswith(("https://", "http://")):
+                raise ValueError("source_url must use http or https")
+            uploaded_bytes = None
+            if payload.content_base64 is not None:
+                try:
+                    uploaded_bytes = base64.b64decode(
+                        payload.content_base64,
+                        validate=True,
+                    )
+                except (binascii.Error, ValueError) as exc:
+                    raise ValueError("content_base64 is invalid") from exc
+            revision = wb.create_revision(
+                source_path=payload.source_path,
+                content=payload.content,
+                content_bytes=uploaded_bytes,
+                source_name=payload.filename,
+                label=label,
+                config={
+                    key: value
+                    for key, value in {
+                        "operator": payload.operator,
+                        "change_summary": payload.change_summary,
+                        "title": payload.title,
+                        "source_url": payload.source_url,
+                    }.items()
+                    if value is not None
+                },
+            )
+            return _public_revision(revision)
+        except (ValueError, FileNotFoundError) as exc:
+            raise HTTPException(status_code=400, detail=safe_error_message(exc)) from exc
+        except WorkbenchConflictError as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
+
+    def _create_job(
+        *,
+        revision_id: str,
+        kind: str,
+        payload: JobCreateRequest,
+        background_tasks: BackgroundTasks,
+    ) -> dict[str, Any]:
+        try:
+            job = wb.create_job(
+                revision_id=revision_id,
+                kind=kind,
+                question_limit=payload.question_limit,
+                question=payload.question,
+            )
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except WorkbenchConflictError as exc:
+            raise HTTPException(status_code=429, detail=safe_error_message(exc)) from exc
+        background_tasks.add_task(wb.run_job, str(job["id"]))
+        return _public_job(job)
+
+    @app.post("/workbench/revisions/{revision_id}/comparison-jobs", status_code=202)
+    def create_comparison_job(
+        revision_id: str,
+        background_tasks: BackgroundTasks,
+        payload: JobCreateRequest | None = None,
+    ) -> dict[str, Any]:
+        request = payload or JobCreateRequest()
+        if not request.question or not request.question.strip():
+            raise HTTPException(status_code=400, detail="comparison requires one question")
+        if request.question_limit is not None:
+            raise HTTPException(status_code=400, detail="question_limit is not allowed for comparison")
+        return _create_job(
+            revision_id=revision_id,
+            kind="comparison",
+            payload=request,
+            background_tasks=background_tasks,
+        )
+
+    @app.post("/workbench/revisions/{revision_id}/validation-jobs", status_code=202)
+    def create_validation_job(
+        revision_id: str,
+        background_tasks: BackgroundTasks,
+        payload: JobCreateRequest | None = None,
+    ) -> dict[str, Any]:
+        request = payload or JobCreateRequest()
+        if request.question is not None or request.question_limit is not None:
+            raise HTTPException(
+                status_code=400,
+                detail="full validation does not accept question or question_limit",
+            )
+        return _create_job(
+            revision_id=revision_id,
+            kind="validation",
+            payload=request,
+            background_tasks=background_tasks,
+        )
+
+    @app.get("/workbench/jobs/{job_id}")
+    def get_job(job_id: str) -> dict[str, Any]:
+        try:
+            return _public_job(wb.store.get_job(job_id))
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/revisions/{revision_id}/approve")
+    def approve_revision(
+        revision_id: str,
+        payload: DecisionRequest | None = None,
+    ) -> dict[str, Any]:
+        try:
+            revision = wb.store.approve_revision(
+                revision_id,
+                reason=(payload.reason.strip() if payload else ""),
+                engine_fingerprint=wb.fingerprint(),
+                operator=(payload.operator.strip() if payload and payload.operator else None),
+            )
+            wb.clear_rag_cache()
+            return _public_revision(revision)
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except WorkbenchConflictError as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/revisions/{revision_id}/reject")
+    def reject_revision(
+        revision_id: str,
+        payload: DecisionRequest | None = None,
+    ) -> dict[str, Any]:
+        try:
+            revision = wb.store.reject_revision(
+                revision_id,
+                reason=(payload.reason.strip() if payload else ""),
+                operator=(payload.operator.strip() if payload and payload.operator else None),
+            )
+            return _public_revision(revision)
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except WorkbenchConflictError as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
+
+    @app.get("/workbench/adjustments")
+    def list_adjustments(
+        limit: int = Query(default=100, ge=1, le=200),
+    ) -> dict[str, Any]:
+        return {"items": wb.store.list_adjustments(limit=limit)}
+
+    @app.get("/audit/traces/{trace_id}")
+    def get_audit_trace(trace_id: str) -> dict[str, Any]:
+        if re.fullmatch(r"[a-f0-9]{32}", trace_id) is None:
+            raise HTTPException(status_code=400, detail="invalid trace_id")
+        try:
+            local = wb.store.get_trace(trace_id)
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        remote = check_langfuse_trace(trace_id)
+        return {
+            **local,
+            "local_status": local["status"],
+            "status": remote.status,
+            "trace_url": remote.trace_url or local.get("trace_url"),
+            "observation_names": list(remote.observation_names),
+        }
 
     return app
 
