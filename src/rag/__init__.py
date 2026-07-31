@@ -1,4 +1,4 @@
-"""src/rag — LangChain / LangGraph による医療ガイドライン RAG 本体。
+"""src/rag — LangChain / LangGraph によるナレッジ RAG 本体。
 
 チャンクの埋め込み（多言語ローカルモデル）→ Chroma への格納 → 質問に対する
 検索 → 根拠付き回答生成（日本語・出典引用）を担当する。
@@ -26,16 +26,18 @@ from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langgraph.graph import END, START, StateGraph
 
-from src.ingest import load_and_chunk
+from src.ingest import load_and_chunk, source_sha256
+from src.knowledge_config import get_active_knowledge
 from src.observability import build_langfuse_runnable_config
 
 load_dotenv()  # リポジトリ直下 .env の ANTHROPIC_API_KEY 等を環境変数へ
 
 # ---- 設定（self-contained な既定値。必要なら環境変数で上書き）----
 PRODUCT_ROOT = Path(__file__).resolve().parents[2]  # products/medguide-rag
-DEFAULT_PDF = PRODUCT_ROOT / "data" / "sample" / "who-hearts-healthy-lifestyle-counselling.pdf"
+KNOWLEDGE = get_active_knowledge()
+DEFAULT_SOURCE = KNOWLEDGE.source_path
 CHROMA_DIR = PRODUCT_ROOT / "chroma"
-COLLECTION = "who-hearts"
+COLLECTION = os.getenv("CHROMA_COLLECTION", KNOWLEDGE.collection)
 EMBED_MODEL = os.getenv("EMBED_MODEL", "intfloat/multilingual-e5-small")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-4-8")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.6-sol")
@@ -43,11 +45,11 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").strip().lower()
 TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 
 SYSTEM_PROMPT = (
-    "あなたは医療ガイドライン文書の検索アシスタントです。以下のルールを厳守してください。\n"
-    "1. 回答は必ず『提供された抜粋（英語）』の内容だけを根拠にする。抜粋に無い情報は決して述べない。\n"
+    "あなたは登録済みナレッジ文書の検索アシスタントです。以下のルールを厳守してください。\n"
+    "1. 回答は必ず『提供された抜粋』の内容だけを根拠にする。抜粋に無い情報は決して述べない。\n"
     "2. 抜粋に根拠が無い、または質問が文書の対象外の場合は『提供された文書には記載がありません』と答える。\n"
     "3. 回答は日本語で、平易に述べる。主張の末尾には根拠にした抜粋番号を [1] のように付す。\n"
-    "4. 最後に『※これは学習用デモの文書要約であり、医療上の助言ではありません』と一文添える。"
+    "4. 最後に『※これは学習用デモの文書要約です』と一文添える。"
 )
 
 
@@ -70,13 +72,15 @@ def get_embeddings() -> E5Embeddings:
 
 
 def get_or_build_index(
-    pdf_path: str | Path = DEFAULT_PDF,
+    source_path: str | Path = DEFAULT_SOURCE,
     persist_dir: str | Path = CHROMA_DIR,
 ) -> tuple[Chroma, int]:
-    """Chroma 索引を取得。空なら PDF を ingest して構築・永続化する。
+    """Chroma 索引を取得。空ならナレッジを ingest して構築・永続化する。
 
     戻り値: (vectorstore, 格納チャンク数)
     """
+    source_path = Path(source_path)
+    current_sha = source_sha256(source_path)
     vs = Chroma(
         collection_name=COLLECTION,
         embedding_function=get_embeddings(),
@@ -85,11 +89,24 @@ def get_or_build_index(
     )
     existing = vs.get()  # 既存 id 一覧
     count = len(existing.get("ids", []))
+    if count:
+        metadatas = existing.get("metadatas", [])
+        indexed_shas = {m.get("source_sha256") for m in metadatas if m and m.get("source_sha256")}
+        if indexed_shas != {current_sha}:
+            vs.delete_collection()
+            vs = Chroma(
+                collection_name=COLLECTION,
+                embedding_function=get_embeddings(),
+                persist_directory=str(persist_dir),
+                collection_metadata={"hnsw:space": "cosine"},
+            )
+            count = 0
     if count == 0:
-        chunks = load_and_chunk(pdf_path)
+        chunks = load_and_chunk(source_path)
         if not chunks:
-            # テキスト抽出に失敗（スキャン画像PDF等）→ 空索引で add_documents が例外化する前に明示エラー
-            raise ValueError(f"チャンクが空です（PDFのテキスト抽出に失敗した可能性）: {pdf_path}")
+            raise ValueError(f"チャンクが空です（文書のテキスト抽出に失敗した可能性）: {source_path}")
+        for chunk in chunks:
+            chunk.metadata["source_sha256"] = current_sha
         vs.add_documents(chunks)
         count = len(chunks)
     return vs, count
@@ -176,7 +193,7 @@ def build_graph(vs: Chroma, model: str | None = None, top_k: int = TOP_K):
 
 
 def make_rag(
-    pdf_path: str | Path = DEFAULT_PDF,
+    source_path: str | Path = DEFAULT_SOURCE,
     persist_dir: str | Path = CHROMA_DIR,
     model: str | None = None,
     top_k: int = TOP_K,
@@ -185,7 +202,7 @@ def make_rag(
 
     戻り値: (graph, vectorstore, チャンク数)
     """
-    vs, n = get_or_build_index(pdf_path, persist_dir)
+    vs, n = get_or_build_index(source_path, persist_dir)
     graph = build_graph(vs, model=model, top_k=top_k)
     return graph, vs, n
 

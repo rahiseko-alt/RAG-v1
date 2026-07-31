@@ -1,14 +1,14 @@
 # medguide-rag
 
-医療ガイドライン文書に対する質問応答システム（RAG）と、その回答品質評価結果を集計・可視化する仕組みを組み合わせたプロジェクトです。
+登録済みナレッジ文書に対する質問応答システム（RAG）と、その回答品質評価結果を集計・可視化する仕組みを組み合わせたプロジェクトです。
 
-> **現在の状態: 実証プロトタイプ。** OpenAI対応RAG、FastAPI最小API、Langfuse連携経路、評価結果の集計/HTML化まで実装済みです。CLIでのOpenAI回答生成とLangfuse認証は確認済みですが、Langfuse画面でのtrace着弾確認、実uvicorn経由の `/ask` E2E、非エンジニア向けUI、工程診断、調整台帳は未実装です。現在地と計画は [docs/current-plan-report.md](docs/current-plan-report.md) にまとめています。
+> **現在の状態: 実証プロトタイプ。** OpenAI対応RAG、FastAPI API、工程詳細付き透明型RAG UI、Langfuse連携経路、評価結果の集計/HTML化まで実装済みです。CLIでのOpenAI回答生成、Langfuse認証、実uvicorn経由の `/ask` E2E は確認済みですが、Langfuse画面でのtrace着弾確認、工程診断スコアカード、調整台帳は未実装です。現在地と計画は [docs/current-plan-report.md](docs/current-plan-report.md) にまとめています。
 
-> **注意:** このプロジェクトは学習・ポートフォリオ用デモです。医療判断、診断、治療、投薬、緊急時対応には使用できません。
+> **注意:** このプロジェクトは学習・ポートフォリオ用デモです。現在の既定ナレッジは `config/knowledge.toml` で指定されています。原典確認や専門判断を置き換えるものではありません。
 
 ## 1. これは何をするものか
 
-公開されている医療ガイドライン文書を検索対象にして、文書内に書かれている内容を根拠ページ付きで要約するシステムです。個別症状への医療助言ではなく、「登録済み文書のどこに何が書かれているか」を確認する学習用デモとして扱います。回答品質については、外部で作成した複数評価者の verdict JSON を集計し、HTMLレポートとして確認できる仕組みを備えています。
+公開されている文書を検索対象にして、登録済みナレッジ内に書かれている内容を根拠付きで要約するシステムです。現在は `config/knowledge.toml` で有効ナレッジを選び、ナレッジID、本文パス、出典URL、ライセンス、評価セット、検索collection名をコード外で管理します。回答品質については、外部で作成した複数評価者の verdict JSON を集計し、HTMLレポートとして確認できる仕組みを備えています。
 
 ## 2. 作った理由
 
@@ -16,12 +16,13 @@
 
 ## 3. 何ができるか
 
-- [x] サンプル文書（WHO HEARTS 生活習慣カウンセリング）に対する質問応答のCLIデモ
-  - 実行: `python -m src.rag.cli "成人は運動をどのくらい行うべきですか？"`（要 `.env` の `ANTHROPIC_API_KEY` または `OPENAI_API_KEY`）
-  - 出力: 質問 → 出典追跡パネル（検索チャンクの出典ページ・類似度）→ 文書を根拠にした日本語回答（引用付き）
-  - 日本語質問→英語文書のクロスリンガル検索。文書に無い質問は「記載なし」と答え幻覚を抑止
+- [x] サンプルナレッジ（呪術廻戦の公開情報とファン論点観測を要約した拡張リサーチナレッジ）に対する質問応答のCLIデモ
+  - 実行: `python -m src.rag.cli "呪術廻戦の作者は誰ですか？"`（質問例は `config/knowledge.toml` で管理。要 `.env` の `ANTHROPIC_API_KEY` または `OPENAI_API_KEY`）
+  - 出力: 質問 → 出典追跡パネル（検索チャンクの出典・類似度）→ 登録済みナレッジを根拠にした日本語回答
+  - 文書に無い質問は「記載なし」と答え、幻覚を抑止
 - [x] 教材ノート `notebooks/03-rag-walkthrough.ipynb`（RAGの流れを解説付きで体験）
 - [x] FastAPI経由でローカル起動して質問できるデモ
+- [x] ブラウザで回答・根拠・工程詳細・監査状態を見られる透明型RAG UI
 - [ ] デモのスクリーンショット / GIF
 
 ## 4. アーキテクチャ
@@ -49,7 +50,7 @@
 
 ## 7. 設計で工夫した点
 
-このプロジェクトの核は、RAGそのものより「回答品質をどう検証可能にするか」の部分です。現時点では、出典追跡、監査トレース経路、評価結果の集計/HTML化まで実装しています。今後は、非エンジニア向けUI、工程別診断、調整台帳、before/after比較を追加し、回答品質を継続改善できる形へ発展させます。
+このプロジェクトの核は、RAGそのものより「回答品質をどう検証可能にするか」の部分です。現時点では、出典追跡、工程別の目的・入力・処理・出力・判断目安の表示、監査トレース経路、評価結果の集計/HTML化まで実装しています。今後は、工程診断スコアカード、調整台帳、before/after比較を追加し、回答品質を継続改善できる形へ発展させます。
 
 ## 8. セットアップ手順
 
@@ -67,6 +68,7 @@ ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
 ANTHROPIC_MODEL=claude-opus-4-8
 OPENAI_MODEL=gpt-5.6-sol
+KNOWLEDGE_CONFIG_PATH=config/knowledge.toml
 ```
 
 回答生成は `LLM_PROVIDER=openai` または `LLM_PROVIDER=anthropic` で切り替えられます。既定はOpenAIです。
@@ -100,7 +102,23 @@ jupyter nbconvert --to html --execute 01-foundations.ipynb
 Stage 3 のRAG CLIは以下で実行できます。
 
 ```bash
-python -m src.rag.cli "成人は運動をどのくらい行うべきですか？"
+python -m src.rag.cli "呪術廻戦の作者は誰ですか？"
+```
+
+検索対象を変える場合は、新しいナレッジ用の TOML を作り、`.env` の `KNOWLEDGE_CONFIG_PATH=...` を差し替えます。PDF、Markdown、テキストに対応しています。
+
+```toml
+[knowledge]
+id = "client_knowledge"
+title = "顧客向けナレッジ"
+source_path = "data/sample/client-knowledge.md"
+collection = "knowledge_client_20260731"
+source_url = "https://example.com/source"
+license = "確認済みライセンス"
+checked_at = "2026-07-31"
+eval_set = "data/eval/client-questions.json"
+example_question = "この文書の対象は何ですか？"
+expected_terms = ["期待される語"]
 ```
 
 FastAPIデモは以下で起動できます。
@@ -111,6 +129,7 @@ uvicorn src.api:app --reload
 
 - `GET /health`: 設定状態の確認
 - `POST /ask`: 質問応答（回答・出典・監査ON/OFFを返す）
+- `GET /`: 透明型RAG UI
 
 ## 進捗
 
@@ -120,10 +139,11 @@ uvicorn src.api:app --reload
 |---|---|---|
 | 1 | Python基礎固め（pandas/numpy） | 完了 |
 | 2 | 軽量モデルを1本完走（scikit-learn/PyTorch） | 完了 |
-| 3 | 医療文書RAG構築（LangChain/LangGraph/Chroma） | 完了 |
+| 3 | 登録済みナレッジRAG構築（LangChain/LangGraph/Chroma） | 完了 |
 | 4 | 評価ループ移植（LLM-as-judge） | 完了 |
 | 5 | Langfuse監査ログ連携 | 任意連携追加済（認証確認済み・画面着弾確認は未記録） |
 | 6 | LLMプロバイダ切替 | Anthropic / OpenAI 切替対応 |
+| 7 | ナレッジ設定分離 | `config/knowledge.toml` で本文・出典・評価セット・collectionを管理 |
 
 ## 監査ログ
 

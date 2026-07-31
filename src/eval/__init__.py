@@ -15,11 +15,13 @@ import statistics
 from collections import Counter
 from pathlib import Path
 
+from src.knowledge_config import get_active_knowledge
+
 # 注: src.rag（langchain/torch 等の重い依存）は prepare_items でのみ必要なため遅延 import。
 # 集計・レポート描画は src.rag 非依存で高速に動く。
 
 PRODUCT_ROOT = Path(__file__).resolve().parents[2]
-QUESTIONS_PATH = PRODUCT_ROOT / "data" / "eval" / "eval_questions.json"
+LEGACY_QUESTIONS_PATH = PRODUCT_ROOT / "data" / "eval" / "eval_questions.json"
 
 # 評価3軸（検証パネル転用・1回答を異なる観点で採点）。スコアは 0-2（0=不可 / 1=一部 / 2=良）
 AXES = [
@@ -31,8 +33,15 @@ AXIS_KEYS = [a[0] for a in AXES]
 PASS_THRESHOLD = 2  # 各軸の中央値がこの値以上で合格
 
 
-def load_questions(path: str | Path = QUESTIONS_PATH) -> list[dict]:
-    return json.loads(Path(path).read_text(encoding="utf-8"))["questions"]
+def get_questions_path(path: str | Path | None = None) -> Path:
+    if path is not None:
+        return Path(path)
+    knowledge = get_active_knowledge()
+    return knowledge.eval_set or LEGACY_QUESTIONS_PATH
+
+
+def load_questions(path: str | Path | None = None) -> list[dict]:
+    return json.loads(get_questions_path(path).read_text(encoding="utf-8"))["questions"]
 
 
 def prepare_items(top_k: int | None = None) -> list[dict]:
@@ -117,6 +126,7 @@ def build_report(items_path, answers_path, verdicts_path, out_html, human_sampli
 
 
 def _render_html(items, answers, verdicts, agg, human_sampling) -> str:
+    knowledge = get_active_knowledge()
     axis_ja = {a[0]: a[1] for a in AXES}
     item_by_id = {it["id"]: it for it in items}
     npass, n = agg["pass_rate"]
@@ -167,7 +177,7 @@ def _render_html(items, answers, verdicts, agg, human_sampling) -> str:
 
     return f"""<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAG回答品質 評価レポート — WHO HEARTS</title>
+<title>RAG回答品質 評価レポート — {esc(knowledge.title)}</title>
 <style>
 :root{{--ink:#1f2933;--muted:#5b6670;--line:#e3e8ee;--bg:#f6f8fa;--card:#fff;--accent:#0b6b5b;--warn:#b45309;--red:#b3261e;}}
 *{{box-sizing:border-box}} body{{margin:0;font-family:"Yu Gothic","Meiryo",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7}}
@@ -196,7 +206,8 @@ footer{{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-s
 @media(max-width:600px){{.wrap{{padding:22px 14px}}}}
 </style></head><body><div class="wrap">
 <h1>RAG回答品質 評価レポート</h1>
-<p>対象: WHO HEARTS「Healthy-lifestyle counselling」に対する Stage 3 RAG の回答を、<b>独立した複数の評価者サブAI</b>が3軸で採点。</p>
+<p>対象: {esc(knowledge.title)} に対する RAG の回答を、<b>独立した複数の評価者サブAI</b>が3軸で採点。</p>
+<p>ナレッジID: {esc(knowledge.id)} / 出典: {esc(knowledge.source_url or knowledge.source_path.name)} / ライセンス: {esc(knowledge.license or "未設定")}</p>
 <div class="method"><b>評価方法（独立性の担保）:</b> 回答を作る<b>生成者AIと採点する評価者AIを分離</b>し（自己採点しない）、各回答を{esc(len(agg['judges']))}名の独立評価者が
 「根拠忠実性／質問直接性／誤情報なし」の3軸で 0-2 点採点。評価者間は<b>中央値・最頻値</b>で集計（平均は使わない）。評価が割れた項目は人手サンプリングへ回す。
 各採点は検索文脈（出典ページ）を根拠にした意味評価。<b>幻覚検出力の実証のため、意図的な誤答を1件混入</b>している。</div>
@@ -217,6 +228,6 @@ footer{{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-s
 
 <footer>
 <p>スコア: 0=不可 / 1=一部 / 2=良。合格＝全3軸の評価者間中央値が2以上。数値は中央値・最頻値の実数（平均は不使用）。</p>
-<p>評価は独立サブAIによる複数視点採点であり、最終判断は人手サンプリングで担保する（検証パネル思想の転用）。対象文書 © WHO 2018, CC BY-NC-SA 3.0 IGO。医療助言ではない。</p>
+<p>評価は独立サブAIによる複数視点採点であり、最終判断は人手サンプリングで担保する（検証パネル思想の転用）。対象ナレッジの出典・ライセンス・確認日は設定ファイルで管理する。</p>
 </footer>
 </div></body></html>"""

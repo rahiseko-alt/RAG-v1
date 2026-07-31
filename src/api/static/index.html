@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>medguide-rag</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="query-panel" aria-labelledby="app-title">
+        <div>
+          <p class="eyebrow">登録済みナレッジQAデモ</p>
+          <h1 id="app-title">根拠追跡ビュー</h1>
+          <p class="notice">学習用デモです。回答は登録済みナレッジの要約であり、原典の確認を置き換えるものではありません。</p>
+        </div>
+
+        <form id="ask-form" class="ask-form">
+          <label for="question">質問</label>
+          <textarea id="question" name="question" rows="4" required>東堂葵の術式は何？</textarea>
+          <button type="submit" id="ask-button">
+            <span aria-hidden="true">▶</span>
+            質問する
+          </button>
+        </form>
+
+        <div class="status-strip" aria-live="polite">
+          <span id="provider-status">provider: -</span>
+          <span id="audit-status">監査: -</span>
+          <span id="model-status">model: -</span>
+        </div>
+
+        <div class="knowledge-strip" aria-live="polite">
+          <div>
+            <span>ナレッジ</span>
+            <strong id="knowledge-title">未確認</strong>
+          </div>
+          <div>
+            <span>出典</span>
+            <a id="knowledge-source" href="#" target="_blank" rel="noreferrer">未確認</a>
+          </div>
+          <div>
+            <span>設定</span>
+            <code id="knowledge-config">-</code>
+          </div>
+        </div>
+      </section>
+
+      <section class="timeline-panel" aria-labelledby="timeline-title">
+        <h2 id="timeline-title">処理工程</h2>
+        <ol id="timeline" class="timeline">
+          <li data-step="received"><span></span>質問受付</li>
+          <li data-step="knowledge"><span></span>ナレッジ選択</li>
+          <li data-step="searching"><span></span>登録済みナレッジを意味検索</li>
+          <li data-step="sources"><span></span>関連箇所を抽出</li>
+          <li data-step="generating"><span></span>根拠だけを渡して回答生成</li>
+          <li data-step="audit"><span></span>監査ログへ記録</li>
+          <li data-step="complete"><span></span>回答表示</li>
+        </ol>
+        <div id="process-details" class="process-details">
+          <div class="process-placeholder">質問すると、各工程の目的・入力・処理・出力・判断目安がここに表示されます。</div>
+        </div>
+      </section>
+
+      <section class="answer-panel" aria-labelledby="answer-title">
+        <div class="panel-heading">
+          <h2 id="answer-title">回答</h2>
+          <span id="answer-state" class="state-pill">待機中</span>
+        </div>
+        <div id="answer" class="answer empty">質問すると、ここに回答が表示されます。</div>
+      </section>
+
+      <section class="sources-panel" aria-labelledby="sources-title">
+        <div class="panel-heading">
+          <h2 id="sources-title">根拠パネル</h2>
+          <span class="state-pill muted">検索スコアは正確性ではありません</span>
+        </div>
+        <p class="score-note">
+          検索スコアは、質問と文書候補の近さです。回答の正しさは、根拠に必要情報が含まれるか、回答の数値や条件が根拠と一致するかで確認します。
+        </p>
+        <div id="sources" class="sources-list">
+          <div class="source-placeholder">検索された文書箇所がここに表示されます。</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

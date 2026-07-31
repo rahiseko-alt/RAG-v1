@@ -1,0 +1,12 @@
+[knowledge]
+id = "jujutsu_kaisen_wikipedia"
+title = "呪術廻戦 拡張リサーチナレッジ"
+description = "日本語版Wikipedia、少年ジャンプ公式、TVアニメ公式、集英社公式ファンブック情報をもとにRAGデモ用に要約・再構成したナレッジ。"
+source_path = "data/sample/jujutsu-kaisen-wikipedia.md"
+collection = "knowledge_jujutsu_kaisen_research_20260731"
+source_url = "https://ja.wikipedia.org/wiki/%E5%91%AA%E8%A1%93%E5%BB%BB%E6%88%A6"
+license = "CC BY-SA"
+checked_at = "2026-07-31"
+eval_set = "data/eval/jujutsu-kaisen-questions.json"
+example_question = "呪術廻戦の作者は誰ですか？"
+expected_terms = ["芥見下々", "作者"]

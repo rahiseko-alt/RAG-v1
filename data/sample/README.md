@@ -1,9 +1,26 @@
 # data/sample
 
-RAGの検索対象とする、公開されている医療ガイドライン文書のサンプルを数件置くディレクトリ。
+RAGの検索対象とする、公開されている文書・学習用データのサンプルを数件置くディレクトリ。
 
 - ライセンス上再配布可能な文書のみを置く（出典を必ず明記する）
 - 大きな生データ（データセット丸ごと等）は `data/raw/`（gitignore対象）に置き、ここには数件のサンプルのみ置く
+
+---
+
+## データカード: jujutsu-kaisen-wikipedia.md
+
+現在のRAGデモで既定の検索対象にしている要約ナレッジ。実際にどのナレッジを使うかは `config/knowledge.toml` で指定する。
+
+| 項目 | 内容 |
+|---|---|
+| 名称 | 呪術廻戦 拡張リサーチナレッジ |
+| 原典 | 日本語版Wikipedia「呪術廻戦」、日本語版Wikipedia「呪術廻戦 (アニメ)」、少年ジャンプ公式、TVアニメ公式、集英社公式ファンブック書誌ページ |
+| 観測ソース | Reddit、5ちゃんねる、Yahoo!知恵袋、YouTube解説/考察動画などの公開情報から、本文を保存せず論点カテゴリのみ抽出 |
+| 原典URL | https://ja.wikipedia.org/wiki/%E5%91%AA%E8%A1%93%E5%BB%BB%E6%88%A6 / https://ja.wikipedia.org/wiki/%E5%91%AA%E8%A1%93%E5%BB%BB%E6%88%A6_(%E3%82%A2%E3%83%8B%E3%83%A1) / https://www.shonenjump.com/j/rensai/jujutsu/ / https://jujutsukaisen.jp/ / https://books.shueisha.co.jp/items/contents.html?isbn=978-4-08-882636-3 |
+| 確認日 | 2026-07-31 |
+| ライセンス | CC BY-SA |
+| 用途 | 透明型RAG UIのデモ用ナレッジ。原文そのものではなく、RAG検証用に要約・再構成したMarkdown |
+| 注意 | 台詞、全話サブタイトル、公式ファンブック詳細Q&A、SNS/掲示板投稿本文、YouTube字幕・コメント本文の転載は含めない。詳細・最新情報・Wikipedia脚注は原ページを確認する |
 
 ---
 
@@ -45,7 +62,7 @@ Stage 1（Python基礎固め）で使う練習用データセット。
 
 ## データカード: who-hearts-healthy-lifestyle-counselling.pdf
 
-Stage 3（医療文書RAG）で検索対象とする医療ガイドライン文書。
+旧Stage 3（医療文書RAG）で検索対象にしていた医療ガイドライン文書。現在の既定検索対象は `jujutsu-kaisen-wikipedia.md`。
 
 | 項目 | 内容 |
 |---|---|

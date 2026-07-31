@@ -25,10 +25,11 @@
   - 定説はサブエージェント（research-analyst）が出典付き（AHA/ACC・査読論文・URL・確度）で調査。相関≠因果／`ca` は目的変数と同一検査由来（tautological）／カテゴリの数値扱いは単純化、の但し書き付き
   - 依存追加: venv に scikit-learn 導入（requirements.txt 記載済）。生成器 = scratchpad `build_notebook_stage2.py`（nbformat）。Windows cp932 罠は `sklearn.set_config(display="text")` で回避
 
-## Stage 3 — 医療文書RAGを構築する
+## Stage 3 — 登録済みナレッジRAGを構築する
 
-状態: コアRAG＋CLI＋教材ノート＋FastAPI 完了（2026-07-30）
+状態: コアRAG＋CLI＋教材ノート＋FastAPI＋透明型RAG UI 完了。ナレッジ設定分離まで実装（2026-07-31）
 
+- [x] 既定の検索対象を `config/knowledge.toml` で管理。本文、出典URL、ライセンス、評価セット、Chroma collection、例示質問をコード外へ分離
 - [x] 対象文書を選定: **WHO HEARTS「Healthy-lifestyle counselling」**（30ページ・CC BY-NC-SA 3.0 IGO・再配布可をライセンス検証）。`data/sample/who-hearts-healthy-lifestyle-counselling.pdf`（データカードは data/sample/README.md）
 - [x] チャンク分割・埋め込み・Chroma格納: `src/ingest`（pypdf＋RecursiveCharacterTextSplitter・30ページ→71チャンク・出典metadata付き）／`src/rag`（多言語埋め込み intfloat/multilingual-e5-small・Chroma cosine・`chroma/`に永続化）
 - [x] LangGraphで検索→生成フロー: `src/rag` の StateGraph（retrieve→generate）。生成は OpenAI / Anthropic を `LLM_PROVIDER` で切替可能。既定は OpenAI（`gpt-5.6-sol`）で、文脈のみ根拠に日本語回答＋引用
@@ -36,13 +37,14 @@
 - [x] 教材ノート: `notebooks/03-rag-walkthrough.ipynb`（解説→コード→出力・出典追跡パネル＝Stage1-2「定説照合」のRAG版）
 - [x] 軽量テスト: `tests/test_rag.py`（チャンク化・クロスリンガル検索）3 passed
 - [x] FastAPI エンドポイント（`src/api/`）。`GET /health` と `POST /ask` を実装し、Langfuse監査もRAG実行経由で連携
+- [x] 透明型RAG UI（`GET /`）。質問、処理工程タイムライン、工程別の目的・入力・処理・出力・判断目安、回答、根拠パネル、検索スコア注意書き、監査ON/OFF表示を実装
 - [ ] 教材ノートの nbconvert 実行＋HTML化＋スクショ（生成セルは `.env` の ANTHROPIC_API_KEY 設定時に実行）
 
 ### 検証
 - ingest: 30ページ→71チャンク・metadata（source/page/chunk_id）正常・英語抽出クリーン
 - 埋め込み＋Chroma＋検索: **日本語質問→英語文書のクロスリンガル検索が成立**（「運動はどのくらい」→p.11 physical activity・類似度0.859）
-- 生成: 2026-07-30 に OpenAI `gpt-5.6-sol` で CLI 実行し、WHO p.11 を根拠に運動量の推奨回答が生成されることを確認済み
-- FastAPI: `GET /health` はローカル確認済み。`POST /ask` の実uvicorn経由E2Eは未記録（テストはモック中心）
+- 生成: 2026-07-30 に OpenAI `gpt-5.6-sol` で CLI 実行し、WHO p.11 を根拠に運動量の推奨回答が生成されることを確認済み。2026-07-31 に既定ナレッジを呪術廻戦Wikipedia要約へ変更
+- FastAPI: `GET /health` と `POST /ask` の実uvicorn経由E2Eを確認済み。`POST /ask` は回答、出典、ナレッジ情報、工程詳細を返す
 
 ## Stage 4 — 評価ループを移植する
 

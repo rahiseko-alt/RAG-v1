@@ -1,6 +1,6 @@
-"""src/ingest — 医療ガイドライン文書（PDF）を読み込み、検索しやすい単位に分割する。
+"""src/ingest — ナレッジ文書を読み込み、検索しやすい単位に分割する。
 
-Stage 3。入力は `data/sample/` 配下の PDF、出力は metadata（source / page）付きの
+Stage 3。入力は `data/sample/` 配下の PDF / Markdown / Text、出力は metadata（source / page）付きの
 チャンク化 Document 列で、`src/rag` の埋め込み処理へ渡す。
 
 チャンク戦略（architecture.md の未決事項をここで確定）:
@@ -10,6 +10,7 @@ Stage 3。入力は `data/sample/` 配下の PDF、出力は metadata（source /
 """
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 from langchain_core.documents import Document
@@ -19,6 +20,12 @@ from pypdf import PdfReader
 # チャンク分割の既定値（意味の切れ目を優先しつつ、埋め込みに載る長さに収める）
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
+
+
+def source_sha256(source_path: str | Path) -> str:
+    """Return a content fingerprint for index freshness checks."""
+    source_path = Path(source_path)
+    return hashlib.sha256(source_path.read_bytes()).hexdigest()
 
 
 def load_pdf(pdf_path: str | Path) -> list[Document]:
@@ -36,6 +43,26 @@ def load_pdf(pdf_path: str | Path) -> list[Document]:
         # metadata: source=ファイル名（可搬性）, page=0始まりのページ番号
         pages.append(Document(page_content=text, metadata={"source": pdf_path.name, "page": i}))
     return pages
+
+
+def load_text(text_path: str | Path) -> list[Document]:
+    """Markdown / Text を Document として読み込む。"""
+    text_path = Path(text_path)
+    if not text_path.exists():
+        raise FileNotFoundError(f"テキスト文書が見つかりません: {text_path}")
+    text = text_path.read_text(encoding="utf-8")
+    return [Document(page_content=text, metadata={"source": text_path.name, "page": 0})]
+
+
+def load_documents(source_path: str | Path) -> list[Document]:
+    """拡張子に応じて PDF / Markdown / Text を読み込む。"""
+    source_path = Path(source_path)
+    suffix = source_path.suffix.lower()
+    if suffix == ".pdf":
+        return load_pdf(source_path)
+    if suffix in {".md", ".txt"}:
+        return load_text(source_path)
+    raise ValueError(f"未対応のナレッジ形式です: {source_path}")
 
 
 def chunk_documents(
@@ -61,6 +88,6 @@ def chunk_documents(
     return chunks
 
 
-def load_and_chunk(pdf_path: str | Path) -> list[Document]:
-    """PDF 読み込み → チャンク分割 をまとめて実行する便利関数。"""
-    return chunk_documents(load_pdf(pdf_path))
+def load_and_chunk(source_path: str | Path) -> list[Document]:
+    """ナレッジ読み込み → チャンク分割 をまとめて実行する便利関数。"""
+    return chunk_documents(load_documents(source_path))

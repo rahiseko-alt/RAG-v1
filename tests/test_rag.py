@@ -4,7 +4,7 @@
     python -m pytest tests/ -q
 
 - test_chunking: ingest が出典 metadata 付きのチャンク列を返すこと
-- test_retrieval_finds_relevant: 日本語質問→英語文書のクロスリンガル検索が関連チャンクを上位に返すこと
+- test_retrieval_finds_relevant: 日本語質問で関連チャンクを上位に返すこと
 """
 import os
 import sys
@@ -16,16 +16,17 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from src.ingest import load_and_chunk  # noqa: E402
-from src.rag import DEFAULT_PDF, get_or_build_index  # noqa: E402
+from src.knowledge_config import get_active_knowledge  # noqa: E402
+from src.rag import DEFAULT_SOURCE, get_or_build_index  # noqa: E402
 
 
 def test_document_present():
-    assert DEFAULT_PDF.exists(), f"題材PDFが無い: {DEFAULT_PDF}"
+    assert DEFAULT_SOURCE.exists(), f"題材文書が無い: {DEFAULT_SOURCE}"
 
 
 def test_chunking():
-    chunks = load_and_chunk(DEFAULT_PDF)
-    assert len(chunks) >= 30, f"チャンク数が想定より少ない: {len(chunks)}"
+    chunks = load_and_chunk(DEFAULT_SOURCE)
+    assert len(chunks) >= 3, f"チャンク数が想定より少ない: {len(chunks)}"
     # 出典追跡に必要な metadata が全チャンクに付いていること
     for c in chunks:
         assert "source" in c.metadata
@@ -36,11 +37,11 @@ def test_chunking():
 
 @pytest.mark.slow
 def test_retrieval_finds_relevant():
-    """埋め込みモデルのロードが要るため slow。日本語質問で運動関連チャンクが上位に来る。"""
+    """埋め込みモデルのロードが要るため slow。設定された例示質問で関連チャンクが上位に来る。"""
+    knowledge = get_active_knowledge()
     vs, n = get_or_build_index()
-    assert n >= 30
-    hits = vs.similarity_search_with_relevance_scores("運動はどのくらい推奨されますか", k=4)
+    assert n >= 3
+    hits = vs.similarity_search_with_relevance_scores(knowledge.example_question, k=4)
     assert hits, "検索結果が空"
-    joined = " ".join(d.page_content.lower() for d, _ in hits)
-    # 身体活動に関する語が上位チャンクに含まれること（クロスリンガル検索の健全性）
-    assert "physical activity" in joined or "exercise" in joined
+    joined = " ".join(d.page_content for d, _ in hits)
+    assert any(term in joined for term in knowledge.expected_terms)

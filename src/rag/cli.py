@@ -1,12 +1,12 @@
-"""src/rag/cli.py — 医療ガイドライン RAG の CLI デモ。
+"""src/rag/cli.py — 登録済みナレッジ RAG の CLI デモ。
 
 使い方（リポジトリ直下＝products/medguide-rag で実行）:
-    python -m src.rag.cli "運動は週にどのくらい推奨されますか？"   # 1問だけ
+    python -m src.rag.cli "このナレッジの対象は何ですか？"       # 1問だけ
     python -m src.rag.cli                                          # 対話モード（空行/quitで終了）
 
 各回答の前に「出典追跡」（検索されたチャンクの出典ページと類似度）を表示し、
 回答が実在の文書箇所に根拠づいていることを目視できるようにする。
-ANTHROPIC_API_KEY は .env または環境変数から読む（コードに平文で置かない）。
+OPENAI_API_KEY / ANTHROPIC_API_KEY は .env または環境変数から読む（コードに平文で置かない）。
 """
 from __future__ import annotations
 
