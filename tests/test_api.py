@@ -95,6 +95,7 @@ def test_index_serves_workbench_ui(tmp_path):
     assert res.status_code == 200
     assert "medguide-rag 運用ワークベンチ" in res.text
     assert "<main" in res.text
+    assert "これは学習用デモです" in res.text
 
 
 def test_health_reports_configuration(monkeypatch, tmp_path):

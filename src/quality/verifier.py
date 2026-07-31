@@ -97,7 +97,7 @@ def _deterministic_checks(
     substantive_sentences = [
         sentence.strip()
         for sentence in SENTENCE_SPLIT_PATTERN.split(candidate_answer)
-        if sentence.strip() and not sentence.strip().startswith("※")
+        if sentence.strip()
     ]
     citation_coverage = bool(substantive_sentences) and all(
         CITATION_PATTERN.search(sentence) for sentence in substantive_sentences
@@ -128,7 +128,7 @@ def _claim_coverage(
     factual_sentences = [
         _normalize_claim_text(sentence)
         for sentence in SENTENCE_SPLIT_PATTERN.split(candidate_answer)
-        if sentence.strip() and not sentence.strip().startswith("※")
+        if sentence.strip()
     ]
     claim_texts = [
         _normalize_claim_text(str(claim.get("claim") or ""))

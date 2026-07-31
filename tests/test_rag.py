@@ -17,7 +17,11 @@ if _ROOT not in sys.path:
 
 from src.ingest import load_and_chunk  # noqa: E402
 from src.knowledge_config import get_active_knowledge  # noqa: E402
-from src.rag import get_default_source, get_or_build_index  # noqa: E402
+from src.rag import (  # noqa: E402
+    get_default_source,
+    get_or_build_index,
+    normalize_answer_citations,
+)
 
 
 def test_document_present():
@@ -34,6 +38,26 @@ def test_chunking():
         assert "page" in c.metadata
         assert "chunk_id" in c.metadata
         assert len(c.page_content.strip()) >= 30  # 空白のみチャンクは除外済み
+
+
+def test_paragraph_citation_is_attached_to_each_sentence():
+    answer = (
+        "東堂葵の術式は不義遊戯です。"
+        "拍手を契機に対象の位置を入れ替えます。[1]"
+    )
+
+    normalized = normalize_answer_citations(answer)
+
+    assert normalized == (
+        "東堂葵の術式は不義遊戯です [1]。"
+        "拍手を契機に対象の位置を入れ替えます [1]。"
+    )
+
+
+def test_citation_normalization_preserves_decimal_points():
+    normalized = normalize_answer_citations("用量は2.5 mgです。[2]")
+
+    assert normalized == "用量は2.5 mgです [2]。"
 
 
 @pytest.mark.slow

@@ -87,6 +87,20 @@ def test_verifier_cannot_omit_a_candidate_sentence():
     assert result["release_allowed"] is False
 
 
+def test_note_prefix_does_not_bypass_verification():
+    verifier = OnlineVerifier(StaticVerifier(), timeout_seconds=1)
+
+    result = verifier.evaluate(
+        question="What?",
+        candidate_answer="Supported answer [1]. ※Unsupported note.",
+        evidence=EVIDENCE,
+    )
+
+    assert result["deterministic"]["all_pass"] is False
+    assert result["claim_coverage"] is False
+    assert result["release_allowed"] is False
+
+
 def test_decimal_point_does_not_break_citation_coverage():
     class DecimalVerifier:
         def verify(self, **_kwargs):

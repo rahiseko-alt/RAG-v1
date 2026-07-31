@@ -2,7 +2,7 @@
 
 ## Automated tests
 
-- `python -m pytest -q`: 39 passed
+- `python -m pytest -q`: 42 passed
 - `node --check src/api/static/app.js`: passed
 - `node tests/e2e/workbench-e2e.cjs`: PASS
 - Playwright viewports: desktop 1280x900, mobile 390x844
@@ -25,3 +25,12 @@
 - Local audit screenshot: `workbench-audit.jpg`
 
 The in-app browser was not signed in to Langfuse Cloud, so the direct Cloud page displayed an access error. Remote existence and observation names were verified through the configured Langfuse API and then displayed in the local audit UI.
+
+## Disclaimer separation regression
+
+- Generated disclaimer removed from the answer prompt
+- Demo notice rendered as fixed UI text outside the answer
+- `※` no longer bypasses answer verification
+- Paragraph-level citations normalized onto every factual sentence
+- Real rerun: `ddc70dacf4624587bc3b791557373859`
+- Result: `released`, all three verification axes scored 2

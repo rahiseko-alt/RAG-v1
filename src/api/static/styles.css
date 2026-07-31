@@ -474,6 +474,14 @@ textarea:hover {
   white-space: pre-wrap;
 }
 
+.answer-notice {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+
 .blocked-action {
   margin-top: 16px;
 }
