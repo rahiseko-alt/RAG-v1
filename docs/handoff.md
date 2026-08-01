@@ -6,64 +6,44 @@
 
 ## ①今回実施
 
-**`codex/public-delivery-workbench` の medguide-rag を本リポジトリへ取り込み、開発土台を `main` に
-一本化した。** テンプレを卒業し、medguide-rag 専用の開発リポジトリになった。
+`docs/session-reports/2026-08-01-coverage-loop-design.md`「次にやるべきこと」の項目1〜5を実装した。
 
-着手前に移行計画を**3視点の敵対検証サブエージェント**（ルール整合性／技術リスク／運用継続性）に
-かけ、実行すれば確実に失敗する誤りを潰してから実行した。潰した主なもの：
+- **項目1（PR #18・別セッションでマージ済み）**：`coverage-loop` の D 判定に失敗原因分類
+  （`missing_knowledge` / `retrieval_failure` / `generation_failure` / `chunking_failure` /
+  `ambiguous_question` / `invalid_A` / `out_of_scope` / `needs_quarantine`）を追加。
+- **項目2（PR #19）**：`src/coverage_loop.py` の `AgentAnswer` に evidence metadata
+  （`EvidenceSource`: url/source_type/span/updated_at、`RetrievedChunk`: chunk_id/score/citation/rank、
+  `confidence`）を追加。デフォルト空のオプションフィールドで既存呼び出し元は無変更。
+- **項目3〜5（PR #19）**：`src/quality/store.py` に `coverage_candidates` テーブルを追加し、
+  `run_revision_coverage_loop()` が各候補を自動保存するようにした（`persist: bool = True` 既定オン）。
+  `classify_coverage_item` の disposition を初期状態へマッピング：
+  `add_candidate -> auto_classified` / `rejected -> auto_rejected` / `quarantined -> auto_quarantined` /
+  `no_gap -> no_gap`。`GET /workbench/revisions/{id}/coverage-candidates`（status フィルタ対応）と
+  `POST /workbench/coverage-candidates/{id}/resolve`（`auto_quarantined -> auto_approved/auto_rejected`
+  のみ許可）を追加。ローカル `uvicorn` を実際に起動し、coverage-loop → 一覧 → resolve（409になる
+  ケース含む）まで curl で手元検証済み。
 
-- `uv sync` では `ruff`/`pytest` が入らない（`[project.optional-dependencies] dev` は `--extra dev` 必須）
-- それを直すと e2e テストの `skipif` が外れて別の赤が出る → `pytest.ini` の `addopts` で既定除外
-- `ruff` の赤は記録の 3 件ではなく**実測 10 件**（全て `notebooks/*.ipynb`）→ 対象を `src tests` に限定
-- `auto-merge.yml` が `--squash --delete-branch` を自動実行し、13 コミットの履歴と原本ブランチを
-  消すところだった → 一時無効化
-- `.gitignore` を片側に寄せると SQLite 台帳・Chroma が公開リポに入る経路ができる → 和集合に
-- 引継ぎ体系の二重化（`docs/handoff.md` に `memory.md` の `[importance:H]` を畳むと 1 サイクルで消える）
-  → 2層構造として整理し、`checkin-checkout` スキルを「両方読む」に変更
-
-**マージ済み**：PR #9（移行・`e6b4a4d`）と PR #16（引継ぎ更新・`e7734e4`）。どちらもマージコミット
-方式。13 コミットは `main` の祖先として保存され、`c6335e8` が到達可能であることを確認済み。
-
-**マージ後の確認結果**：
-
-- `main` は `"protected": true`（適用前は `false`）。旧ブランチ `codex/public-delivery-workbench` は
-  削除済み（API と `git fetch --prune` の両方で確認）
-- **`dependabot.yml` の uv 移行が実際に効いている**：`dependabot/uv/*` の PR が6本自動生成された
-  （anthropic / langgraph / sentence-transformers / uvicorn / dev-dependencies、ラベル `python:uv`）。
-  移行前は Python 依存が完全に監視外だった
-- CI 実測（`748a3e3`）：`ci-green` success。install 20 秒・pytest 21 秒・uvicorn スモーク 9 秒。
-  事前見積もり「cold install 2.8GiB / 5〜12 分」は外れた
+PR #19 はマージコミット方式でマージ済み（`1bce374`）。CI（`ci-green`）は緑を確認してからマージした。
 
 ## ②今回トラブル
 
-- **この環境の git プロキシは、指定ブランチ以外への push を 403 で拒否する**（`docs/failures.md`
-  に記録済み）。タグ作成もブランチ削除もできず、ユーザーの手動作業になった。**履歴の保全を
-  タグに依存する計画を立てないこと。**
-- **CodeQL check が赤のままマージした**（ユーザー判断）。`codeql.yml` に `python` を追加したことで
-  Python 本体が初めてスキャンされ、high 16 件・medium 2 件が出た。全件コードを読んで
-  **ガード済みコードに対する誤検知**と確認済み（`_resolve_source` の `is_relative_to` 封じ込め、
-  `safe_name != source_name` 拒否、`revision_id` は全箇所 `uuid4().hex`、テスト2件は
-  URL サニタイズですらないアサーション）。根拠は PR #9 の集約コメントに記載。
-  - なお `python` 単独にすると「1 configuration not found」で赤くなる（既定ブランチ側の
-    `javascript-typescript` 設定が消えるため）。**matrix で両方走らせて解消**した。
-- **未検証が2点残っている**：(a) CodeQL アラートの dismiss 状況は API に読み取り手段が無く確認不可、
-  (b) Ruleset の内訳（`Require a pull request before merging` が入っているか）も同様。
-  `protected: true` は「Ruleset が Active で main を対象にしている」ことしか示さない。
+無し。ただし設計判断を1つ明記しておく：**`add_candidate` はあえて `auto_classified` 止まりで
+`auto_approved` にはしていない。** 設計文書の自動採用条件案は before/after 改善確認（項目6・未実装）
+も必須にしており、それを飛ばして自動承認すると「本人採点」と同じ誤りになるため。項目6を実装する
+までは、この保守的な挙動を変えないこと。
 
 ## ③次回やる事
 
-1. **本題：`coverage-loop` の D 判定スキーマに失敗原因分類を追加する**
-   （`missing_knowledge` / `retrieval_failure` / `generation_failure` / `chunking_failure` /
-   `ambiguous_question` / `invalid_A` / `out_of_scope` / `needs_quarantine`）。
-   敵対検証で「現設計のままでは採用不可」とされた根本原因がここで、後続の台帳・自動採否・
-   隔離UIがすべてこの分類に依存する。詳細は
-   `docs/session-reports/2026-08-01-coverage-loop-design.md`「次にやるべきこと」の 1〜7。
-2. **Dependabot PR 8 本の処理**：`dependabot/uv/*` 6 本＋ `actions/checkout` ＋ `codeql-action`。
-   特に `astral-sh/setup-uv 6→7`（#14）は `.github/workflows/ci.yml` を触るので、CI が緑のままかを
-   実際の run で確認してからマージすること。
-3. **積み残しのゲート**：`mypy src` の 34 件を直して型ゲートを `ci-green` に追加。
-   依存脆弱性ゲート（`pip-audit` 等）の導入。どちらも AGENTS.md に「既知の欠落」として明記済み。
+1. **本題：`docs/session-reports/2026-08-01-coverage-loop-design.md`「次にやるべきこと」の
+   項目6・7**：
+   - 6: 30問セット（C-1/C-2/C-3、計30問）をA/B/Dへ流し、問い型別弱点分類表を作る。
+   - 7: `missing_knowledge` と `retrieval_failure` を分けるため、B回答時の retrieved chunks /
+     scores / citations を必ず保存する（`RetrievedChunk` スキーマは項目2で用意済み・配線は未着手）。
+   - 7が終わると、before/after改善確認（項目6の実行結果）を使って `auto_classified -> auto_approved`
+     の自動昇格ロジックを実装できるようになる。これが今回あえてやらなかった部分。
+2. **積み残しのゲート**（`memory.md` からも継続）：`mypy src` の型エラーを直して型ゲートを
+   `ci-green` に追加。依存脆弱性ゲート（`pip-audit` 等）の導入。
+3. **Dependabot PR の処理**：前回セッションから積み残っている `dependabot/uv/*` 等。
 4. **`auto-merge.yml` の再有効化**：手順0 適用後、squash ではなくマージコミットを作る方式に
    直してから `on:` を戻す。現在は `workflow_dispatch` のみ。
-5. 未検証2点（②参照）の確認：Ruleset に `Require a pull request` が入っているか、
-   CodeQL 18 件を dismiss したか。どちらも GitHub の画面で目視するしかない。
+5. quarantine 一覧の UI（`src/api/static/app.js`）は今回未着手。API（項目5）のみ実装済み。

@@ -12,7 +12,7 @@
 
 > 直近 plan: RAG弱点仮説生成・検証ワークフロー（A/B/C/D coverage loop）を構造化ナレッジ改善ワークベンチへ接続中。次は `docs/session-reports/2026-08-01-coverage-loop-design.md` を読むこと。
 
-- **[importance:H][2026-08-01] 現在の主題は呪術廻戦ナレッジそのものではなく、任意ドメインRAGの弱点仮説生成・検証ワークフロー。A/B/C/Dループは「ナレッジ不足確定」ではなく「BがAより弱く見えた差分」を出すだけ。次実装では `missing_knowledge / retrieval_failure / generation_failure / chunking_failure / invalid_A / ambiguous_question / out_of_scope / needs_quarantine` へ原因分類すること。**
+- **[importance:H][2026-08-01] 現在の主題は呪術廻戦ナレッジそのものではなく、任意ドメインRAGの弱点仮説生成・検証ワークフロー。A/B/C/Dループは「ナレッジ不足確定」ではなく「BがAより弱く見えた差分」を出すだけ。`missing_knowledge / retrieval_failure / generation_failure / chunking_failure / invalid_A / ambiguous_question / out_of_scope / needs_quarantine` への原因分類は実装済み（PR #18）。evidence metadata・coverage台帳のSQLite永続化・auto_classified/auto_rejected/auto_quarantined 状態遷移・隔離解決APIも実装済み（PR #19）。残りは項目6（30問A/B/D全実行→弱点分類表）・項目7（B側retrieved chunks保存の配線）・その先の `auto_classified -> auto_approved` 自動昇格（before/after改善確認が前提、未実装）。詳細は `docs/handoff.md` 参照。**
 - **[importance:H][2026-08-01] ユーザー都度承認は禁止方針。処理が止まるため。通常候補は自動採用/自動却下/隔離に分岐し、隔離だけ日次・週次・任意タイミングでまとめてユーザー確認する。**
 - **[importance:H][2026-08-01] 製品API内でA/C/Dを毎回LLM実行しない。A/B/D結果はサブエージェント、人間、外部ツール、既存ログから注入可能にする。製品APIは候補化・台帳化・before/after比較を担う。**
 - **[importance:M][2026-08-01] C役は3人化済み設計: C-1 因果xマニアック、C-2 因果x複数人/組織、C-3 条件/例外x時系列/比較。敵対検証により実ユーザーログ由来・曖昧質問・手順系・エラー系・権限系・no-answer系も追加すべき。**
