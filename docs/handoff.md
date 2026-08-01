@@ -29,28 +29,40 @@
 Python へ、`dependabot.yml` を uv へ変更。`roadmap-state.json` の虚偽（実装済みの Phase 3 UI を
 未完了と主張していた）を訂正し、`docs/session-reports/README.md` に旧パスの読み替え表を追加した。
 
+PR #9 はマージ済み（`e6b4a4d`、マージコミット方式）。**13 コミットは `main` の祖先として保存**され、
+`c6335e8` が到達可能であることを確認した。Dependabot PR は #1・#2・#5〜#8 をクローズし、
+**#3 actions/checkout と #4 codeql-action は Python 移行後も有効なので残してある**。
+
+CI 実測（`748a3e3`）：`ci-green` **success**。install 20 秒・pytest 21 秒・uvicorn スモーク 9 秒。
+事前に「cold install は 2.8GiB / 5〜12 分」と見積もっていたが、実測は 20 秒で外れた。
+
 ## ②今回トラブル
 
-- **タグの push がプロキシに 403 で拒否された**。`archive/codex-public-delivery-workbench` を作れて
-  いない。ただし `--allow-unrelated-histories` のマージにより 13 コミットは `main` 系列の祖先に
-  なっており、`c6335e8` 等の commit SHA は到達可能（確認済み）。**PR は必ずマージコミットで
-  マージすること。squash すると履歴が潰れる。**
+- **この環境の git プロキシは、指定ブランチ以外への push を 403 で拒否する**。そのため
+  (a) `archive/codex-public-delivery-workbench` タグを作れず、(b) 旧ブランチ
+  `codex/public-delivery-workbench` を削除できなかった。**旧ブランチは手動削除が必要**
+  （履歴は `main` の祖先として保存済みなので、削除しても失われない）。
+- **CodeQL check が赤のままマージした**（ユーザー判断）。`codeql.yml` に `python` を追加したことで
+  Python 本体が初めてスキャンされ、high 16 件・medium 2 件が出た。全件コードを読んで
+  **ガード済みコードに対する誤検知**と判断済み（`_resolve_source` の `is_relative_to` 封じ込め、
+  `safe_name != source_name` 拒否、`revision_id` は全箇所 `uuid4().hex`）。根拠は PR #9 の
+  集約コメントに記載。**アラートの dismiss は未実施**＝Security タブに残っている。
+- なお `python` 単独にすると「1 configuration not found」で赤くなる。既定ブランチ側の
+  `javascript-typescript` 設定が消えるため。matrix で両方走らせることで解消した。
 - **`mypy src` が 34 errors**（`get_active_revision()` の `dict | None` を絞り込まずに添字アクセス
-  している箇所が大半）。修正は移行の範囲を超えるため、型ゲートは `ci-green` に入れず「既知の欠落」
-  として AGENTS.md に明記した。
-- **CI は今回の push が初回実行**。`astral-sh/setup-uv@v6` の可用性、cold install（torch + CUDA で
-  約 2.8GiB）の所要時間、uvicorn スモークの実挙動はまだ実測されていない。
+  している箇所が大半）。型ゲートは `ci-green` に入れず「既知の欠落」として AGENTS.md に明記した。
 
 ## ③次回やる事
 
-1. **CI を緑にする**（最優先）。初回 run の結果を見て詰める。
-2. **手順0 の適用**（ユーザー作業）。`main` は現在 `protected: false`。`ci-green` の check run が
-   実際に生成されたことを確認してから、Ruleset で必須化する。`GITHUB_TOKEN` では設定できない。
-3. 旧ブランチ `codex/public-delivery-workbench` の削除（PR マージ後）。
-4. Dependabot PR の整理：#5〜#8（npm）と #1・#2（setup-node / pnpm-action-setup）はクローズ。
-   **#3 actions/checkout と #4 codeql-action は Python 移行後も有効なので残す。**
-5. 本題の開発：**coverage-loop の D 判定スキーマに失敗原因分類を追加**
+1. **手順0 の適用（ユーザー作業・管理者権限が必要）**。`main` は `protected: false` のまま。
+   `ci-green` は実際に生成済み（run 30696743483）なので、Ruleset で必須指定できる状態にある。
+   `GITHUB_TOKEN` では設定できないため AI 側では実施不可。
+2. **旧ブランチ `codex/public-delivery-workbench` の手動削除**（上記②の理由で自動化できず）。
+3. **CodeQL アラート18件の処遇**：誤検知と判断済みなので Security タブから False positive として
+   dismiss するか、そのまま残すかを決める。
+4. 本題の開発：**coverage-loop の D 判定スキーマに失敗原因分類を追加**
    （`missing_knowledge` / `retrieval_failure` / `generation_failure` / `chunking_failure` /
    `ambiguous_question` / `invalid_A` / `out_of_scope` / `needs_quarantine`）。
    詳細は `docs/session-reports/2026-08-01-coverage-loop-design.md`「次にやるべきこと」。
-6. 積み残し：`mypy` の 34 件を直して型ゲートを `ci-green` に追加。依存脆弱性ゲート（`pip-audit` 等）。
+5. 積み残し：`mypy` の 34 件を直して型ゲートを `ci-green` に追加。依存脆弱性ゲート（`pip-audit` 等）。
+6. `auto-merge.yml` の再有効化（手順0 適用後、squash ではなくマージコミットを作る方式に直してから）。
