@@ -467,6 +467,7 @@ class QualityWorkbench:
         answer_mode: AnswerMode = "standard",
         allow_llm_agents: bool = False,
         run_knowledge_answerer: bool = False,
+        persist: bool = True,
     ) -> dict[str, Any]:
         """Find questions where external truth exists but local knowledge fails."""
         revision = self.store.get_revision(revision_id)
@@ -551,7 +552,16 @@ class QualityWorkbench:
             knowledge_answerer=knowledge_answerer,
             answer_mode=answer_mode,
         )
-        return result.model_dump()
+        result_dict = result.model_dump()
+        if persist:
+            saved = self.store.save_coverage_loop_items(str(revision["id"]), result_dict["items"])
+            saved_by_question = {candidate["question"]: candidate for candidate in saved}
+            for item in result_dict["items"]:
+                candidate = saved_by_question.get(item["question"])
+                if candidate is not None:
+                    item["candidate_id"] = candidate["id"]
+                    item["ledger_status"] = candidate["status"]
+        return result_dict
 
     def create_job(
         self,

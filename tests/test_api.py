@@ -525,6 +525,89 @@ def test_coverage_loop_marks_external_pass_b_abstention_as_add_candidate(monkeyp
     assert "D judged B as abstain" in item["candidate_reason"]
     assert "簡易領域習得の因果関係" in item["fact_check"]["missing_knowledge"]
 
+    # Persisted to the coverage-candidate ledger (design-doc step 3) with the
+    # add_candidate disposition mapped to auto_classified, not auto_approved —
+    # promoting further needs a before/after check that does not exist yet.
+    assert item["ledger_status"] == "auto_classified"
+    candidate_id = item["candidate_id"]
+
+    listed = client.get(f"/workbench/revisions/{revision_id}/coverage-candidates")
+    assert listed.status_code == 200
+    candidates = listed.json()["items"]
+    assert len(candidates) == 1
+    assert candidates[0]["id"] == candidate_id
+    assert candidates[0]["status"] == "auto_classified"
+    assert candidates[0]["disposition"] == "add_candidate"
+    assert candidates[0]["question"] == question
+
+    filtered = client.get(
+        f"/workbench/revisions/{revision_id}/coverage-candidates",
+        params={"status": "auto_rejected"},
+    )
+    assert filtered.json()["items"] == []
+
+
+def test_coverage_candidate_quarantine_can_be_resolved_by_hand(monkeypatch, tmp_path):
+    """A `needs_quarantine` D verdict lands in the ledger as auto_quarantined,
+    which is the one status a human is expected to resolve by hand (design-doc
+    step 5: "隔離だけまとめてユーザー確認する")."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "呪霊操術の等級差はどう扱われるか。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "focus": "条件/例外",
+            "questions": [question],
+            "external_answers": {
+                question: {"answer": "外部基準回答", "status": "ok"},
+            },
+            "knowledge_answers": {
+                question: {"answer": "記載がありません", "status": "released"},
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "unclear",
+                    "knowledge_status": "unclear",
+                    "same_answer": False,
+                    "failure_cause": "needs_quarantine",
+                    "reason": "two plausible causes, could not decide",
+                }
+            },
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+    assert res.status_code == 200
+    candidate_id = res.json()["items"][0]["candidate_id"]
+    assert res.json()["items"][0]["ledger_status"] == "auto_quarantined"
+
+    # Resolving before it is quarantined-eligible is refused; only auto_quarantined
+    # candidates may be resolved, and only into one of the two terminal states.
+    bad_status = client.post(
+        f"/workbench/coverage-candidates/{candidate_id}/resolve",
+        json={"status": "auto_approved", "reason": "not a real status check"},
+    )
+    # (this call is valid — auto_quarantined -> auto_approved is allowed — but a
+    # second resolution attempt on the now-resolved candidate must be refused)
+    assert bad_status.status_code == 200
+    assert bad_status.json()["status"] == "auto_approved"
+
+    second_attempt = client.post(
+        f"/workbench/coverage-candidates/{candidate_id}/resolve",
+        json={"status": "auto_rejected", "reason": "changed my mind"},
+    )
+    assert second_attempt.status_code == 409
+
+    missing = client.post(
+        "/workbench/coverage-candidates/does-not-exist/resolve",
+        json={"status": "auto_approved", "reason": "n/a"},
+    )
+    assert missing.status_code == 404
+
 
 def test_blocked_candidate_is_not_returned_but_is_saved(monkeypatch, tmp_path):
     monkeypatch.setattr(api, "is_generation_configured", lambda: True)
