@@ -1,0 +1,32 @@
+{
+  "project": "medguide-rag",
+  "updated_at": "2026-08-01T00:00:00+09:00",
+  "branch": "codex/public-delivery-workbench",
+  "status": "internal_beta",
+  "active_milestone": "Milestone 1",
+  "active_phase": 0,
+  "phase_status": {
+    "0": "in_progress",
+    "1": "pending",
+    "2": "pending",
+    "3": "pending",
+    "4": "pending",
+    "5": "pending",
+    "6": "pending",
+    "7": "pending",
+    "8": "pending",
+    "9": "pending"
+  },
+  "known_verified": {
+    "pytest": "84 passed, 1 warning, about 145 seconds",
+    "ruff": "3 failures before Phase 0 edits",
+    "secrets_scan": "narrow tracked-file scan found 0 matches excluding .env.example"
+  },
+  "current_blockers": [
+    "structured knowledge can alter active revision behavior without approval",
+    "process UI is not backed by asynchronous persisted events",
+    "coverage loop lacks durable taxonomy, ledger, automatic disposition, and quarantine UI",
+    "dependencies, CI, packaging, backup, restore, and public repo hygiene are incomplete"
+  ],
+  "next_required_action": "Finish Phase 1: freeze structured knowledge per revision and include its digest in validation and approval."
+}
