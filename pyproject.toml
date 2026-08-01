@@ -15,7 +15,7 @@ dependencies = [
     "langchain-openai==1.4.1",
     "langchain-text-splitters==1.1.2",
     "langfuse==4.14.1",
-    "langgraph==1.2.7",
+    "langgraph==1.2.10",
     "numpy==2.5.0",
     "pandas==3.0.3",
     "pydantic==2.13.4",
