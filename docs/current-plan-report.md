@@ -58,7 +58,7 @@ NG、判定不能、検品エラー、timeout、JSON破損はすべて出荷停�
 | 0 | 真実固定 | 専用ブランチ、現状レポート訂正、正本一覧、ロードマップ、引継ぎ様式 | 現状の能力と未完成項目に矛盾がない | 完了 |
 | 1 | 整合性修復 | 構造化entity/factをrevision不変スナップショット化し、承認fingerprintへ追加 | 無承認でactive回答が変化しない。改変後承認は409 | 完了 |
 | 2 | 再現可能化 | Python 3.12、pyproject、lock、依存分離、Python Playwright | 新規環境をlockで再現。lint/type/testがPASS | 完了 |
-| 3 | 実工程可視化 | 永続run、追記専用工程event、SSE配信、UI追跡 | 500ms以内に実イベント表示。再読込後も追跡 | 未完 |
+| 3 | 実工程可視化 | 永続run、追記専用工程event、SSE配信、UI追跡 | 500ms以内に実イベント表示。再読込後も追跡 | 部分実装 |
 | 4 | 耐障害運用 | migration、worker lease/heartbeat/retry/cancel、backup/restore、診断bundle | 強制終了後も重複runなしで再開。復元後SHA一致 | 未完 |
 | 5 | 評価基盤 | qrels、期待主張、answerability、問い型、危険度、検索/回答分離評価 | Recall@5>=0.90、nDCG@5>=0.75等を測定 | 未完 |
 | 6 | Judge校正 | frozen人手ラベル、混同行列、macro-F1、Cohen's kappa、rubric hash | 一致率>=80%、kappa>=0.70、重大false-pass 0 | 未完 |
@@ -79,4 +79,4 @@ NG、判定不能、検品エラー、timeout、JSON破損はすべて出荷停�
 
 ## 次にやること
 
-次の最優先はPhase 3です。現在の工程表示は同期`/ask`完了後に工程一覧を置換する作りであり、「処理中に何をしたか」をリアルタイム表示できていません。永続run、追記専用工程event、SSE配信、再読込後のrun追跡へ進めます。
+次の最優先はPhase 3のUI接続です。バックエンドには`POST /runs`、`GET /runs/{id}`、`GET /runs/{id}/events`と追記event保存を入れました。残りはUIを`/ask`同期表示から`/runs`作成 + EventSource購読へ切り替え、工程表示を実イベント由来にすることです。

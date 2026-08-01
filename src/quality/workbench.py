@@ -183,6 +183,7 @@ class QualityWorkbench:
         user_id: str | None = None,
         trace_tags: list[str] | None = None,
         job_id: str | None = None,
+        run_id: str | None = None,
         answer_mode: AnswerMode = "strict",
     ) -> dict[str, Any]:
         revision = (
@@ -192,10 +193,31 @@ class QualityWorkbench:
         )
         graph, vectorstore, chunks_indexed = self._get_rag(revision)
         trace_id = new_trace_id()
+        if run_id:
+            self.store.append_run_event(
+                run_id,
+                "knowledge_selected",
+                payload={
+                    "stage": "knowledge_selected",
+                    "revision_id": str(revision["id"]),
+                    "source_sha256": revision["source_sha256"],
+                    "structured_sha256": self.structured_digest(str(revision["id"])),
+                },
+            )
         structured_hits = [
             self._public_structured_hit(hit)
             for hit in self.structured_store.search(str(revision["id"]), question)
         ]
+        if run_id:
+            self.store.append_run_event(
+                run_id,
+                "retrieve_started",
+                payload={
+                    "stage": "retrieve",
+                    "input": {"question_length": len(question)},
+                    "structured_hits": len(structured_hits),
+                },
+            )
         state = self.ask_fn(
             graph,
             question,
@@ -208,6 +230,16 @@ class QualityWorkbench:
         )
         candidate = str(state.get("answer") or "")
         private_evidence, public_sources = self._evidence(list(state.get("docs") or []))
+        if run_id:
+            self.store.append_run_event(
+                run_id,
+                "generate_completed",
+                payload={
+                    "stage": "generate",
+                    "retrieved_sources": len(public_sources),
+                    "candidate_answer_saved": True,
+                },
+            )
         verification = self.verifier.evaluate(
             question=question,
             candidate_answer=candidate,
@@ -217,6 +249,26 @@ class QualityWorkbench:
         released = verification.get("release_allowed") is True
         delivery_status = "released" if released else "blocked"
         blocked_reason = None if released else str(verification.get("reason_code") or "quality_gate_failed")
+        if run_id:
+            self.store.append_run_event(
+                run_id,
+                "verify_completed",
+                payload={
+                    "stage": "verify",
+                    "status": verification.get("status"),
+                    "claim_count": len(verification.get("claims") or []),
+                    "release_allowed": verification.get("release_allowed"),
+                },
+            )
+            self.store.append_run_event(
+                run_id,
+                "gate_completed",
+                payload={
+                    "stage": "gate",
+                    "delivery_status": delivery_status,
+                    "blocked_reason": blocked_reason,
+                },
+            )
         quality_audit_status = record_langfuse_quality_observations(
             trace_id=trace_id,
             question=question,
@@ -226,7 +278,7 @@ class QualityWorkbench:
         audit = finalize_langfuse_trace(trace_id)
         if quality_audit_status == "error":
             audit = AuditResult(trace_id=trace_id, status="error", trace_url=audit.trace_url)
-        run_id = uuid.uuid4().hex
+        run_id = run_id or uuid.uuid4().hex
         self.store.record_run(
             run_id=run_id,
             revision_id=str(revision["id"]),

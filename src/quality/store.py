@@ -151,6 +151,18 @@ class WorkbenchStore:
                     created_at TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS async_runs (
+                    id TEXT PRIMARY KEY,
+                    revision_id TEXT NOT NULL REFERENCES revisions(id),
+                    question TEXT NOT NULL,
+                    answer_mode TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('queued', 'running', 'completed', 'failed')),
+                    response_json TEXT,
+                    error_message TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
                 CREATE TABLE IF NOT EXISTS adjustments (
                     id TEXT PRIMARY KEY,
                     revision_id TEXT NOT NULL REFERENCES revisions(id),
@@ -165,6 +177,7 @@ class WorkbenchStore:
                 CREATE INDEX IF NOT EXISTS idx_events_revision ON events(revision_id, id);
                 CREATE INDEX IF NOT EXISTS idx_jobs_revision ON jobs(revision_id, kind, created_at);
                 CREATE INDEX IF NOT EXISTS idx_runs_revision ON runs(revision_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_async_runs_status ON async_runs(status, created_at);
                 CREATE INDEX IF NOT EXISTS idx_adjustments_created ON adjustments(created_at DESC);
 
                 CREATE TRIGGER IF NOT EXISTS revisions_no_update
@@ -190,6 +203,10 @@ class WorkbenchStore:
                 CREATE TRIGGER IF NOT EXISTS runs_no_delete
                 BEFORE DELETE ON runs BEGIN
                     SELECT RAISE(ABORT, 'runs are immutable');
+                END;
+                CREATE TRIGGER IF NOT EXISTS async_run_events_no_update
+                BEFORE UPDATE ON events WHEN OLD.run_id IS NOT NULL BEGIN
+                    SELECT RAISE(ABORT, 'run events are append-only');
                 END;
                 """
             )
@@ -605,6 +622,173 @@ class WorkbenchStore:
                 payload={"kind": kind, "engine_fingerprint": engine_fingerprint},
             )
         return self.get_job(job_id)
+
+    def create_async_run(
+        self,
+        *,
+        revision_id: str,
+        question: str,
+        answer_mode: str,
+    ) -> dict[str, Any]:
+        self.get_revision(revision_id)
+        run_id = uuid.uuid4().hex
+        now = utc_now()
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO async_runs(
+                    id, revision_id, question, answer_mode, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, 'queued', ?, ?)
+                """,
+                (run_id, revision_id, question, answer_mode, now, now),
+            )
+            self._append_event(
+                connection,
+                "queued",
+                revision_id=revision_id,
+                run_id=run_id,
+                payload={
+                    "stage": "queued",
+                    "summary": "Run accepted for asynchronous processing.",
+                },
+            )
+        return self.get_async_run(run_id)
+
+    def append_run_event(
+        self,
+        run_id: str,
+        event_type: str,
+        *,
+        payload: dict[str, Any] | None = None,
+    ) -> None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT revision_id FROM async_runs WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+            if row is None:
+                raise WorkbenchNotFoundError(f"async run not found: {run_id}")
+            self._append_event(
+                connection,
+                event_type,
+                revision_id=str(row["revision_id"]),
+                run_id=run_id,
+                payload=payload or {},
+            )
+
+    def mark_async_run_running(self, run_id: str) -> None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT status, revision_id FROM async_runs WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+            if row is None:
+                raise WorkbenchNotFoundError(f"async run not found: {run_id}")
+            if row["status"] != "queued":
+                raise WorkbenchConflictError(f"async run cannot start from status {row['status']}")
+            connection.execute(
+                """
+                UPDATE async_runs SET status = 'running', updated_at = ?
+                WHERE id = ?
+                """,
+                (utc_now(), run_id),
+            )
+            self._append_event(
+                connection,
+                "running",
+                revision_id=str(row["revision_id"]),
+                run_id=run_id,
+                payload={"stage": "running", "summary": "Run worker started."},
+            )
+
+    def finish_async_run(self, run_id: str, response: dict[str, Any]) -> None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT status, revision_id FROM async_runs WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+            if row is None:
+                raise WorkbenchNotFoundError(f"async run not found: {run_id}")
+            if row["status"] not in {"queued", "running"}:
+                raise WorkbenchConflictError(f"async run cannot finish from status {row['status']}")
+            connection.execute(
+                """
+                UPDATE async_runs
+                SET status = 'completed', response_json = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (self._json(response), utc_now(), run_id),
+            )
+            self._append_event(
+                connection,
+                "completed",
+                revision_id=str(row["revision_id"]),
+                run_id=run_id,
+                payload={
+                    "stage": "completed",
+                    "delivery_status": response.get("delivery_status"),
+                    "blocked_reason": response.get("blocked_reason"),
+                },
+            )
+
+    def fail_async_run(self, run_id: str, error_message: str) -> None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT status, revision_id FROM async_runs WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+            if row is None:
+                raise WorkbenchNotFoundError(f"async run not found: {run_id}")
+            connection.execute(
+                """
+                UPDATE async_runs
+                SET status = 'failed', error_message = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (error_message, utc_now(), run_id),
+            )
+            self._append_event(
+                connection,
+                "failed",
+                revision_id=str(row["revision_id"]),
+                run_id=run_id,
+                payload={"stage": "failed", "error": error_message},
+            )
+
+    def get_async_run(self, run_id: str) -> dict[str, Any]:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM async_runs WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+        if row is None:
+            raise WorkbenchNotFoundError(f"async run not found: {run_id}")
+        result = dict(row)
+        result["response"] = self._decode(result.pop("response_json"), None)
+        return result
+
+    def list_run_events(self, run_id: str, *, after_id: int = 0) -> list[dict[str, Any]]:
+        with self._connect() as connection:
+            exists = connection.execute(
+                "SELECT 1 FROM async_runs WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+            if exists is None:
+                raise WorkbenchNotFoundError(f"async run not found: {run_id}")
+            rows = connection.execute(
+                """
+                SELECT * FROM events
+                WHERE run_id = ? AND id > ?
+                ORDER BY id
+                """,
+                (run_id, after_id),
+            ).fetchall()
+        results = []
+        for row in rows:
+            item = dict(row)
+            item["payload"] = self._decode(item.pop("payload_json"), {})
+            results.append(item)
+        return results
 
     def mark_job_running(self, job_id: str) -> None:
         with self._connect() as connection:

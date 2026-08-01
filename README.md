@@ -131,6 +131,8 @@ uv run uvicorn src.api:app --host 127.0.0.1 --port 8010
 
 - `GET /`: 4タブ品質改善ワークベンチ
 - `POST /ask`: 質問、回答照合、出荷判定、監査記録
+- `POST /runs`: 非同期run作成
+- `GET /runs/{id}` / `GET /runs/{id}/events`: run状態とSSE工程イベント
 - 品質管理API一覧: [src/api/README.md](src/api/README.md)
 
 主要UIフローのPlaywright E2Eは、サーバー起動中に次で実行する。

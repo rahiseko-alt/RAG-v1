@@ -551,6 +551,39 @@ def test_blocked_candidate_is_not_returned_but_is_saved(monkeypatch, tmp_path):
     assert adjustments[0]["run_id"] == body["run_id"]
 
 
+def test_async_run_records_events_without_leaking_blocked_candidate(monkeypatch, tmp_path):
+    monkeypatch.setattr(api, "is_generation_configured", lambda: True)
+    workbench = _make_workbench(tmp_path, blocked=True)
+    client = TestClient(api.create_app(workbench))
+
+    created = client.post("/runs", json={"question": "危険な質問"})
+
+    assert created.status_code == 202
+    run_id = created.json()["run_id"]
+
+    status = client.get(f"/runs/{run_id}")
+    assert status.status_code == 200
+    body = status.json()
+    assert body["status"] == "completed"
+    assert body["response"]["delivery_status"] == "blocked"
+    assert body["response"]["answer"] is None
+    assert "非公開候補" not in status.text
+    assert "private candidate wording" not in status.text
+
+    event_types = [event["event_type"] for event in body["events"]]
+    assert event_types[:2] == ["queued", "running"]
+    assert "question_received" in event_types
+    assert "knowledge_selected" in event_types
+    assert "verify_completed" in event_types
+    assert "gate_completed" in event_types
+    assert event_types[-1] == "completed"
+
+    streamed = client.get(f"/runs/{run_id}/events")
+    assert streamed.status_code == 200
+    assert "text/event-stream" in streamed.headers["content-type"]
+    assert "非公開候補" not in streamed.text
+
+
 def test_revision_validation_and_atomic_approval(monkeypatch, tmp_path):
     monkeypatch.setattr(api, "is_generation_configured", lambda: True)
     workbench = _make_workbench(tmp_path)

@@ -9,7 +9,7 @@
     "0": "completed",
     "1": "completed",
     "2": "completed",
-    "3": "pending",
+    "3": "in_progress",
     "4": "pending",
     "5": "pending",
     "6": "pending",
@@ -28,5 +28,5 @@
     "coverage loop lacks durable taxonomy, ledger, automatic disposition, and quarantine UI",
     "dependencies, CI, packaging, backup, restore, and public repo hygiene are incomplete"
   ],
-  "next_required_action": "Start Phase 3: replace synchronous template process display with persisted run events and SSE."
+  "next_required_action": "Finish Phase 3 UI: connect EventSource to /runs/{id}/events and render persisted run events instead of synchronous process templates."
 }

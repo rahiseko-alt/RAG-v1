@@ -3,13 +3,15 @@ from __future__ import annotations
 
 import base64
 import binascii
+import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field, model_validator
@@ -109,6 +111,23 @@ class AskResponse(BaseModel):
     audit_enabled: bool
     knowledge: dict[str, Any]
     process_steps: list[ProcessStep]
+
+
+class RunCreateResponse(BaseModel):
+    run_id: str
+    status: str
+    events_url: str
+
+
+class RunStatusResponse(BaseModel):
+    run_id: str
+    status: str
+    revision_id: str
+    question: str
+    answer_mode: str
+    response: dict[str, Any] | None = None
+    error_message: str | None = None
+    events: list[dict[str, Any]]
 
 
 class RevisionCreateRequest(BaseModel):
@@ -465,6 +484,52 @@ def _build_process_steps(
     ]
 
 
+def _build_ask_response(
+    *,
+    payload: AskRequest,
+    question: str,
+    outcome: dict[str, Any],
+) -> AskResponse:
+    knowledge = dict(outcome["revision"]["config"])
+    knowledge.pop("source_path", None)
+    sources = [SourceHit.model_validate(item) for item in outcome["sources"]]
+    return AskResponse(
+        question=question,
+        run_id=outcome["run_id"],
+        delivery_status=outcome["delivery_status"],
+        answer=outcome["answer"],
+        answer_mode=outcome["answer_mode"],
+        blocked_reason=outcome["blocked_reason"],
+        verification=outcome["verification"],
+        audit=outcome["audit"],
+        sources=sources,
+        chunks_indexed=outcome["chunks_indexed"],
+        model=get_generation_model(),
+        audit_enabled=outcome["audit"]["status"] != "disabled",
+        knowledge=knowledge,
+        process_steps=_build_process_steps(
+            raw_question=payload.question,
+            question=question,
+            sources=sources,
+            chunks_indexed=outcome["chunks_indexed"],
+            model=get_generation_model(),
+            audit_enabled=outcome["audit"]["status"] != "disabled",
+            knowledge=knowledge,
+            delivery_status=outcome["delivery_status"],
+            blocked_reason=outcome["blocked_reason"],
+            verification=outcome["verification"],
+            audit=outcome["audit"],
+            answer_mode=outcome["answer_mode"],
+            vs=outcome["vectorstore"],
+            answer=outcome["answer"],
+        ),
+    )
+
+
+def _sse_event(event: dict[str, Any]) -> str:
+    return f"id: {event['id']}\nevent: {event['event_type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+
 def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
     wb = workbench or get_default_workbench()
     app = FastAPI(
@@ -558,40 +623,112 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"RAG execution failed: {safe_error_message(exc)}") from exc
 
-        knowledge = dict(outcome["revision"]["config"])
-        knowledge.pop("source_path", None)
-        sources = [SourceHit.model_validate(item) for item in outcome["sources"]]
-        return AskResponse(
-            question=question,
-            run_id=outcome["run_id"],
-            delivery_status=outcome["delivery_status"],
-            answer=outcome["answer"],
-            answer_mode=outcome["answer_mode"],
-            blocked_reason=outcome["blocked_reason"],
-            verification=outcome["verification"],
-            audit=outcome["audit"],
-            sources=sources,
-            chunks_indexed=outcome["chunks_indexed"],
-            model=get_generation_model(),
-            audit_enabled=outcome["audit"]["status"] != "disabled",
-            knowledge=knowledge,
-            process_steps=_build_process_steps(
-                raw_question=payload.question,
+        return _build_ask_response(payload=payload, question=question, outcome=outcome)
+
+    def _execute_async_run(run_id: str, payload: AskRequest) -> None:
+        question = payload.question.strip()
+        try:
+            wb.store.mark_async_run_running(run_id)
+            wb.store.append_run_event(
+                run_id,
+                "question_received",
+                payload={
+                    "stage": "question_received",
+                    "input": {"question_length": len(question)},
+                    "answer_mode": payload.answer_mode,
+                },
+            )
+            outcome = wb.answer_question(
                 question=question,
-                sources=sources,
-                chunks_indexed=outcome["chunks_indexed"],
-                model=get_generation_model(),
-                audit_enabled=outcome["audit"]["status"] != "disabled",
-                knowledge=knowledge,
-                delivery_status=outcome["delivery_status"],
-                blocked_reason=outcome["blocked_reason"],
-                verification=outcome["verification"],
-                audit=outcome["audit"],
-                answer_mode=outcome["answer_mode"],
-                vs=outcome["vectorstore"],
-                answer=outcome["answer"],
-            ),
+                revision_id=payload.revision_id,
+                session_id=payload.session_id,
+                user_id=payload.user_id,
+                trace_tags=payload.trace_tags,
+                answer_mode=payload.answer_mode,
+                run_id=run_id,
+            )
+            response = _build_ask_response(
+                payload=payload,
+                question=question,
+                outcome=outcome,
+            ).model_dump()
+            wb.store.finish_async_run(run_id, response)
+        except Exception as exc:
+            wb.store.fail_async_run(run_id, safe_error_message(exc))
+
+    @app.post("/runs", response_model=RunCreateResponse, status_code=202)
+    def create_run(
+        payload: AskRequest,
+        background_tasks: BackgroundTasks,
+    ) -> RunCreateResponse:
+        question = payload.question.strip()
+        if not question:
+            raise HTTPException(status_code=400, detail="question must not be blank")
+        if not is_generation_configured():
+            provider = get_llm_provider()
+            key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
+            raise HTTPException(
+                status_code=503,
+                detail=f"{key_name} is not configured for LLM_PROVIDER={provider}. Set it in .env before calling /runs.",
+            )
+        revision = (
+            wb.store.get_revision(payload.revision_id)
+            if payload.revision_id
+            else wb.store.get_active_revision()
         )
+        run = wb.store.create_async_run(
+            revision_id=str(revision["id"]),
+            question=question,
+            answer_mode=payload.answer_mode,
+        )
+        background_tasks.add_task(_execute_async_run, str(run["id"]), payload)
+        return RunCreateResponse(
+            run_id=str(run["id"]),
+            status=str(run["status"]),
+            events_url=f"/runs/{run['id']}/events",
+        )
+
+    @app.get("/runs/{run_id}", response_model=RunStatusResponse)
+    def get_run(run_id: str) -> RunStatusResponse:
+        try:
+            run = wb.store.get_async_run(run_id)
+            events = wb.store.list_run_events(run_id)
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        return RunStatusResponse(
+            run_id=str(run["id"]),
+            status=str(run["status"]),
+            revision_id=str(run["revision_id"]),
+            question=str(run["question"]),
+            answer_mode=str(run["answer_mode"]),
+            response=run.get("response"),
+            error_message=run.get("error_message"),
+            events=events,
+        )
+
+    @app.get("/runs/{run_id}/events")
+    def stream_run_events(
+        run_id: str,
+        after_id: int = Query(default=0, ge=0),
+    ) -> StreamingResponse:
+        def generate():
+            cursor = after_id
+            deadline = time.monotonic() + 60.0
+            while time.monotonic() < deadline:
+                try:
+                    events = wb.store.list_run_events(run_id, after_id=cursor)
+                    run = wb.store.get_async_run(run_id)
+                except WorkbenchNotFoundError:
+                    yield "event: error\ndata: {\"detail\":\"run not found\"}\n\n"
+                    return
+                for event in events:
+                    cursor = int(event["id"])
+                    yield _sse_event(event)
+                if run["status"] in {"completed", "failed"} and not events:
+                    return
+                time.sleep(0.25)
+
+        return StreamingResponse(generate(), media_type="text/event-stream")
 
     @app.get("/workbench/revisions")
     def list_revisions() -> dict[str, Any]:
