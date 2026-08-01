@@ -306,9 +306,13 @@ def test_ask_passes_revision_structured_hits_to_rag(monkeypatch, tmp_path):
     monkeypatch.setattr(api, "is_generation_configured", lambda: True)
     ask_kwargs_log = []
     workbench = _make_workbench(tmp_path, ask_kwargs_log=ask_kwargs_log)
-    active_revision = workbench.store.get_active_revision()
+    revision = workbench.create_revision(
+        source_path="data/sample/jujutsu-kaisen-wikipedia.md",
+        content=None,
+        label="candidate",
+    )
     workbench.structured_store.replace_revision(
-        active_revision["id"],
+        revision["id"],
         entities=[],
         facts=[
             KnowledgeFact(
@@ -329,7 +333,13 @@ def test_ask_passes_revision_structured_hits_to_rag(monkeypatch, tmp_path):
     )
     client = TestClient(api.create_app(workbench))
 
-    res = client.post("/ask", json={"question": "虎杖が簡易領域を習得できた理由"})
+    res = client.post(
+        "/ask",
+        json={
+            "question": "虎杖が簡易領域を習得できた理由",
+            "revision_id": revision["id"],
+        },
+    )
 
     assert res.status_code == 200
     structured_hits = ask_kwargs_log[0]["structured_hits"]
@@ -340,7 +350,14 @@ def test_ask_passes_revision_structured_hits_to_rag(monkeypatch, tmp_path):
 def test_structured_records_can_be_replaced_and_searched_by_api(tmp_path):
     workbench = _make_workbench(tmp_path)
     client = TestClient(api.create_app(workbench))
-    revision_id = workbench.store.get_active_revision()["id"]
+    created = client.post(
+        "/workbench/revisions",
+        json={
+            "source_path": "data/sample/jujutsu-kaisen-wikipedia.md",
+            "label": "candidate",
+        },
+    )
+    revision_id = created.json()["id"]
 
     replaced = client.post(
         f"/workbench/revisions/{revision_id}/structured-records",
@@ -368,6 +385,7 @@ def test_structured_records_can_be_replaced_and_searched_by_api(tmp_path):
     assert replaced.status_code == 200
     assert replaced.json()["entities"] == 1
     assert replaced.json()["facts"] == 1
+    assert len(replaced.json()["structured_sha256"]) == 64
 
     searched = client.get(
         f"/workbench/revisions/{revision_id}/structured-search",
@@ -380,10 +398,31 @@ def test_structured_records_can_be_replaced_and_searched_by_api(tmp_path):
     assert item["data"]["value"]["approver"] == "部長"
 
 
+def test_active_structured_records_cannot_be_replaced_by_api(tmp_path):
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+    active_revision_id = workbench.store.get_active_revision()["id"]
+
+    replaced = client.post(
+        f"/workbench/revisions/{active_revision_id}/structured-records",
+        json={"entities": [], "facts": []},
+    )
+
+    assert replaced.status_code == 409
+    assert "active revision" in replaced.json()["detail"]
+
+
 def test_structured_records_can_be_extracted_and_persisted_by_api(tmp_path):
     workbench = _make_workbench(tmp_path, structured_extractor=FakeStructuredExtractor())
     client = TestClient(api.create_app(workbench))
-    revision_id = workbench.store.get_active_revision()["id"]
+    created = client.post(
+        "/workbench/revisions",
+        json={
+            "source_path": "data/sample/jujutsu-kaisen-wikipedia.md",
+            "label": "candidate",
+        },
+    )
+    revision_id = created.json()["id"]
 
     extracted = client.post(
         f"/workbench/revisions/{revision_id}/structured-extract",
@@ -411,7 +450,14 @@ def test_structured_extraction_can_target_query_retrieved_chunks(tmp_path):
         vectorstore=FakeExtractionVectorStore(),
     )
     client = TestClient(api.create_app(workbench))
-    revision_id = workbench.store.get_active_revision()["id"]
+    created = client.post(
+        "/workbench/revisions",
+        json={
+            "source_path": "data/sample/jujutsu-kaisen-wikipedia.md",
+            "label": "candidate",
+        },
+    )
+    revision_id = created.json()["id"]
 
     extracted = client.post(
         f"/workbench/revisions/{revision_id}/structured-extract",
@@ -539,8 +585,15 @@ def test_revision_validation_and_atomic_approval(monkeypatch, tmp_path):
     assert job["result"]["no_regression"] is True
     assert job["result"]["engine_fingerprint"]
     assert set(job["result"]["source_hashes"]) == {"before", "after"}
+    assert set(job["result"]["structured_hashes"]) == {"before", "after"}
     assert job["result"]["before"]["items"][0]["answer"]
     assert job["result"]["after"]["items"][0]["verification"]["status"] == "pass"
+
+    locked = client.post(
+        f"/workbench/revisions/{revision_id}/structured-records",
+        json={"entities": [], "facts": []},
+    )
+    assert locked.status_code == 409
 
     approved = client.post(
         f"/workbench/revisions/{revision_id}/approve",

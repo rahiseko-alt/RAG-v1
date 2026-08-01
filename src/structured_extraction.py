@@ -107,7 +107,6 @@ def _ensure_record_ids(batch: ExtractedKnowledgeBatch, document: Document) -> Ex
     entities: list[KnowledgeEntity] = []
     facts: list[KnowledgeFact] = []
     for entity in batch.entities:
-        entity_data = _model_dump(entity)
         evidence = entity.evidence or [fallback]
         entity_id = entity.entity_id or _stable_id(
             "entity",
@@ -123,7 +122,6 @@ def _ensure_record_ids(batch: ExtractedKnowledgeBatch, document: Document) -> Ex
     for fact in batch.facts:
         if "不明" in fact.subject and not fact.subject_id:
             continue
-        fact_data = _model_dump(fact)
         evidence = fact.evidence or [fallback]
         fact_id = fact.fact_id or _stable_id(
             "fact",

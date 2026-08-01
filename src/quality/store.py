@@ -552,6 +552,22 @@ class WorkbenchStore:
             result["decision"] = latest_decision.get(result["id"])
         return results
 
+    def revision_has_validation_or_decision(self, revision_id: str) -> bool:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT 1 FROM jobs
+                WHERE revision_id = ? AND kind = 'validation'
+                UNION ALL
+                SELECT 1 FROM events
+                WHERE revision_id = ?
+                  AND event_type IN ('revision_approved', 'revision_rejected')
+                LIMIT 1
+                """,
+                (revision_id, revision_id),
+            ).fetchone()
+        return row is not None
+
     def create_job(
         self,
         *,
@@ -979,6 +995,7 @@ class WorkbenchStore:
         *,
         reason: str,
         engine_fingerprint: str | None = None,
+        structured_digest: str | None = None,
         operator: str | None = None,
     ) -> dict[str, Any]:
         now = utc_now()
@@ -1031,6 +1048,15 @@ class WorkbenchStore:
                 and (result.get("source_hashes") or {}).get("after")
                 == revision["source_sha256"]
             )
+            structured_hashes = result.get("structured_hashes") or {}
+            structured_hash_matches = (
+                structured_digest is None
+                if not structured_hashes
+                else (
+                    structured_digest is not None
+                    and structured_hashes.get("after") == structured_digest
+                )
+            )
             if (
                 rejected is not None
                 or validation is None
@@ -1038,6 +1064,7 @@ class WorkbenchStore:
                 or result.get("full_pass") is not True
                 or result.get("no_regression") is not True
                 or not source_hash_matches
+                or not structured_hash_matches
                 or not eval_set_hash_matches
                 or (
                     engine_fingerprint is not None

@@ -10,9 +10,11 @@ Any domain can be represented as:
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import sqlite3
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterator, Literal
 
@@ -23,6 +25,10 @@ from src.knowledge_config import PRODUCT_ROOT
 
 DEFAULT_STRUCTURED_DB_PATH = PRODUCT_ROOT / "data" / "runtime" / "structured_knowledge.sqlite3"
 RecordKind = Literal["entity", "fact"]
+
+
+class StructuredKnowledgeFrozenError(RuntimeError):
+    """Structured records for this revision are already part of a sealed snapshot."""
 
 
 class EvidenceRef(BaseModel):
@@ -101,6 +107,14 @@ def _expand_iteration_marks(value: str) -> str:
 
 def _normalize_text(value: str) -> str:
     return _expand_iteration_marks(value).casefold()
+
+
+def _utc_now() -> str:
+    return datetime.now(UTC).isoformat(timespec="milliseconds")
+
+
+def _sha256_text(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 def _query_terms(query: str) -> list[str]:
@@ -256,14 +270,191 @@ class StructuredKnowledgeStore:
                     PRIMARY KEY (revision_id, fact_id)
                 );
 
+                CREATE TABLE IF NOT EXISTS structured_revision_state (
+                    revision_id TEXT PRIMARY KEY,
+                    digest_sha256 TEXT NOT NULL CHECK(length(digest_sha256) = 64),
+                    updated_at TEXT NOT NULL,
+                    frozen_at TEXT
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_structured_entities_type
                     ON structured_entities(revision_id, entity_type);
                 CREATE INDEX IF NOT EXISTS idx_structured_facts_subject
                     ON structured_facts(revision_id, subject_id, subject);
                 CREATE INDEX IF NOT EXISTS idx_structured_facts_predicate
                     ON structured_facts(revision_id, predicate);
+
+                CREATE TRIGGER IF NOT EXISTS structured_entities_no_insert_when_frozen
+                BEFORE INSERT ON structured_entities
+                WHEN EXISTS (
+                    SELECT 1 FROM structured_revision_state
+                    WHERE revision_id = NEW.revision_id AND frozen_at IS NOT NULL
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'structured revision is frozen');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS structured_entities_no_update_when_frozen
+                BEFORE UPDATE ON structured_entities
+                WHEN EXISTS (
+                    SELECT 1 FROM structured_revision_state
+                    WHERE revision_id = OLD.revision_id AND frozen_at IS NOT NULL
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'structured revision is frozen');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS structured_entities_no_delete_when_frozen
+                BEFORE DELETE ON structured_entities
+                WHEN EXISTS (
+                    SELECT 1 FROM structured_revision_state
+                    WHERE revision_id = OLD.revision_id AND frozen_at IS NOT NULL
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'structured revision is frozen');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS structured_facts_no_insert_when_frozen
+                BEFORE INSERT ON structured_facts
+                WHEN EXISTS (
+                    SELECT 1 FROM structured_revision_state
+                    WHERE revision_id = NEW.revision_id AND frozen_at IS NOT NULL
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'structured revision is frozen');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS structured_facts_no_update_when_frozen
+                BEFORE UPDATE ON structured_facts
+                WHEN EXISTS (
+                    SELECT 1 FROM structured_revision_state
+                    WHERE revision_id = OLD.revision_id AND frozen_at IS NOT NULL
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'structured revision is frozen');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS structured_facts_no_delete_when_frozen
+                BEFORE DELETE ON structured_facts
+                WHEN EXISTS (
+                    SELECT 1 FROM structured_revision_state
+                    WHERE revision_id = OLD.revision_id AND frozen_at IS NOT NULL
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'structured revision is frozen');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS structured_state_no_unfreeze
+                BEFORE UPDATE OF frozen_at ON structured_revision_state
+                WHEN OLD.frozen_at IS NOT NULL AND NEW.frozen_at IS NULL
+                BEGIN
+                    SELECT RAISE(ABORT, 'structured revision is frozen');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS structured_state_no_digest_change_when_frozen
+                BEFORE UPDATE OF digest_sha256 ON structured_revision_state
+                WHEN OLD.frozen_at IS NOT NULL AND NEW.digest_sha256 != OLD.digest_sha256
+                BEGIN
+                    SELECT RAISE(ABORT, 'structured revision is frozen');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS structured_state_no_delete_when_frozen
+                BEFORE DELETE ON structured_revision_state
+                WHEN OLD.frozen_at IS NOT NULL
+                BEGIN
+                    SELECT RAISE(ABORT, 'structured revision is frozen');
+                END;
                 """
             )
+
+    @staticmethod
+    def _row_payload(row: sqlite3.Row, *, fields: list[str]) -> dict[str, Any]:
+        payload = {field: row[field] for field in fields}
+        for key in list(payload):
+            if key.endswith("_json"):
+                payload[key] = _decode(payload[key], None)
+        return payload
+
+    def _revision_payload(self, connection: sqlite3.Connection, revision_id: str) -> dict[str, Any]:
+        entity_fields = [
+            "entity_id",
+            "name",
+            "entity_type",
+            "aliases_json",
+            "attributes_json",
+            "evidence_json",
+            "search_text",
+        ]
+        fact_fields = [
+            "fact_id",
+            "subject_id",
+            "subject",
+            "predicate",
+            "object_id",
+            "object_text",
+            "value_json",
+            "qualifiers_json",
+            "evidence_json",
+            "confidence",
+            "authority",
+            "search_text",
+        ]
+        entities = connection.execute(
+            "SELECT * FROM structured_entities WHERE revision_id = ? ORDER BY entity_id",
+            (revision_id,),
+        ).fetchall()
+        facts = connection.execute(
+            "SELECT * FROM structured_facts WHERE revision_id = ? ORDER BY fact_id",
+            (revision_id,),
+        ).fetchall()
+        return {
+            "entities": [
+                self._row_payload(row, fields=entity_fields) for row in entities
+            ],
+            "facts": [
+                self._row_payload(row, fields=fact_fields) for row in facts
+            ],
+        }
+
+    def _revision_digest(self, connection: sqlite3.Connection, revision_id: str) -> str:
+        return _sha256_text(_json(self._revision_payload(connection, revision_id)))
+
+    def revision_digest(self, revision_id: str) -> str:
+        """Return a stable SHA-256 for all structured records in a revision."""
+
+        with self._connect() as connection:
+            return self._revision_digest(connection, revision_id)
+
+    def is_revision_frozen(self, revision_id: str) -> bool:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT frozen_at FROM structured_revision_state
+                WHERE revision_id = ?
+                """,
+                (revision_id,),
+            ).fetchone()
+        return row is not None and row["frozen_at"] is not None
+
+    def freeze_revision(self, revision_id: str) -> str:
+        """Seal the current structured snapshot and return its digest."""
+
+        with self._connect() as connection:
+            digest = self._revision_digest(connection, revision_id)
+            now = _utc_now()
+            connection.execute(
+                """
+                INSERT INTO structured_revision_state(
+                    revision_id, digest_sha256, updated_at, frozen_at
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(revision_id) DO UPDATE
+                SET digest_sha256 = excluded.digest_sha256,
+                    updated_at = excluded.updated_at,
+                    frozen_at = COALESCE(structured_revision_state.frozen_at, excluded.frozen_at)
+                """,
+                (revision_id, digest, now, now),
+            )
+        return digest
 
     def replace_revision(
         self,
@@ -275,6 +466,17 @@ class StructuredKnowledgeStore:
         """Replace the structured cache for one immutable source revision."""
 
         with self._connect() as connection:
+            state = connection.execute(
+                """
+                SELECT frozen_at FROM structured_revision_state
+                WHERE revision_id = ?
+                """,
+                (revision_id,),
+            ).fetchone()
+            if state is not None and state["frozen_at"] is not None:
+                raise StructuredKnowledgeFrozenError(
+                    f"structured revision is frozen: {revision_id}"
+                )
             connection.execute(
                 "DELETE FROM structured_entities WHERE revision_id = ?",
                 (revision_id,),
@@ -332,6 +534,18 @@ class StructuredKnowledgeStore:
                     )
                     for fact in facts
                 ],
+            )
+            digest = self._revision_digest(connection, revision_id)
+            connection.execute(
+                """
+                INSERT INTO structured_revision_state(
+                    revision_id, digest_sha256, updated_at, frozen_at
+                ) VALUES (?, ?, ?, NULL)
+                ON CONFLICT(revision_id) DO UPDATE
+                SET digest_sha256 = excluded.digest_sha256,
+                    updated_at = excluded.updated_at
+                """,
+                (revision_id, digest, _utc_now()),
             )
 
     def search(self, revision_id: str, query: str, *, limit: int = 8) -> list[StructuredSearchHit]:

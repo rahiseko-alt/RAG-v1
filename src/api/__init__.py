@@ -46,6 +46,7 @@ class AskRequest(BaseModel):
     """HTTP request body for one RAG question."""
 
     question: str = Field(..., min_length=1, max_length=4000)
+    revision_id: str | None = Field(default=None, max_length=64)
     session_id: str | None = Field(default=None, max_length=128)
     user_id: str | None = Field(default=None, max_length=128)
     answer_mode: Literal["strict", "standard", "explore"] = "standard"
@@ -546,6 +547,7 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
         try:
             outcome = wb.answer_question(
                 question=question,
+                revision_id=payload.revision_id,
                 session_id=payload.session_id,
                 user_id=payload.user_id,
                 trace_tags=payload.trace_tags,
@@ -714,19 +716,15 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
         payload: StructuredRecordsRequest,
     ) -> dict[str, Any]:
         try:
-            wb.store.get_revision(revision_id)
-            wb.structured_store.replace_revision(
+            return wb.replace_revision_structured_records(
                 revision_id,
                 entities=payload.entities,
                 facts=payload.facts,
             )
         except WorkbenchNotFoundError as exc:
             raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
-        return {
-            "revision_id": revision_id,
-            "entities": len(payload.entities),
-            "facts": len(payload.facts),
-        }
+        except WorkbenchConflictError as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
 
     @app.get("/workbench/revisions/{revision_id}/structured-search")
     def search_structured_records(
@@ -763,6 +761,8 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             )
         except WorkbenchNotFoundError as exc:
             raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except WorkbenchConflictError as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=500, detail=safe_error_message(exc)) from exc
 
@@ -811,6 +811,7 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
                 revision_id,
                 reason=(payload.reason.strip() if payload else ""),
                 engine_fingerprint=wb.fingerprint(),
+                structured_digest=wb.structured_digest(revision_id),
                 operator=(payload.operator.strip() if payload and payload.operator else None),
             )
             wb.clear_rag_cache()

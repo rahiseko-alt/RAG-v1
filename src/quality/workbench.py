@@ -36,14 +36,13 @@ from src.rag import (
 )
 from src.runtime_errors import safe_error_message
 from src.structured_extraction import (
-    ExtractedKnowledgeBatch,
     LLMStructuredExtractor,
     StructuredExtractor,
     extract_structured_records,
 )
 from src.structured_knowledge import StructuredKnowledgeStore
 
-from .store import WorkbenchStore, sha256_file
+from .store import WorkbenchConflictError, WorkbenchStore, sha256_file
 from .verifier import CANONICAL_ABSTENTION, AnswerMode, OnlineVerifier, public_verification
 
 
@@ -70,6 +69,9 @@ class QualityWorkbench:
         self.structured_store = structured_store or StructuredKnowledgeStore(
             self.store.runtime_root / "structured_knowledge.sqlite3"
         )
+        active_revision = self.store.get_active_revision(required=False)
+        if active_revision is not None:
+            self.structured_store.freeze_revision(str(active_revision["id"]))
         self.structured_extractor = structured_extractor
         self.coverage_question_generator = coverage_question_generator
         self.coverage_external_answerer = coverage_external_answerer
@@ -92,6 +94,9 @@ class QualityWorkbench:
             else self.store.get_active_revision()
         )
         return self._get_rag(revision)
+
+    def structured_digest(self, revision_id: str) -> str:
+        return self.structured_store.revision_digest(revision_id)
 
     def _get_structured_extractor(self) -> StructuredExtractor:
         if self.structured_extractor is None:
@@ -305,6 +310,8 @@ class QualityWorkbench:
         source_path = Path(str(revision["source_path"]))
         if sha256_file(source_path) != revision["source_sha256"]:
             raise RuntimeError("immutable revision source hash mismatch")
+        if persist:
+            self._ensure_structured_records_mutable(revision_id)
         normalized_query = query.strip() if query else None
         chunks_total: int
         if normalized_query:
@@ -360,6 +367,38 @@ class QualityWorkbench:
                 item.model_dump() if hasattr(item, "model_dump") else item.dict()
                 for item in batch.facts
             ],
+        }
+
+    def _ensure_structured_records_mutable(self, revision_id: str) -> dict[str, Any]:
+        revision = self.store.get_revision(revision_id)
+        if revision["active"]:
+            raise WorkbenchConflictError("active revision structured records are frozen")
+        if self.store.revision_has_validation_or_decision(revision_id):
+            raise WorkbenchConflictError(
+                "structured records cannot change after validation, approval, or rejection"
+            )
+        if self.structured_store.is_revision_frozen(revision_id):
+            raise WorkbenchConflictError("structured revision is frozen")
+        return revision
+
+    def replace_revision_structured_records(
+        self,
+        revision_id: str,
+        *,
+        entities: list[Any],
+        facts: list[Any],
+    ) -> dict[str, Any]:
+        self._ensure_structured_records_mutable(revision_id)
+        self.structured_store.replace_revision(
+            revision_id,
+            entities=entities,
+            facts=facts,
+        )
+        return {
+            "revision_id": revision_id,
+            "entities": len(entities),
+            "facts": len(facts),
+            "structured_sha256": self.structured_store.revision_digest(revision_id),
         }
 
     def run_revision_coverage_loop(
@@ -471,6 +510,8 @@ class QualityWorkbench:
         question: str | None = None,
     ) -> dict[str, Any]:
         request = {"question_limit": question_limit, "question": question}
+        if kind == "validation":
+            self.structured_store.freeze_revision(revision_id)
         return self.store.create_job(
             revision_id=revision_id,
             kind=kind,
@@ -611,6 +652,12 @@ class QualityWorkbench:
             before_revision = self.store.get_active_revision()
             before = self._evaluate_revision(before_revision, questions=questions, job_id=job_id)
             after = self._evaluate_revision(revision, questions=questions, job_id=job_id)
+            before_structured_digest = self.structured_store.revision_digest(
+                str(before_revision["id"])
+            )
+            after_structured_digest = self.structured_store.revision_digest(
+                str(revision["id"])
+            )
             before_by_id = {item["id"]: item for item in before["items"]}
             regressions = [
                 item["id"]
@@ -631,6 +678,10 @@ class QualityWorkbench:
                 "source_hashes": {
                     "before": before_revision["source_sha256"],
                     "after": revision["source_sha256"],
+                },
+                "structured_hashes": {
+                    "before": before_structured_digest,
+                    "after": after_structured_digest,
                 },
                 "before": before,
                 "after": after,

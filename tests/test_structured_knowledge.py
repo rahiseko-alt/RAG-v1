@@ -1,8 +1,13 @@
+import sqlite3
+
+import pytest
+
 from src.structured_knowledge import (
     EvidenceRef,
     KnowledgeEntity,
     KnowledgeFact,
     StructuredKnowledgeStore,
+    StructuredKnowledgeFrozenError,
     format_structured_context,
 )
 
@@ -153,3 +158,36 @@ def test_structured_search_prefers_records_covering_more_query_terms(tmp_path):
     hits = store.search("rev-1", "虎杖が簡易領域を習得できた理由")
 
     assert hits[0].record_id == "fact:itadori-learned-simple-domain"
+
+
+def test_structured_revision_freeze_blocks_api_and_direct_database_changes(tmp_path):
+    store = StructuredKnowledgeStore(tmp_path / "structured.sqlite3")
+    store.replace_revision(
+        "rev1",
+        entities=[
+            KnowledgeEntity(
+                entity_id="person:itadori",
+                name="虎杖悠仁",
+                aliases=["虎杖"],
+            )
+        ],
+        facts=[],
+    )
+    digest = store.freeze_revision("rev1")
+
+    assert len(digest) == 64
+    assert store.is_revision_frozen("rev1") is True
+
+    with pytest.raises(StructuredKnowledgeFrozenError):
+        store.replace_revision("rev1", entities=[], facts=[])
+
+    with sqlite3.connect(store.db_path) as connection:
+        with pytest.raises(sqlite3.IntegrityError, match="structured revision is frozen"):
+            connection.execute(
+                """
+                INSERT INTO structured_entities(
+                    revision_id, entity_id, name, entity_type, aliases_json,
+                    attributes_json, evidence_json, search_text
+                ) VALUES ('rev1', 'person:gojo', '五条悟', 'person', '[]', '{}', '[]', '五条悟')
+                """
+            )
