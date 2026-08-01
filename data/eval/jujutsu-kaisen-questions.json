@@ -1,0 +1,115 @@
+{
+  "knowledge_id": "jujutsu_kaisen_wikipedia",
+  "description": "呪術廻戦 拡張リサーチナレッジ向けの評価質問セット。in_doc=false は『提供された文書に記載なし』と答えるのが正解。",
+  "source_doc": "jujutsu-kaisen-wikipedia.md",
+  "questions": [
+    {
+      "id": "jjk-001",
+      "question": "呪術廻戦の作者は誰ですか？",
+      "in_doc": true,
+      "expected_terms": ["芥見下々"]
+    },
+    {
+      "id": "jjk-002",
+      "question": "呪術廻戦の主人公は誰ですか？",
+      "in_doc": true,
+      "expected_terms": ["虎杖悠仁"]
+    },
+    {
+      "id": "jjk-003",
+      "question": "呪術高専とは何ですか？",
+      "in_doc": true,
+      "expected_terms": ["呪術師", "教育機関"]
+    },
+    {
+      "id": "jjk-004",
+      "question": "アニメのサブタイトル一覧はありますか？全話分ですか？",
+      "in_doc": true,
+      "expected_terms": ["#48", "#54", "全話"]
+    },
+    {
+      "id": "jjk-005",
+      "question": "五条悟の代表的な術式や領域展開は何ですか？",
+      "in_doc": true,
+      "expected_terms": ["無下限呪術", "六眼", "無量空処"]
+    },
+    {
+      "id": "jjk-006",
+      "question": "伏黒恵の術式と領域展開について説明して。",
+      "in_doc": true,
+      "expected_terms": ["十種影法術", "嵌合暗翳庭"]
+    },
+    {
+      "id": "jjk-007",
+      "question": "渋谷事変は物語上どんな位置づけですか？",
+      "in_doc": true,
+      "expected_terms": ["五条", "封印", "転換点"]
+    },
+    {
+      "id": "jjk-008",
+      "question": "死滅回游で重要な用語を挙げて。",
+      "in_doc": true,
+      "expected_terms": ["泳者", "コガネ", "ルール"]
+    },
+    {
+      "id": "jjk-009",
+      "question": "東堂葵の術式は何ですか？",
+      "in_doc": true,
+      "expected_terms": ["不義遊戯"]
+    },
+    {
+      "id": "jjk-010",
+      "question": "公式ファンブックにはどんな種類の情報がありますか？",
+      "in_doc": true,
+      "expected_terms": ["キャラクターQ&A", "設定解説", "各話コメンタリー"]
+    },
+    {
+      "id": "jjk-011",
+      "question": "呪術廻戦の全台詞を引用できますか？",
+      "in_doc": false,
+      "expected_terms": ["記載がありません"]
+    },
+    {
+      "id": "jjk-012",
+      "question": "死滅回游が分かりにくいと言われる理由は？",
+      "in_doc": true,
+      "expected_terms": ["ルール", "新キャラクター", "羂索"]
+    },
+    {
+      "id": "jjk-013",
+      "question": "縛りはご都合主義なの？",
+      "in_doc": true,
+      "expected_terms": ["取引", "制約", "ファン議論"]
+    },
+    {
+      "id": "jjk-014",
+      "question": "五条vs宿儺の領域戦が難しい理由は？",
+      "in_doc": true,
+      "expected_terms": ["必中効果", "領域", "結界"]
+    },
+    {
+      "id": "jjk-015",
+      "question": "SNSや掲示板から取得した情報はどのように管理しますか？",
+      "in_doc": true,
+      "expected_terms": ["内部保存", "出典URL", "ファン情報"]
+    },
+    {
+      "id": "jjk-016",
+      "question": "海外YouTubeでは呪術廻戦の何がよく解説されている？",
+      "in_doc": true,
+      "expected_terms": ["power system", "binding vows", "Culling Game"]
+    },
+    {
+      "id": "jjk-017",
+      "question": "Power System解説で初心者が混乱しやすい点は？",
+      "in_doc": true,
+      "expected_terms": ["呪力", "術式", "領域展開"]
+    },
+    {
+      "id": "jjk-018",
+      "question": "YouTube考察を公式情報として信じていい？",
+      "in_doc": true,
+      "expected_terms": ["公式確定情報", "考察", "分ける"]
+    }
+  ]
+}

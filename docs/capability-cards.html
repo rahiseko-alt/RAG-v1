@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>能力カード — ポートフォリオ資料</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#181b22; --line:#2a2f3a; --ink:#e7eaf0;
+    --sub:#9aa4b2; --acc:#5db0ff; --acc2:#4ade80; --tag:#232a36;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Yu Gothic UI","Segoe UI",-apple-system,sans-serif;
+    line-height:1.65;padding:32px 20px;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  h1{font-size:24px;margin:0 0 6px;}
+  .lead{color:var(--sub);font-size:14px;margin:0 0 4px;}
+  .path{color:var(--sub);font-size:12px;font-family:Consolas,monospace;margin:0 0 24px;word-break:break-all;}
+  h2{font-size:15px;color:var(--acc);border-left:3px solid var(--acc);
+    padding-left:10px;margin:32px 0 14px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 18px 16px;display:flex;flex-direction:column;gap:10px;}
+  .name{font-size:17px;font-weight:700;}
+  .oneline{color:var(--sub);font-size:13.5px;margin:-4px 0 2px;}
+  .row{font-size:12.5px;}
+  .label{color:var(--acc2);font-weight:600;font-size:11px;letter-spacing:.03em;
+    display:block;margin-bottom:3px;text-transform:uppercase;}
+  code{background:var(--tag);padding:2px 6px;border-radius:5px;
+    font-family:Consolas,monospace;font-size:11.5px;color:#cfe3ff;}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .tag{background:var(--tag);border:1px solid var(--line);border-radius:999px;
+    padding:2px 10px;font-size:11px;color:var(--sub);}
+  .files{display:flex;flex-direction:column;gap:4px;}
+  .note{margin-top:28px;background:#20160f;border:1px solid #4a3315;
+    border-radius:10px;padding:14px 16px;font-size:13px;color:#f0c891;}
+  .foot{margin-top:26px;color:var(--sub);font-size:12.5px;
+    border-top:1px solid var(--line);padding-top:16px;}
+  .foot ul{margin:8px 0 0;padding-left:20px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>能力カード（案件当てはめ用）</h1>
+  <p class="lead">複数案件に串刺しで使う、能力単位の独立カード。応募時は該当カードを選び「本案件への当てはめ」を3〜5行で追記する運用。</p>
+  <p class="path">出典: docs/deliverables/development-career-summary-technical.md（272行目〜）</p>
+
+  <h2>medguide-rag 由来（4枚・本セッションで実物確認済の系統）</h2>
+  <div class="grid" id="med"></div>
+
+  <h2>kosespark 由来（4枚・実物再検証は未実施）</h2>
+  <div class="grid" id="kose"></div>
+
+  <div class="note">⚠ kosespark 由来4枚は過去調査ベースで、実物再検証が未実施（memory.md P1 の M 優先残作業）。実案件に当てはめる前に kosespark 側での確認が必要。</div>
+
+  <div class="foot">
+    <strong>運用メモ</strong>
+    <ul>
+      <li>各カードは「本案件への当てはめ3〜5行」を応募時に追記する運用。雛形は未作成（募集要項が出た時点で都度作成とマスター確認済）。</li>
+      <li>採用上の見せ方: 大規模SaaS中核バックエンドより、AI活用・業務自動化・プロトタイピング・検証基盤整備の文脈で出す方が強みが伝わる。</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const med=[
+ {n:"出典追跡RAG",o:"AIの回答がどの文書のどの箇所に基づくか追跡できる仕組み",
+  t:"LangChain/LangGraph, Chroma(cosine), e5多言語埋め込み, pypdf+RecursiveCharacterTextSplitter",
+  g:["RAG","ベクトル検索","出典管理","ハルシネーション対策"],
+  f:["products/medguide-rag/src/rag","notebooks/03-rag-walkthrough.ipynb"]},
+ {n:"LLM独立評価",o:"AIの回答を別のAIでダブルチェックする仕組み",
+  t:"LLM-as-judge（根拠忠実性／質問直接性／誤情報なしの複数視点採点）",
+  g:["LLM評価","ハルシネーション検知","QA品質保証"],
+  f:["products/medguide-rag/src/eval"]},
+ {n:"データ健全性チェック",o:"データ分析結果が医学的定説と矛盾していないか自動照合",
+  t:"pandas, scikit-learn(Logistic Regression), 出典付きサブエージェント定説照合",
+  g:["データ分析","統計","機械学習分類","可視化"],
+  f:["notebooks/01-foundations.ipynb","notebooks/02-baseline-model.ipynb"]},
+ {n:"プロンプト制御",o:"AIに必ず出典付きで答えさせ、答えられない時は「わからない」と言わせる制御",
+  t:"ChatAnthropic(Claude), LangGraphステートマシン, 引用形式強制プロンプト設計",
+  g:["プロンプトエンジニアリング","LLM API統合","日本語対応"],
+  f:["products/medguide-rag/src/rag"]},
+];
+const kose=[
+ {n:"音声認識（二系統ASR）",o:"音声を文字に起こす仕組み。ネット無しでも鍵ありでも動く",
+  t:"faster-whisper(ローカル), Groq whisper-large-v3-turbo(クラウド), 鍵有無で自動フォールバック",
+  g:["音声認識","ASR","Whisper","ローカルAI"],
+  f:["products/kosespark（video-shorts）"]},
+ {n:"用語補正",o:"文字起こし後の専門用語・固有名詞を客ごとに正しく直す仕組み",
+  t:"term-corrections.json（客別辞書）, reverse-match（時刻確定）",
+  g:["NLP後処理","用語正規化","カスタム辞書"],
+  f:["products/kosespark"]},
+ {n:"動画音声パイプライン",o:"動画から音声を取り出し、文字にして、補正して使える形にする一連の流れ",
+  t:"音声抽出→ASR→補正→出力の連結処理",
+  g:["動画処理","メディアパイプライン"],
+  f:["products/kosespark"]},
+ {n:"ローカルAI統合",o:"クラウドの鍵が無くてもローカルだけで動く設計",
+  t:"faster-whisperローカル実行＋クラウドAPIとのハイブリッドフォールバック",
+  g:["ローカルAI","オンプレ対応","コスト最適化"],
+  f:["products/kosespark"]},
+];
+function card(c){
+  return `<div class="card">
+    <div class="name">${c.n}</div>
+    <div class="oneline">${c.o}</div>
+    <div class="row"><span class="label">実装技術</span>${c.t}</div>
+    <div class="row"><span class="label">案件タグ</span><div class="tags">${c.g.map(x=>`<span class="tag">${x}</span>`).join("")}</div></div>
+    <div class="row"><span class="label">実物</span><div class="files">${c.f.map(x=>`<code>${x}</code>`).join("")}</div></div>
+  </div>`;
+}
+document.getElementById("med").innerHTML=med.map(card).join("");
+document.getElementById("kose").innerHTML=kose.map(card).join("");
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>医療ガイドライン Q&A レポート — WHO HEARTS 生活習慣カウンセリング</title>
+<style>
+  :root{
+    --ink:#1f2933; --muted:#5b6670; --line:#e3e8ee; --bg:#f6f8fa; --card:#ffffff;
+    --accent:#0b6b5b; --accent-soft:#e6f2ef; --warn:#b45309; --warn-soft:#fdf3e7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",system-ui,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.75;font-size:16px}
+  .wrap{max-width:860px;margin:0 auto;padding:40px 22px 80px}
+  header.title{border-bottom:3px solid var(--accent);padding-bottom:18px;margin-bottom:26px}
+  header.title h1{font-size:1.55rem;margin:0 0 6px;letter-spacing:.01em}
+  header.title p{margin:2px 0;color:var(--muted);font-size:.92rem}
+  .meta{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:22px 0}
+  .meta table{width:100%;border-collapse:collapse;font-size:.92rem}
+  .meta td{padding:5px 0;vertical-align:top}
+  .meta td:first-child{width:130px;color:var(--muted);white-space:nowrap}
+  .method{background:var(--accent-soft);border:1px solid #cfe6e0;border-radius:12px;padding:16px 20px;margin:22px 0;font-size:.93rem}
+  .method h2{margin:0 0 8px;font-size:1rem;color:var(--accent)}
+  h2.section{font-size:1.15rem;margin:36px 0 14px;padding-left:12px;border-left:5px solid var(--accent)}
+  .qa{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:16px 0;
+    box-shadow:0 1px 2px rgba(20,40,60,.04)}
+  .q{font-weight:700;font-size:1.03rem;margin:0 0 12px;color:var(--ink)}
+  .q .num{display:inline-block;background:var(--accent);color:#fff;border-radius:6px;font-size:.8rem;
+    padding:1px 8px;margin-right:8px;vertical-align:.08em}
+  .a{margin:0 0 14px}
+  .a ul{margin:8px 0 0;padding-left:1.2em}
+  .a li{margin:4px 0}
+  cite.src{color:var(--accent);font-style:normal;font-weight:700;font-size:.86em;white-space:nowrap}
+  .trace{border-top:1px dashed var(--line);padding-top:10px;margin-top:6px;font-size:.83rem;color:var(--muted)}
+  .trace b{color:var(--ink);font-weight:600}
+  .chip{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:20px;
+    padding:1px 10px;margin:2px 4px 2px 0;font-size:.82rem;color:var(--muted)}
+  .qa.nogrounds{border-color:#f0d9b5;background:var(--warn-soft)}
+  .qa.nogrounds .verdict{color:var(--warn);font-weight:700}
+  .note{font-size:.82rem;color:var(--muted);background:#fff;border:1px dashed var(--line);
+    border-radius:8px;padding:4px 10px;margin-top:8px;display:inline-block}
+  footer.disc{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+  footer.disc h2{font-size:.95rem;color:var(--ink);margin:0 0 8px}
+  footer.disc p{margin:6px 0}
+  @media (max-width:600px){ body{font-size:15px} .wrap{padding:26px 15px 60px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="title">
+  <h1>医療ガイドライン Q&amp;A レポート</h1>
+  <p>WHO HEARTS「Healthy-lifestyle counselling（健康的な生活習慣のカウンセリング）」</p>
+  <p>心血管疾患予防のための生活習慣（食事・運動・禁煙・飲酒）に関する要点整理</p>
+</header>
+
+<div class="meta">
+  <table>
+    <tr><td>対象文書</td><td>WHO HEARTS Technical Package — Healthy-lifestyle counselling（全30ページ・英語）</td></tr>
+    <tr><td>発行</td><td>World Health Organization, 2018（WHO/NMH/NVI/18.1）</td></tr>
+    <tr><td>ライセンス</td><td>CC BY-NC-SA 3.0 IGO（非営利・帰属表示・継承）</td></tr>
+    <tr><td>本レポートの性質</td><td>上記文書の該当箇所のみを根拠にした要約・引用。<b>医療上の助言ではありません。</b></td></tr>
+  </table>
+</div>
+
+<div class="method">
+  <h2>本レポートの作り方（根拠の透明化）</h2>
+  <p>各質問について、対象文書を<b>機械検索（RAG：文書をベクトル化して意味の近い箇所を抽出）</b>し、<b>ヒットした箇所だけを根拠</b>に回答を作成しています。回答文の末尾には根拠にした<b>ページ番号</b>を付し、各カード下部の「出典追跡」に検索でヒットしたページを示します。<b>文書に根拠が無い質問には「記載なし」と明記</b>し、推測で埋めません（＝作り話をしない）。</p>
+</div>
+
+<h2 class="section">① 食事</h2>
+
+<div class="qa">
+  <p class="q"><span class="num">Q1</span>健康的な食事の基本と、脂肪・糖分の考え方は？</p>
+  <div class="a">
+    多様な食品を組み合わせることが基本です <cite class="src">[p.10]</cite>。具体的には、
+    <ul>
+      <li>果物・野菜・豆類（レンズ豆・いんげん等）・ナッツ、全粒穀物（未精製のトウモロコシ・雑穀・オーツ・小麦・玄米）、いも類、肉・魚・卵・乳などの動物性食品を、多様に摂る <cite class="src">[p.10]</cite></li>
+      <li>果物と野菜は 1 日 <b>少なくとも 400g（5 サービング）</b> <cite class="src">[p.10]</cite></li>
+      <li><b>トランス脂肪酸は避ける</b> <cite class="src">[p.11]</cite></li>
+      <li><b>遊離糖（free sugars）は総エネルギーの 10% 未満</b>、理想は 5% 未満（健康体重の人で約 50g／小さじ約 12 杯に相当） <cite class="src">[p.11]</cite></li>
+    </ul>
+  </div>
+  <div class="trace"><b>出典追跡:</b>
+    <span class="chip">p.10 食事の基本（多様な食品・400g）</span>
+    <span class="chip">p.11 トランス脂肪酸・遊離糖</span>
+  </div>
+</div>
+
+<div class="qa">
+  <p class="q"><span class="num">Q2</span>果物と野菜は 1 日にどのくらい？</p>
+  <div class="a">
+    <b>1 日 5 サービング（少なくとも 400g）以上</b>が推奨されます <cite class="src">[p.10, p.19]</cite>。
+    1 サービングは、オレンジ・りんご・マンゴー・バナナ 1 個、または加熱野菜 大さじ 3 杯に相当します。
+    <b>じゃがいも・さつまいも・キャッサバなどのでんぷん質の芋類は、この 5 サービングには数えません</b> <cite class="src">[p.19]</cite>。
+  </div>
+  <div class="trace"><b>出典追跡:</b>
+    <span class="chip">p.19 Table 2（食事の5As・果物と野菜の例）</span>
+    <span class="chip">p.10 1日400g・1サービングの目安</span>
+  </div>
+</div>
+
+<h2 class="section">② 身体活動（運動）</h2>
+
+<div class="qa">
+  <p class="q"><span class="num">Q3</span>成人は運動をどのくらい行うべき？</p>
+  <div class="a">
+    成人は <b>週に中強度の身体活動を少なくとも 150 分、または高強度を少なくとも 75 分</b>行うことが推奨されます <cite class="src">[p.11]</cite>。
+    <ul>
+      <li>中強度＝早歩き・階段昇降・ダンス・園芸・家事など、心拍や呼吸がやや上がる程度。高強度＝ランニング・速い自転車・速い水泳など <cite class="src">[p.11]</cite></li>
+      <li><b>1 回 10 分程度の短時間からでよく</b>、日・週に分けて構いません。無理のない量から始め、時間・頻度・強度を徐々に増やします <cite class="src">[p.11, p.20]</cite></li>
+    </ul>
+  </div>
+  <div class="trace"><b>出典追跡:</b>
+    <span class="chip">p.11 150分/75分の推奨</span>
+    <span class="chip">p.20 Table 3（運動の5As・10分から/週2.5時間）</span>
+  </div>
+</div>
+
+<div class="qa">
+  <p class="q"><span class="num">Q4</span>運動にはどんな健康上の利点がある？</p>
+  <div class="a">
+    定期的で十分な身体活動は、<b>高血圧・心臓発作・脳卒中・糖尿病・一部のがん（乳がん・大腸がん）のリスクを下げる</b>のに役立ちます <cite class="src">[p.11]</cite>。
+    さらに、<b>血圧・コレステロール・糖尿病の管理、減量・体重管理、うつの予防と管理</b>にも役立ちます。
+    <b>「少しでも運動する方が、まったくしないよりよい」</b>とされています <cite class="src">[p.20]</cite>。
+  </div>
+  <div class="trace"><b>出典追跡:</b>
+    <span class="chip">p.11 運動の効果（疾患リスク低減）</span>
+    <span class="chip">p.20 血圧・体重・うつへの効果</span>
+  </div>
+</div>
+
+<h2 class="section">③ 禁煙</h2>
+
+<div class="qa">
+  <p class="q"><span class="num">Q5</span>禁煙をどう支援する？（5As）</p>
+  <div class="a">
+    禁煙支援は <b>「5As」</b>の枠組みで行います：<b>Ask（尋ねる）・Advise（助言）・Assess（評価）・Assist（支援）・Arrange（手配）</b> <cite class="src">[p.18]</cite>。
+    <ul>
+      <li><b>Ask</b>: 過去 12 か月・現在のタバコ使用、受動喫煙の有無を、非難せず簡潔に尋ねて記録する <cite class="src">[p.21]</cite></li>
+      <li><b>Advise</b>: 医療者の専門的立場から、明確・簡潔・個別化した助言を行う <cite class="src">[p.18]</cite></li>
+      <li><b>Assist</b>（実践的カウンセリング）: 基礎情報の提供、再発リスクの高い状況（感情・場所・活動）の特定と対処法の練習、社会的支援、励まし、教育資料の提供 <cite class="src">[p.21]</cite></li>
+      <li><b>Arrange</b>: 必要なら専門支援へ紹介し、フォローアップ（成功者は称賛、再喫煙は「学びの機会」と捉え再挑戦を促す） <cite class="src">[p.22]</cite></li>
+    </ul>
+  </div>
+  <div class="trace"><b>出典追跡:</b>
+    <span class="chip">p.18 Table 1（5As 一般枠組み）</span>
+    <span class="chip">p.21 Table 4（禁煙の5As・実践的カウンセリング）</span>
+    <span class="chip">p.22 Arrange・フォローアップ</span>
+  </div>
+</div>
+
+<div class="qa">
+  <p class="q"><span class="num">Q6</span>禁煙する気がない人にはどう対応する？</p>
+  <div class="a">
+    検索でヒットした範囲では、<b>「まだ変える準備ができていない人には、変化への動機づけを高める働きかけが必要」</b>と示されています（Assess の段階） <cite class="src">[p.20]</cite>。
+    また、やる気の無い人向けの <b>「5R's」を含む簡易介入ツールキット</b>が参照されています <cite class="src">[p.28（参考文献12）]</cite>。
+    <span class="note">正直な但し書き：5R's（Relevance／Risks／Rewards／Roadblocks／Repetition）の各ステップの詳細は、今回の検索で取り出した抜粋には含まれていませんでした。ここでは根拠にできる範囲のみを提示し、未取得の内容は断定していません。</span>
+  </div>
+  <div class="trace"><b>出典追跡:</b>
+    <span class="chip">p.20 Assess（準備不足→動機づけ）</span>
+    <span class="chip">p.28 参考文献（5A's/5R's ツールキット）</span>
+  </div>
+</div>
+
+<h2 class="section">④ 飲酒（アルコール）</h2>
+
+<div class="qa">
+  <p class="q"><span class="num">Q7</span>飲酒についてどんな助言がある？</p>
+  <div class="a">
+    次のような助言が示されています <cite class="src">[p.23]</cite>。
+    <ul>
+      <li><b>「健康のため」を理由に飲酒しない</b></li>
+      <li>次の場合は飲まない：運転・機械操作をするとき／妊娠中・授乳中／アルコールと相互作用する薬の服用中／アルコールで悪化する疾患があるとき／飲酒量の制御が難しいとき</li>
+      <li>1 日 2 単位以上、または週 5 日超の飲酒、その他問題の兆候がある人には介入を検討する（Assess） <cite class="src">[p.23]</cite></li>
+    </ul>
+    アルコール問題への詳細な対応は本モジュールの範囲外で、スクリーニング（ASSIST／AUDIT 等）や追加のトレーニングを参照するよう案内されています <cite class="src">[p.14]</cite>。
+    <span class="note">正直な但し書き：週あたりの具体的な上限「単位数」は、抽出した抜粋の途中で文が切れており、本レポートでは断定していません。</span>
+  </div>
+  <div class="trace"><b>出典追跡:</b>
+    <span class="chip">p.23 飲酒の助言・Assess</span>
+    <span class="chip">p.14 モジュールの範囲・スクリーニング参照</span>
+  </div>
+</div>
+
+<h2 class="section">⑤ 健全性チェック（文書に無いことは答えない）</h2>
+
+<div class="qa nogrounds">
+  <p class="q"><span class="num">Q8</span>高血圧の患者に処方する降圧薬の具体的な用量（mg）は？</p>
+  <div class="a">
+    <span class="verdict">▲ 提供された文書には記載がありません。</span>
+    本文書は「生活習慣のカウンセリング」が対象で、薬物療法の用量は扱っていません。
+    実際、この質問での検索上位は文書のライセンス表記や参考文献リストばかりで、用量の根拠となる本文がヒットしませんでした。
+    <b>根拠が無いため、推測で数値を作らず「記載なし」と回答します。</b>
+  </div>
+  <div class="trace"><b>出典追跡:</b>
+    <span class="chip">p.3 ライセンス表記（=本文の根拠でない）</span>
+    <span class="chip">p.29 参考文献リスト（=本文の根拠でない）</span>
+  </div>
+</div>
+
+<footer class="disc">
+  <h2>注記・出典</h2>
+  <p>本レポートの各回答は、上記 WHO 文書の該当箇所のみを根拠にした要約・引用であり、<b>医療上の助言ではありません</b>。個別の診断・治療・服薬の判断は医療専門職にご相談ください。</p>
+  <p>© World Health Organization 2018. <i>HEARTS technical package: Healthy-lifestyle counselling</i> (WHO/NMH/NVI/18.1). Licensed under CC BY-NC-SA 3.0 IGO. 本レポートは同ライセンスの非営利条件のもとで作成しています。</p>
+  <p>作成方法：対象文書をローカルのベクトル検索（Chroma＋多言語埋め込みモデル multilingual-e5）で質問に該当する箇所を特定し、その箇所のみを根拠に回答を生成。ページ番号は原文 PDF のページに対応します。</p>
+</footer>
+
+</div>
+</body>
+</html>
