@@ -55,9 +55,9 @@ NG、判定不能、検品エラー、timeout、JSON破損はすべて出荷停�
 
 | Phase | 目的 | 実装内容 | 完了条件 | 現在地 |
 |---|---|---|---|---|
-| 0 | 真実固定 | 専用ブランチ、現状レポート訂正、正本一覧、ロードマップ、引継ぎ様式 | 現状の能力と未完成項目に矛盾がない | 着手中 |
-| 1 | 整合性修復 | 構造化entity/factをrevision不変スナップショット化し、承認fingerprintへ追加 | 無承認でactive回答が変化しない。改変後承認は409 | 未完 |
-| 2 | 再現可能化 | Python 3.12、pyproject、lock、依存分離、Python Playwright | 新規環境をlockで再現。lint/type/testがPASS | 未完 |
+| 0 | 真実固定 | 専用ブランチ、現状レポート訂正、正本一覧、ロードマップ、引継ぎ様式 | 現状の能力と未完成項目に矛盾がない | 完了 |
+| 1 | 整合性修復 | 構造化entity/factをrevision不変スナップショット化し、承認fingerprintへ追加 | 無承認でactive回答が変化しない。改変後承認は409 | 完了 |
+| 2 | 再現可能化 | Python 3.12、pyproject、lock、依存分離、Python Playwright | 新規環境をlockで再現。lint/type/testがPASS | 完了 |
 | 3 | 実工程可視化 | 永続run、追記専用工程event、SSE配信、UI追跡 | 500ms以内に実イベント表示。再読込後も追跡 | 未完 |
 | 4 | 耐障害運用 | migration、worker lease/heartbeat/retry/cancel、backup/restore、診断bundle | 強制終了後も重複runなしで再開。復元後SHA一致 | 未完 |
 | 5 | 評価基盤 | qrels、期待主張、answerability、問い型、危険度、検索/回答分離評価 | Recall@5>=0.90、nDCG@5>=0.75等を測定 | 未完 |
@@ -79,4 +79,4 @@ NG、判定不能、検品エラー、timeout、JSON破損はすべて出荷停�
 
 ## 次にやること
 
-最優先はPhase 1です。構造化ナレッジがactive revisionへ後差しされると、検証済みrevisionの意味が崩れます。ここを塞がない限り、before/after、回帰検査、承認、監査は「文書SHAだけは正しいが実回答は変わる」状態になります。
+次の最優先はPhase 3です。現在の工程表示は同期`/ask`完了後に工程一覧を置換する作りであり、「処理中に何をしたか」をリアルタイム表示できていません。永続run、追記専用工程event、SSE配信、再読込後のrun追跡へ進めます。

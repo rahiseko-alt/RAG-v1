@@ -37,7 +37,7 @@ def new_trace_id() -> str:
 
 def get_langfuse_config_error() -> str | None:
     """Return a human-readable Langfuse config issue, or None when usable."""
-    enabled = os.getenv("LANGFUSE_ENABLED", "true").strip().lower()
+    enabled = os.getenv("LANGFUSE_ENABLED", "false").strip().lower()
     if enabled in FALSE_VALUES:
         return "LANGFUSE_ENABLED is disabled"
 

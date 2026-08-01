@@ -59,9 +59,7 @@
 ## 8. セットアップ手順
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # Windowsは venv\Scripts\activate
-pip install -r requirements.txt
+uv sync --locked --extra dev --extra notebook
 ```
 
 環境変数はリポジトリ直下に `.env` を作成し、以下を設定してください（`.env` はgitignore対象・コミットしない）。Stage 3・4（RAG・評価）で使用します。
@@ -83,10 +81,10 @@ Langfuse Cloud でRAGの監査ログ（質問・検索/生成トレース・モ�
 LANGFUSE_PUBLIC_KEY=
 LANGFUSE_SECRET_KEY=
 LANGFUSE_BASE_URL=https://cloud.langfuse.com
-LANGFUSE_ENABLED=true
+LANGFUSE_ENABLED=false
 ```
 
-日本リージョンのプロジェクトを作った場合は `LANGFUSE_BASE_URL=https://jp.cloud.langfuse.com` に変更します。
+Langfuseを使う場合だけ `LANGFUSE_ENABLED=true` にします。日本リージョンのプロジェクトを作った場合は `LANGFUSE_BASE_URL=https://jp.cloud.langfuse.com` に変更します。
 
 ### Stage 1 の実行（Python基礎固めノート）
 
@@ -128,7 +126,7 @@ expected_terms = ["期待される語"]
 FastAPIデモは以下で起動できます。
 
 ```bash
-uvicorn src.api:app --host 127.0.0.1 --port 8010
+uv run uvicorn src.api:app --host 127.0.0.1 --port 8010
 ```
 
 - `GET /`: 4タブ品質改善ワークベンチ
@@ -138,7 +136,7 @@ uvicorn src.api:app --host 127.0.0.1 --port 8010
 主要UIフローのPlaywright E2Eは、サーバー起動中に次で実行する。
 
 ```bash
-node tests/e2e/workbench-e2e.cjs
+uv run pytest tests/e2e -m e2e
 ```
 
 ## 進捗

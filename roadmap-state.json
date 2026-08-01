@@ -4,11 +4,11 @@
   "branch": "codex/public-delivery-workbench",
   "status": "internal_beta",
   "active_milestone": "Milestone 1",
-  "active_phase": 2,
+  "active_phase": 3,
   "phase_status": {
     "0": "completed",
     "1": "completed",
-    "2": "pending",
+    "2": "completed",
     "3": "pending",
     "4": "pending",
     "5": "pending",
@@ -28,5 +28,5 @@
     "coverage loop lacks durable taxonomy, ledger, automatic disposition, and quarantine UI",
     "dependencies, CI, packaging, backup, restore, and public repo hygiene are incomplete"
   ],
-  "next_required_action": "Start Phase 2: make the repository reproducible with pyproject, locked dependencies, delayed ML imports, and self-contained Python Playwright E2E."
+  "next_required_action": "Start Phase 3: replace synchronous template process display with persisted run events and SSE."
 }
