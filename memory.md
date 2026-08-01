@@ -18,7 +18,7 @@
 - **[importance:M][2026-08-01] C役は3人化済み設計: C-1 因果xマニアック、C-2 因果x複数人/組織、C-3 条件/例外x時系列/比較。敵対検証により実ユーザーログ由来・曖昧質問・手順系・エラー系・権限系・no-answer系も追加すべき。**
 - **[importance:M][2026-08-01] 10問coverage loop実験では10問中6件が追加候補。弱点は情報量だけでなく、因果の橋・条件・例外・比較・前提設定の不足。30問質問生成までは完了、A/B/D全実行は未完。**
 
-- **現フェーズ: Stage 1-4 完遂。ポートフォリオ戦略＝能力単位の独立カード集（製品でなく"能力"軸でタグ化・応募時は当てはめ3〜5行のみ新規作成）。能力カード8枚（medguide4＋kosespark4）は既存ポートフォリオ `docs/deliverables/development-career-summary-technical.md` 末尾「## 能力カード」節に統合済（フォーマット・置き場・枚数の3未決点は解消済）**
+- **現フェーズ: Stage 1-4 完遂。ポートフォリオ戦略＝能力単位の独立カード集（製品でなく"能力"軸でタグ化・応募時は当てはめ3〜5行のみ新規作成）。能力カード8枚（medguide4＋kosespark4）は既存ポートフォリオ `docs/deliverables/development-career-summary-technical.md` 末尾「## 能力カード」節に統合済（フォーマット・置き場・枚数の3未決点は解消済）。**⚠ この統合先は分割元の vibe-base 側にあり、本リポジトリには存在しない**（本リポには `docs/capability-cards.html` の閲覧ビューのみ）**
 - **[importance:M][2026-07-04] kosespark由来4枚（音声認識/用語補正/動画音声パイプライン/ローカルAI統合）は前回調査ベースで未再検証。案件当てはめ前に kosespark 側で実物確認が要る — plan: なし**
 - **[importance:L][2026-07-04] 案件当てはめ3〜5行の作成は実際の募集要項が出た時点で着手（雛形化は不要とマスター確認済） — plan: なし**
 - 4段階計画: Stage1 Python基礎[完了] → Stage2 分類[完了] → Stage3 RAG[完了] → Stage4 評価ループ[完了]
@@ -54,9 +54,11 @@ Stage1で確立。**Stage2以降のノートも必ずこの型を踏襲する**:
 
 ### Stage 1 成果物（完遂済）
 - `notebooks/01-foundations.ipynb`（解説付き・UCI Heart Disease/Cleveland 303件）。生成器は nbformat スクリプト（旧 scratchpad `build_notebook.py`・再構築時はこれを編集して再生成）
-- 実行検証: `jupyter nbconvert --to html --execute` EXIT 0・図8点 `notebooks/outputs/`・日本語フォント(Yu Gothic)描画OK
+- 実行検証: `jupyter nbconvert --to html --execute` EXIT 0・図8点・日本語フォント(Yu Gothic)描画OK
+  - 図の実体は **`notebooks/01-foundations.html` に base64 で埋め込み済み**（追跡下）。単体 PNG を置く
+    `notebooks/outputs/` は `.gitignore` 対象で**リポジトリには無い**（要るならノートを再実行して生成）
 - 定説照合の可読性再設計済（マスター指示 2026-07-04）: ⑦に**照合スコアカード図** `00-scorecard.png`（matplotlib・PNG＝GitHub公開でも装飾が剥がれない）を主役配置。判定は Okabe-Ito 緑 `#009E73`＋✓＋テキストの3点併記（色単独依存を回避・WCAG 1.4.1）。図見出しは Assertion-Evidence（結論文）化・各図直後の照合は1行凝縮・順序は現状維持（照合は末尾）。→ この見せ方は [[skill-design-from-master-view]] 的に Stage2 以降も踏襲
-- 環境: `products/medguide-rag/venv/`（Stage1依存のみ導入・.gitignore済）。Stage2以降(torch/langchain等)は各Stage着手時に追加
+- 環境: リポジトリ直下の `venv/`（.gitignore済。当時のパスは `products/medguide-rag/venv/`）。現在の依存管理は uv（`uv sync --locked --extra dev`）
 - データ: `data/sample/heart-disease-cleveland.csv`（出典UCI ID45・CC BY 4.0・列辞書は data/sample/README.md）
 
 ### Stage 2 成果物（完遂済・2026-07-04）

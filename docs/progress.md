@@ -7,7 +7,8 @@
 状態: 完了（2026-07-04）
 
 - [x] 公開医療系データセット（UCI Heart Disease / Cleveland・303件）で前処理・簡易統計・可視化を一通り実施
-  - 成果物: [notebooks/01-foundations.ipynb](../notebooks/01-foundations.ipynb)（解説付き）／実行済HTML `notebooks/01-foundations.html`／チャート8点 `notebooks/outputs/`（うち `00-scorecard.png` = 定説照合スコアカード）
+  - 成果物: [notebooks/01-foundations.ipynb](../notebooks/01-foundations.ipynb)（解説付き）／実行済HTML `notebooks/01-foundations.html`（チャート8点は**この HTML に埋め込み済み**で、そのまま閲覧できる。うち `00-scorecard.png` = 定説照合スコアカード）
+  - ⚠ 単体の PNG を置く `notebooks/outputs/` は `.gitignore` 対象のため**リポジトリには入っていない**。単体ファイルが要るときはノートを再実行して生成する
   - データ: [data/sample/heart-disease-cleveland.csv](../data/sample/heart-disease-cleveland.csv)（出典・ライセンス・列辞書は data/sample/README.md）
   - 取得→読込→把握（shape/info/describe）→欠損処理（`?`→NaN→dropna）→統計（中央値・最頻値を主役）→可視化（分布/ヒスト/相関/箱ひげ）の流れを通した
   - 図の用語は全て日本語化。**⑦ 医学的定説との照合**節＝データの傾向を医学の定説（AHA/ACC等・出典URL付き・別途サブエージェント調査）と突き合わせ、5項目すべて向き一致を確認（相関≠因果ガード付き）。素人がコードを読まず「結論と常識の照合」で妥当性/異常を判別できる仕組み
@@ -18,7 +19,8 @@
 状態: 完了（2026-07-04）
 
 - [x] scikit-learn のロジスティック回帰で心疾患あり/なしの二値分類を1本、学習→評価→簡易チューニングまで通した
-  - 成果物: [notebooks/02-baseline-model.ipynb](../notebooks/02-baseline-model.ipynb)（解説付き）／実行済HTML `notebooks/02-baseline-model.html`／新規チャート4点 `notebooks/outputs/08〜11`（`11-coef-scorecard.png` = 係数照合スコアカード）
+  - 成果物: [notebooks/02-baseline-model.ipynb](../notebooks/02-baseline-model.ipynb)（解説付き）／実行済HTML `notebooks/02-baseline-model.html`（新規チャート4点は**この HTML に埋め込み済み**。`11-coef-scorecard.png` = 係数照合スコアカード）
+  - ⚠ 単体 PNG の `notebooks/outputs/08〜11` は `.gitignore` 対象で未追跡（Stage 1 と同じ）
   - 流れ: 前処理（Stage1再現・297件）→ 特徴量Xと正解y作成（**`num` を除外しデータリーク回避**）→ 層化train/test分割 + `Pipeline(StandardScaler→LogisticRegression)` → 評価（適合率/再現率/F1/正解率/ROC-AUC＋混同行列＋ROC曲線）→ `GridSearchCV` で正則化Cを探索し交差検証で比較
   - 実測: テスト正解率 83%（TN28/FP4/FN6/TP22）・ROC-AUC 0.950。100%でない＝リーク無しを確認。医療文脈で再現率（見逃し防止）重視を明記
   - **⑤ 係数と医学的定説の照合**（核）: 標準化後の係数の符号を定説と突き合わせ、照合8項目中7項目が向き一致。**胸痛タイプ(cp)のみ⚠逆向き**＝教科書定説（典型的狭心症ほど疾患）と Cleveland データの既知の逆転（無症候の紹介バイアス・推測）を健全性チェックが炙り出した教材フックとして解説。判定は Okabe-Ito 緑/橙バッジ＋記号(✓/⚠)＋テキストの3点併記（WCAG 1.4.1）
