@@ -179,6 +179,7 @@ def build_chat_model(model: str | None = None):
 class RAGState(TypedDict):
     question: str
     answer_mode: AnswerMode
+    structured_hits: list[dict[str, Any]]
     docs: list[tuple[Document, float]]  # (チャンク, 類似度スコア)
     answer: str
 
@@ -197,6 +198,53 @@ def _format_context(docs: list[tuple[Document, float]]) -> str:
             f"type={source_type}; url={source_url})\n{d.page_content.strip()}"
         )
     return "\n\n".join(blocks)
+
+
+def _structured_hit_to_document(hit: dict[str, Any], index: int) -> Document:
+    """Convert a structured fact/entity hit into the same evidence lane as chunks."""
+
+    data = hit.get("data") or {}
+    evidence = data.get("evidence") or []
+    authority = data.get("authority") or (
+        evidence[0].get("authority") if evidence and isinstance(evidence[0], dict) else "unknown"
+    )
+    source = (
+        evidence[0].get("source")
+        if evidence and isinstance(evidence[0], dict)
+        else "structured_knowledge"
+    )
+    source_url = (
+        evidence[0].get("source_url")
+        if evidence and isinstance(evidence[0], dict)
+        else None
+    )
+    chunk_id = (
+        evidence[0].get("chunk_id")
+        if evidence and isinstance(evidence[0], dict)
+        else None
+    )
+    text = (
+        f"構造化ナレッジレコード\n"
+        f"種別: {hit.get('kind')}\n"
+        f"ID: {hit.get('record_id')}\n"
+        f"見出し: {hit.get('title')}\n"
+        f"内容: {json.dumps(data, ensure_ascii=False, sort_keys=True)}"
+    )
+    return Document(
+        page_content=text,
+        metadata={
+            "source": source or "structured_knowledge",
+            "page": f"structured:{index}",
+            "chunk_id": chunk_id,
+            "source_url": source_url,
+            "source_type": "structured",
+            "authority": authority,
+            "retrieval_relation": f"structured_{hit.get('kind') or 'record'}",
+            "structured_record_id": hit.get("record_id"),
+            "structured_kind": hit.get("kind"),
+            "structured_score": hit.get("score"),
+        },
+    )
 
 
 def expand_with_neighbor_chunks(
@@ -524,6 +572,10 @@ def build_graph(vs: Chroma, model: str | None = None, top_k: int = TOP_K):
     llm = build_chat_model(model=model)
 
     def retrieve(state: RAGState) -> dict[str, Any]:
+        structured_docs = [
+            (_structured_hit_to_document(hit, index), 1.0 - (index * 0.0001))
+            for index, hit in enumerate(state.get("structured_hits") or [], start=1)
+        ]
         results = vs.similarity_search_with_relevance_scores(state["question"], k=top_k)
         results = bm25_rescue_search(
             vs,
@@ -542,7 +594,7 @@ def build_graph(vs: Chroma, model: str | None = None, top_k: int = TOP_K):
             results,
             max_results=top_k * 3,
         )
-        return {"docs": results}
+        return {"docs": [*results, *structured_docs]}
 
     def generate(state: RAGState) -> dict[str, Any]:
         context = _format_context(state["docs"])
@@ -598,8 +650,9 @@ def engine_fingerprint(*, model: str | None = None, top_k: int = TOP_K) -> str:
         "neighbor_window": NEIGHBOR_WINDOW,
         "markdown_section_split_version": 1,
         "quality_verifier_version": 3,
+        "structured_retrieval_version": 1,
         "system_prompt": SYSTEM_PROMPT,
-        "engine_version": 6,
+        "engine_version": 7,
     }
     canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -614,6 +667,7 @@ def ask(
     trace_tags: list[str] | None = None,
     trace_id: str | None = None,
     answer_mode: AnswerMode = "strict",
+    structured_hits: list[dict[str, Any]] | None = None,
 ) -> RAGState:
     """1 問を投げ、question / docs（出典追跡用）/ answer を含む state を返す。
 
@@ -627,6 +681,11 @@ def ask(
         user_id=user_id,
         tags=trace_tags,
     )
+    payload = {
+        "question": question,
+        "answer_mode": answer_mode,
+        "structured_hits": structured_hits or [],
+    }
     if config is None:
-        return graph.invoke({"question": question, "answer_mode": answer_mode})
-    return graph.invoke({"question": question, "answer_mode": answer_mode}, config=config)
+        return graph.invoke(payload)
+    return graph.invoke(payload, config=config)

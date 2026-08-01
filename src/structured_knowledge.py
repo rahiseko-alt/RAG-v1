@@ -134,6 +134,15 @@ def _query_terms(query: str) -> list[str]:
             continue
         if term not in terms:
             terms.append(term)
+        for suffix in ("できた理由", "できる理由", "した理由", "の理由"):
+            if term.endswith(suffix):
+                base = term[: -len(suffix)].strip()
+                if len(base) >= 2 and base not in terms:
+                    terms.append(base)
+        if "習得" in term and "習得" not in terms:
+            terms.append("習得")
+        if "下部組織" in term and "下部組織" not in terms:
+            terms.append("下部組織")
     return terms
 
 
@@ -172,9 +181,17 @@ def _score_content(query: str, content: str, aliases: list[str] | None = None) -
         normalized_alias = _normalize_text(alias)
         if normalized_alias and normalized_alias in normalized_query:
             score += 12.0
-    for term in _query_terms(query):
+    terms = _query_terms(query)
+    matched_terms = []
+    for term in terms:
         if term in normalized_content:
+            matched_terms.append(term)
             score += 4.0 + min(3.0, normalized_content.count(term))
+    if terms:
+        coverage = len(set(matched_terms)) / len(set(terms))
+        score += coverage * 10.0
+        if len(set(matched_terms)) <= 1 and len(set(terms)) >= 3:
+            score -= 6.0
     return score
 
 

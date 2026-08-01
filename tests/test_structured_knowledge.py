@@ -125,3 +125,31 @@ def test_structured_store_can_hold_generic_business_records(tmp_path):
 
     assert hits[0].record_id == "fact:expense-threshold"
     assert hits[0].data["value"]["approver"] == "部長"
+
+
+def test_structured_search_prefers_records_covering_more_query_terms(tmp_path):
+    store = StructuredKnowledgeStore(tmp_path / "structured.sqlite3")
+
+    store.replace_revision(
+        "rev-1",
+        entities=[],
+        facts=[
+            KnowledgeFact(
+                fact_id="fact:generic-simple-domain",
+                subject="誰でも",
+                predicate="学べる",
+                object_text="簡易領域",
+            ),
+            KnowledgeFact(
+                fact_id="fact:itadori-learned-simple-domain",
+                subject="虎杖悠仁",
+                predicate="習得理由",
+                object_text="簡易領域",
+                value={"reason": "魂の入れ替え修行と日下部の指導"},
+            ),
+        ],
+    )
+
+    hits = store.search("rev-1", "虎杖が簡易領域を習得できた理由")
+
+    assert hits[0].record_id == "fact:itadori-learned-simple-domain"

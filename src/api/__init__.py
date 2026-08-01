@@ -35,6 +35,7 @@ from src.rag import (
     make_rag,
 )
 from src.runtime_errors import safe_error_message
+from src.structured_knowledge import KnowledgeEntity, KnowledgeFact
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -72,6 +73,9 @@ class SourceHit(BaseModel):
     anchor_chunk_id: int | None = None
     bm25_score: float | None = None
     rerank_score: float | None = None
+    structured_record_id: str | None = None
+    structured_kind: str | None = None
+    structured_score: float | None = None
 
 
 class ProcessStep(BaseModel):
@@ -139,6 +143,33 @@ class JobCreateRequest(BaseModel):
 class DecisionRequest(BaseModel):
     reason: str = Field(default="", max_length=500)
     operator: str | None = Field(default=None, max_length=120)
+
+
+class StructuredRecordsRequest(BaseModel):
+    entities: list[KnowledgeEntity] = Field(default_factory=list, max_length=5000)
+    facts: list[KnowledgeFact] = Field(default_factory=list, max_length=20000)
+
+
+class StructuredExtractionRequest(BaseModel):
+    query: str | None = Field(default=None, min_length=1, max_length=4000)
+    chunk_limit: int | None = Field(default=20, ge=1, le=500)
+    persist: bool = True
+
+
+class CoverageLoopRequest(BaseModel):
+    focus: str | None = Field(default=None, min_length=1, max_length=1000)
+    questions: list[Annotated[str, Field(min_length=1, max_length=4000)]] = Field(
+        default_factory=list,
+        max_length=30,
+    )
+    external_answers: dict[str, Any] = Field(default_factory=dict)
+    knowledge_answers: dict[str, Any] = Field(default_factory=dict)
+    fact_checks: dict[str, Any] = Field(default_factory=dict)
+    rounds: int = Field(default=1, ge=1, le=5)
+    max_questions_per_round: int = Field(default=5, ge=1, le=20)
+    answer_mode: Literal["strict", "standard", "explore"] = "standard"
+    allow_llm_agents: bool = False
+    run_knowledge_answerer: bool = False
 
 
 _RAG_CACHE: dict[str, Any] = {}
@@ -231,6 +262,9 @@ def _format_sources(docs: list[tuple[Any, float]]) -> list[SourceHit]:
                 anchor_chunk_id=doc.metadata.get("anchor_chunk_id"),
                 bm25_score=doc.metadata.get("bm25_score"),
                 rerank_score=doc.metadata.get("rerank_score"),
+                structured_record_id=doc.metadata.get("structured_record_id"),
+                structured_kind=doc.metadata.get("structured_kind"),
+                structured_score=doc.metadata.get("structured_score"),
             )
         )
     return hits
@@ -673,6 +707,99 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             return _public_job(wb.store.get_job(job_id))
         except WorkbenchNotFoundError as exc:
             raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/revisions/{revision_id}/structured-records")
+    def replace_structured_records(
+        revision_id: str,
+        payload: StructuredRecordsRequest,
+    ) -> dict[str, Any]:
+        try:
+            wb.store.get_revision(revision_id)
+            wb.structured_store.replace_revision(
+                revision_id,
+                entities=payload.entities,
+                facts=payload.facts,
+            )
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        return {
+            "revision_id": revision_id,
+            "entities": len(payload.entities),
+            "facts": len(payload.facts),
+        }
+
+    @app.get("/workbench/revisions/{revision_id}/structured-search")
+    def search_structured_records(
+        revision_id: str,
+        q: str = Query(..., min_length=1, max_length=4000),
+        limit: int = Query(default=8, ge=1, le=50),
+    ) -> dict[str, Any]:
+        try:
+            wb.store.get_revision(revision_id)
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        hits = wb.structured_store.search(revision_id, q, limit=limit)
+        return {
+            "revision_id": revision_id,
+            "query": q,
+            "items": [
+                hit.model_dump() if hasattr(hit, "model_dump") else hit.dict()
+                for hit in hits
+            ],
+        }
+
+    @app.post("/workbench/revisions/{revision_id}/structured-extract")
+    def extract_structured_records_endpoint(
+        revision_id: str,
+        payload: StructuredExtractionRequest | None = None,
+    ) -> dict[str, Any]:
+        request = payload or StructuredExtractionRequest()
+        try:
+            return wb.extract_revision_structured_records(
+                revision_id,
+                query=request.query,
+                chunk_limit=request.chunk_limit,
+                persist=request.persist,
+            )
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/revisions/{revision_id}/coverage-loop")
+    def run_coverage_loop_endpoint(
+        revision_id: str,
+        payload: CoverageLoopRequest | None = None,
+    ) -> dict[str, Any]:
+        request = payload or CoverageLoopRequest()
+        requires_local_llm = request.allow_llm_agents or request.run_knowledge_answerer
+        if requires_local_llm and not is_generation_configured():
+            provider = get_llm_provider()
+            key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
+            raise HTTPException(
+                status_code=503,
+                detail=f"{key_name} is not configured for LLM_PROVIDER={provider}. Set it in .env before running coverage-loop.",
+            )
+        try:
+            return wb.run_revision_coverage_loop(
+                revision_id,
+                focus=request.focus,
+                questions=[question.strip() for question in request.questions],
+                external_answers=request.external_answers,
+                knowledge_answers=request.knowledge_answers,
+                fact_checks=request.fact_checks,
+                rounds=request.rounds,
+                max_questions_per_round=request.max_questions_per_round,
+                answer_mode=request.answer_mode,
+                allow_llm_agents=request.allow_llm_agents,
+                run_knowledge_answerer=request.run_knowledge_answerer,
+            )
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=safe_error_message(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=safe_error_message(exc)) from exc
 
     @app.post("/workbench/revisions/{revision_id}/approve")
     def approve_revision(

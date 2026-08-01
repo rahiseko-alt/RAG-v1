@@ -4,13 +4,19 @@
 
 ## 引継ぎレポート（次セッション必読）
 
-@docs/session-reports/2026-07-04-checkout-3.md
+@docs/session-reports/2026-08-01-coverage-loop-design.md
 
 > 次セッションは上記レポートを **必ず先に Read** してから着手すること。
 
 ## P1: 現在地・引継ぎミッション（絶対に消さない）
 
-> 直近 plan: なし（ポートフォリオ整備フェーズ・コード未編集）
+> 直近 plan: RAG弱点仮説生成・検証ワークフロー（A/B/C/D coverage loop）を構造化ナレッジ改善ワークベンチへ接続中。次は `docs/session-reports/2026-08-01-coverage-loop-design.md` を読むこと。
+
+- **[importance:H][2026-08-01] 現在の主題は呪術廻戦ナレッジそのものではなく、任意ドメインRAGの弱点仮説生成・検証ワークフロー。A/B/C/Dループは「ナレッジ不足確定」ではなく「BがAより弱く見えた差分」を出すだけ。次実装では `missing_knowledge / retrieval_failure / generation_failure / chunking_failure / invalid_A / ambiguous_question / out_of_scope / needs_quarantine` へ原因分類すること。**
+- **[importance:H][2026-08-01] ユーザー都度承認は禁止方針。処理が止まるため。通常候補は自動採用/自動却下/隔離に分岐し、隔離だけ日次・週次・任意タイミングでまとめてユーザー確認する。**
+- **[importance:H][2026-08-01] 製品API内でA/C/Dを毎回LLM実行しない。A/B/D結果はサブエージェント、人間、外部ツール、既存ログから注入可能にする。製品APIは候補化・台帳化・before/after比較を担う。**
+- **[importance:M][2026-08-01] C役は3人化済み設計: C-1 因果xマニアック、C-2 因果x複数人/組織、C-3 条件/例外x時系列/比較。敵対検証により実ユーザーログ由来・曖昧質問・手順系・エラー系・権限系・no-answer系も追加すべき。**
+- **[importance:M][2026-08-01] 10問coverage loop実験では10問中6件が追加候補。弱点は情報量だけでなく、因果の橋・条件・例外・比較・前提設定の不足。30問質問生成までは完了、A/B/D全実行は未完。**
 
 - **現フェーズ: Stage 1-4 完遂。ポートフォリオ戦略＝能力単位の独立カード集（製品でなく"能力"軸でタグ化・応募時は当てはめ3〜5行のみ新規作成）。能力カード8枚（medguide4＋kosespark4）は既存ポートフォリオ `docs/deliverables/development-career-summary-technical.md` 末尾「## 能力カード」節に統合済（フォーマット・置き場・枚数の3未決点は解消済）**
 - **[importance:M][2026-07-04] kosespark由来4枚（音声認識/用語補正/動画音声パイプライン/ローカルAI統合）は前回調査ベースで未再検証。案件当てはめ前に kosespark 側で実物確認が要る — plan: なし**

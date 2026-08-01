@@ -405,6 +405,9 @@ function retrievalRelationLabel(value) {
     neighbor: "隣接補完",
     bm25_rescue: "BM25補完",
     vector_bm25: "ベクトル+BM25",
+    structured_entity: "構造化Entity",
+    structured_fact: "構造化Fact",
+    structured_record: "構造化Record",
     keyword_rescue: "キーワード補完",
     vector_keyword: "ベクトル+キーワード",
   };
@@ -417,6 +420,7 @@ function retrievalScoreText(item) {
   if (similarity !== undefined && similarity !== null) parts.push(`類似度 ${formatValue(similarity)}`);
   if (item.bm25_score !== undefined && item.bm25_score !== null) parts.push(`BM25 ${formatValue(item.bm25_score)}`);
   if (item.rerank_score !== undefined && item.rerank_score !== null) parts.push(`統合 ${formatValue(item.rerank_score)}`);
+  if (item.structured_score !== undefined && item.structured_score !== null) parts.push(`構造化 ${formatValue(item.structured_score)}`);
   return parts.join(" · ") || "スコア未設定";
 }
 
@@ -432,9 +436,10 @@ function candidateMarkup(candidate, index) {
   const fetchedAt = firstValue(candidate.fetched_at, "取得日時未設定");
   const relation = retrievalRelationLabel(candidate.retrieval_relation);
   const scores = retrievalScoreText(candidate);
+  const recordId = candidate.structured_record_id ? ` · record ${escapeHtml(candidate.structured_record_id)}` : "";
   return `
     <li>
-      <div><strong>候補 ${escapeHtml(rank)}</strong> · ${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(source)}</a>` : escapeHtml(source)} · ${escapeHtml(sourceId)} · ${escapeHtml(sourceType)} · ${escapeHtml(authority)} · ${escapeHtml(relation)} · chunk ${escapeHtml(chunk)}</div>
+      <div><strong>候補 ${escapeHtml(rank)}</strong> · ${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(source)}</a>` : escapeHtml(source)} · ${escapeHtml(sourceId)} · ${escapeHtml(sourceType)} · ${escapeHtml(authority)} · ${escapeHtml(relation)} · chunk ${escapeHtml(chunk)}${recordId}</div>
       <p>${escapeHtml(snippet)}</p>
       <span>${escapeHtml(scores)} · 取得 ${escapeHtml(fetchedAt)}</span>
     </li>
@@ -453,6 +458,7 @@ function evidenceMarkup(evidence, index, claimCandidates = []) {
   const fetchedAt = firstValue(evidence.fetched_at, "取得日時未設定");
   const relation = retrievalRelationLabel(evidence.retrieval_relation);
   const scores = retrievalScoreText(evidence);
+  const recordId = evidence.structured_record_id ? `record ${evidence.structured_record_id}` : "";
   const candidates = asArray(firstValue(evidence.retrieved_candidates, evidence.candidates, claimCandidates));
   const candidateDetails = candidates.length
     ? `
@@ -473,6 +479,7 @@ function evidenceMarkup(evidence, index, claimCandidates = []) {
         <span>${escapeHtml(authority)}</span>
         <span>${escapeHtml(relation)}</span>
         <span>chunk ${escapeHtml(chunk)}</span>
+        ${recordId ? `<span>${escapeHtml(recordId)}</span>` : ""}
         <span>取得 ${escapeHtml(fetchedAt)}</span>
         <span>${escapeHtml(scores)}</span>
       </div>

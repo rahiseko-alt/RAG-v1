@@ -13,8 +13,11 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 import src.api as api  # noqa: E402
+from src.coverage_loop import AgentAnswer, CoverageQuestion, FactCheckJudgment  # noqa: E402
 from src.quality import OnlineVerifier, QualityWorkbench, WorkbenchStore  # noqa: E402
 from src.rag import engine_fingerprint  # noqa: E402
+from src.structured_extraction import ExtractedKnowledgeBatch  # noqa: E402
+from src.structured_knowledge import EvidenceRef, KnowledgeFact, StructuredKnowledgeStore  # noqa: E402
 
 
 class PassingStructuredVerifier:
@@ -53,7 +56,92 @@ class BlockingStructuredVerifier:
         }
 
 
-def _make_workbench(tmp_path, *, blocked=False):
+class FakeStructuredExtractor:
+    def extract_document(self, document):
+        return ExtractedKnowledgeBatch(
+            entities=[],
+            facts=[
+                KnowledgeFact(
+                    fact_id="fact:auto-expense-threshold",
+                    subject="経費承認規程",
+                    predicate="approval_threshold",
+                    value={"amount": 50000, "currency": "JPY", "approver": "部長"},
+                    evidence=[
+                        EvidenceRef(
+                            source=str(document.metadata.get("source") or "source.md"),
+                            chunk_id=document.metadata.get("chunk_id"),
+                            excerpt="5万円以上の経費は部長が承認する。",
+                        )
+                    ],
+                )
+            ],
+        )
+
+
+class FakeExtractionVectorStore:
+    def similarity_search_with_relevance_scores(self, query, k):
+        assert query == "虎杖が簡易領域を習得できた理由"
+        return [
+            (
+                Document(
+                    page_content="虎杖は魂の入れ替え修行で日下部から簡易領域を習得した。",
+                    metadata={"source": "source.md", "page": 0, "chunk_id": 42},
+                ),
+                0.91,
+            )
+        ]
+
+    def get(self, where=None, include=None):
+        if where:
+            return {"documents": [], "metadatas": []}
+        return {
+            "documents": ["虎杖は魂の入れ替え修行で日下部から簡易領域を習得した。"],
+            "metadatas": [{"source": "source.md", "page": 0, "chunk_id": 42}],
+        }
+
+
+class FakeCoverageQuestionGenerator:
+    def generate(self, **_kwargs):
+        return [
+            CoverageQuestion(
+                question="虎杖が簡易領域を習得できた理由を答えろ。",
+                intent="causal gap",
+            )
+        ]
+
+
+class FakeExternalAnswerer:
+    def answer(self, *, question):
+        return AgentAnswer(
+            role="external",
+            answer="虎杖は入れ替え修行を通じて日下部から簡易領域を学んだ。",
+            status="ok",
+            sources=[{"source": "external-reference", "snippet": "fixture"}],
+        )
+
+
+class FakeFactChecker:
+    def check(self, *, question, external_answer, knowledge_answer):
+        return FactCheckJudgment(
+            external_status="pass",
+            knowledge_status="abstain",
+            same_answer=False,
+            missing_knowledge="虎杖、日下部、入れ替え修行、簡易領域習得の因果関係",
+            reason="A is usable and B abstained.",
+        )
+
+
+def _make_workbench(
+    tmp_path,
+    *,
+    blocked=False,
+    ask_kwargs_log=None,
+    structured_extractor=None,
+    vectorstore=None,
+    coverage_question_generator=None,
+    coverage_external_answerer=None,
+    coverage_fact_checker=None,
+):
     store = WorkbenchStore(
         tmp_path / "workbench.sqlite3",
         runtime_root=tmp_path / "runtime",
@@ -61,7 +149,7 @@ def _make_workbench(tmp_path, *, blocked=False):
     )
 
     def fake_factory(**_kwargs):
-        return "graph", None, 71
+        return "graph", vectorstore, 71
 
     evaluation = json.loads(
         (Path(_ROOT) / "data" / "eval" / "jujutsu-kaisen-questions.json").read_text(
@@ -77,6 +165,8 @@ def _make_workbench(tmp_path, *, blocked=False):
         assert graph == "graph"
         assert question
         assert kwargs["trace_id"]
+        if ask_kwargs_log is not None:
+            ask_kwargs_log.append(dict(kwargs))
         evaluation_item = evaluation_by_question.get(question)
         if evaluation_item is None:
             answer = "非公開候補の根拠回答です [1]。"
@@ -104,6 +194,11 @@ def _make_workbench(tmp_path, *, blocked=False):
         verifier=OnlineVerifier(verifier, timeout_seconds=1),
         rag_factory=fake_factory,
         ask_fn=fake_ask,
+        structured_store=StructuredKnowledgeStore(tmp_path / "structured.sqlite3"),
+        structured_extractor=structured_extractor,
+        coverage_question_generator=coverage_question_generator,
+        coverage_external_answerer=coverage_external_answerer,
+        coverage_fact_checker=coverage_fact_checker,
     )
 
 
@@ -205,6 +300,184 @@ def test_ask_accepts_answer_mode(monkeypatch, tmp_path):
     assert body["answer_mode"] == "standard"
     assert body["verification"]["answer_mode"] == "standard"
     assert "standard" in body["process_steps"][4]["input"]
+
+
+def test_ask_passes_revision_structured_hits_to_rag(monkeypatch, tmp_path):
+    monkeypatch.setattr(api, "is_generation_configured", lambda: True)
+    ask_kwargs_log = []
+    workbench = _make_workbench(tmp_path, ask_kwargs_log=ask_kwargs_log)
+    active_revision = workbench.store.get_active_revision()
+    workbench.structured_store.replace_revision(
+        active_revision["id"],
+        entities=[],
+        facts=[
+            KnowledgeFact(
+                fact_id="fact:itadori-simple-domain",
+                subject="虎杖悠仁",
+                predicate="learned_reason",
+                object_text="簡易領域",
+                value={"reason": "魂の入れ替え修行で日下部から習得した"},
+                evidence=[
+                    EvidenceRef(
+                        source="source.md",
+                        chunk_id=42,
+                        excerpt="虎杖は魂の入れ替え修行で簡易領域を習得した。",
+                    )
+                ],
+            )
+        ],
+    )
+    client = TestClient(api.create_app(workbench))
+
+    res = client.post("/ask", json={"question": "虎杖が簡易領域を習得できた理由"})
+
+    assert res.status_code == 200
+    structured_hits = ask_kwargs_log[0]["structured_hits"]
+    assert structured_hits[0]["record_id"] == "fact:itadori-simple-domain"
+    assert structured_hits[0]["kind"] == "fact"
+
+
+def test_structured_records_can_be_replaced_and_searched_by_api(tmp_path):
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+    revision_id = workbench.store.get_active_revision()["id"]
+
+    replaced = client.post(
+        f"/workbench/revisions/{revision_id}/structured-records",
+        json={
+            "entities": [
+                {
+                    "entity_id": "policy:expense",
+                    "name": "経費承認規程",
+                    "entity_type": "policy",
+                    "aliases": ["経費ルール"],
+                }
+            ],
+            "facts": [
+                {
+                    "fact_id": "fact:expense-threshold",
+                    "subject_id": "policy:expense",
+                    "subject": "経費承認規程",
+                    "predicate": "approval_threshold",
+                    "value": {"amount": 50000, "currency": "JPY", "approver": "部長"},
+                }
+            ],
+        },
+    )
+
+    assert replaced.status_code == 200
+    assert replaced.json()["entities"] == 1
+    assert replaced.json()["facts"] == 1
+
+    searched = client.get(
+        f"/workbench/revisions/{revision_id}/structured-search",
+        params={"q": "5万円の経費は誰が承認する"},
+    )
+
+    assert searched.status_code == 200
+    item = searched.json()["items"][0]
+    assert item["record_id"] == "fact:expense-threshold"
+    assert item["data"]["value"]["approver"] == "部長"
+
+
+def test_structured_records_can_be_extracted_and_persisted_by_api(tmp_path):
+    workbench = _make_workbench(tmp_path, structured_extractor=FakeStructuredExtractor())
+    client = TestClient(api.create_app(workbench))
+    revision_id = workbench.store.get_active_revision()["id"]
+
+    extracted = client.post(
+        f"/workbench/revisions/{revision_id}/structured-extract",
+        json={"chunk_limit": 1, "persist": True},
+    )
+
+    assert extracted.status_code == 200
+    body = extracted.json()
+    assert body["chunks_scanned"] == 1
+    assert body["facts"][0]["fact_id"] == "fact:auto-expense-threshold"
+
+    searched = client.get(
+        f"/workbench/revisions/{revision_id}/structured-search",
+        params={"q": "5万円の経費は誰が承認する"},
+    )
+
+    assert searched.status_code == 200
+    assert searched.json()["items"][0]["record_id"] == "fact:auto-expense-threshold"
+
+
+def test_structured_extraction_can_target_query_retrieved_chunks(tmp_path):
+    workbench = _make_workbench(
+        tmp_path,
+        structured_extractor=FakeStructuredExtractor(),
+        vectorstore=FakeExtractionVectorStore(),
+    )
+    client = TestClient(api.create_app(workbench))
+    revision_id = workbench.store.get_active_revision()["id"]
+
+    extracted = client.post(
+        f"/workbench/revisions/{revision_id}/structured-extract",
+        json={
+            "query": "虎杖が簡易領域を習得できた理由",
+            "chunk_limit": 1,
+            "persist": True,
+        },
+    )
+
+    assert extracted.status_code == 200
+    body = extracted.json()
+    assert body["query"] == "虎杖が簡易領域を習得できた理由"
+    assert body["chunks_scanned"] == 1
+    assert body["chunks_total"] == 71
+    assert body["facts"][0]["evidence"][0]["chunk_id"] == 42
+
+
+def test_coverage_loop_marks_external_pass_b_abstention_as_add_candidate(monkeypatch, tmp_path):
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "虎杖が簡易領域を習得できた理由を答えろ。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "focus": "因果関係",
+            "questions": [question],
+            "external_answers": {
+                question: {
+                    "answer": "虎杖は入れ替え修行を通じて日下部から簡易領域を学んだ。",
+                    "status": "ok",
+                    "sources": [{"source": "subagent", "snippet": "fixture"}],
+                }
+            },
+            "knowledge_answers": {
+                question: {
+                    "answer": "提供された文書には、虎杖が簡易領域を習得できた理由の記載がありません [3]。",
+                    "status": "released",
+                    "sources": [{"source": "local-rag-log", "snippet": "fixture"}],
+                }
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "missing_knowledge": "虎杖、日下部、入れ替え修行、簡易領域習得の因果関係",
+                    "reason": "A is usable and B abstained.",
+                }
+            },
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["revision_id"] == revision_id
+    assert body["add_candidates"] == 1
+    item = body["items"][0]
+    assert item["add_knowledge_candidate"] is True
+    assert "D judged B as abstain" in item["candidate_reason"]
+    assert "簡易領域習得の因果関係" in item["fact_check"]["missing_knowledge"]
 
 
 def test_blocked_candidate_is_not_returned_but_is_saved(monkeypatch, tmp_path):
