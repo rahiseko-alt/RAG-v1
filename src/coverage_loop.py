@@ -59,6 +59,36 @@ class CoverageQuestion(BaseModel):
     intent: str = ""
 
 
+class EvidenceSource(BaseModel):
+    """One reference backing an A-answer (session-report step 2: 出典URL/出典種別/根拠span/更新日).
+
+    Kept optional on `AgentAnswer` so existing callers/fixtures that predate this
+    taxonomy keep working unchanged. `classify_coverage_item` does not yet read
+    this field — wiring evidence completeness into auto-reject/quarantine is step
+    4 (ledger state transitions), tracked separately.
+    """
+
+    url: str = ""
+    source_type: str = ""
+    span: str = ""
+    updated_at: str = ""
+
+
+class RetrievedChunk(BaseModel):
+    """One chunk B's retriever surfaced (session-report step 2/7: 取得chunk/score/引用箇所/検索順位).
+
+    Recording this per-answer is what will let a later D judgment distinguish
+    `missing_knowledge` (nothing relevant was retrievable) from `retrieval_failure`
+    (a relevant chunk was retrieved but not used) instead of guessing from the
+    final answer text alone.
+    """
+
+    chunk_id: str = ""
+    score: float | None = None
+    citation: str = ""
+    rank: int | None = None
+
+
 class AgentAnswer(BaseModel):
     """One answer produced by an agent participating in the coverage loop."""
 
@@ -68,6 +98,9 @@ class AgentAnswer(BaseModel):
     sources: list[dict[str, Any]] = Field(default_factory=list)
     notes: str = ""
     model: str | None = None
+    confidence: float | None = None
+    evidence: list[EvidenceSource] = Field(default_factory=list)
+    retrieved_chunks: list[RetrievedChunk] = Field(default_factory=list)
 
 
 class FactCheckJudgment(BaseModel):
