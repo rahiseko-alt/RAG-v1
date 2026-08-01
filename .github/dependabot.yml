@@ -1,7 +1,8 @@
 version: 2
 updates:
-  # pnpm workspace（apps/*, packages/*）はロックファイルがルート1つなので "/" 指定で全体をカバーする
-  - package-ecosystem: "npm"
+  # 本体は Python（pyproject.toml + uv.lock）。依存は全て "==" で完全ピン留めして
+  # いるため、ここを設定しないと脆弱性のあるバージョンに固定され続ける。
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"

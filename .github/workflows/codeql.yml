@@ -11,7 +11,7 @@ on:
 
 jobs:
   analyze:
-    name: analyze (javascript-typescript)
+    name: analyze (python)
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -20,13 +20,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 本体は Python（src/ 配下の API・RAG エンジン・SQLite ストア）。
+      # javascript-typescript のままだと src/api/static/app.js しか見ないため、
+      # 解析対象がほぼ無いのに緑になり「嘘の緑」になる。
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: javascript-typescript
+          languages: python
 
-      # JS/TS はビルド不要（CodeQL が解析）。
+      # Python はビルド不要（CodeQL が解析）。
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:javascript-typescript"
+          category: "/language:python"
