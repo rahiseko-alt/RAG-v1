@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-07-31",
+  "run_id": "25cf3bb75e6d425c82d63785ab25276d",
+  "trace_id": "d7c8d9a3c3fc4d3fb2d62b70e139a13d",
+  "local_status": "flushed",
+  "remote_status": "confirmed",
+  "observation_names": [
+    "retrieve",
+    "generate",
+    "verify",
+    "gate"
+  ],
+  "trace_url": "https://jp.cloud.langfuse.com/project/cms7f17ko00blad0dx8ui31v4/traces/d7c8d9a3c3fc4d3fb2d62b70e139a13d",
+  "secrets_included": false
+}

@@ -1,0 +1,3 @@
+# Compatibility entrypoint for pip users.
+# Canonical dependency metadata is pyproject.toml and uv.lock.
+.

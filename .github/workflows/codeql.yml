@@ -11,22 +11,30 @@ on:
 
 jobs:
   analyze:
-    name: analyze (javascript-typescript)
+    name: analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     permissions:
       security-events: write
       actions: read
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # 本体は Python（src/ 配下の API・RAG エンジン・SQLite ストア）だが、
+        # ワークベンチ UI の src/api/static/app.js も実コードなので両方走らせる。
+        # python だけにすると、既定ブランチ側に存在する javascript-typescript の
+        # 設定が見つからず「1 configuration not found」で check が赤くなる。
+        language: [python, javascript-typescript]
     steps:
       - uses: actions/checkout@v4
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: javascript-typescript
+          languages: ${{ matrix.language }}
 
-      # JS/TS はビルド不要（CodeQL が解析）。
+      # どちらもビルド不要（CodeQL が解析）。
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:javascript-typescript"
+          category: "/language:${{ matrix.language }}"

@@ -1,32 +1,46 @@
-# dependencies
-node_modules/
-.pnp
-.pnp.js
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
 
-# next.js
-.next/
-out/
-build/
-dist/
-
-# next typegen
-next-env.d.ts
-
-# production / cache
-.turbo/
-.vercel/
-*.tsbuildinfo
-coverage/
-
-# env
+# 環境変数・秘密情報（コミット厳禁・.env.example はテンプレなので復活させる）
 .env
 .env.*
 !.env.example
-
-# misc
-.DS_Store
+*.key
 *.pem
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+secrets/
+credentials.json
+token.json
+ga4-*.json
+**/.claude/settings.local.json
+
+# データ・生成物（ワークベンチの SQLite 台帳とベクタDBは絶対にコミットしない）
+data/raw/
+data/runtime/
+*.db
+*.sqlite3
+chroma/
+
+# ノートブックの実行時出力
+notebooks/.ipynb_checkpoints/
+outputs/
+output/
+
+# 一時ファイル・キャッシュ
+tmp/
+tmp-*/
+*.tmp
+coverage/
+.serena/
+
+# ログ
+.claude/logs/
+tmp-api*.log
+
+# OS
+.DS_Store
+Thumbs.db

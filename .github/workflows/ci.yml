@@ -1,7 +1,10 @@
 name: CI
 
-# 機械の審判（machine judge）。型/Lint/テスト/ビルド/起動確認を機械的に検査する
+# 機械の審判（machine judge）。Lint / テスト / 起動確認を機械的に検査する
 # （AI の自己申告を証拠にしない。完了報告の evidence はこのワークフローの run URL / commit SHA を指す）。
+#
+# 依存は torch + CUDA スタックを含み cold install が重い（約 2.8GiB）。
+# 二重に払わないよう、Lint・テスト・起動スモークは単一ジョブにまとめてある。
 on:
   push:
     branches: ["**"]
@@ -9,74 +12,50 @@ on:
 
 jobs:
   quality:
-    name: typecheck / lint / test / build
+    name: lint / test / 起動スモーク
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
         with:
-          version: 10.33.0
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-          cache: pnpm
+      # pyproject.toml が requires-python = ">=3.12,<3.13"、uv.lock が "==3.12.*"。
+      # 3.13 が来ると解決に失敗するので明示的に固定する。
+      - name: Setup Python 3.12
+        run: uv python install 3.12
 
-      - name: Install (frozen lockfile)
-        run: pnpm install --frozen-lockfile
+      # ruff / pytest は [project.optional-dependencies] dev にあるため、
+      # --extra dev を付けないとインストールされない（uv が自動で入れるのは
+      # [dependency-groups] のみ）。ここを省くと ruff: command not found になる。
+      - name: Install (locked)
+        run: uv sync --locked --extra dev
 
-      - name: Typecheck
-        run: pnpm -r typecheck
+      # 対象を src tests に限定する。notebooks/*.ipynb は教材として
+      # 未使用 import やセミコロン区切りを意図的に含んでおり、
+      # ruff check . だと 10 件の指摘で赤くなる（本体コードの問題ではない）。
+      - name: Lint (ruff)
+        run: uv run ruff check src tests
 
-      - name: Lint
-        run: pnpm -r lint
-
-      - name: Test
-        run: pnpm -r test
-
-      - name: Build
-        run: pnpm -r build
-
-      - name: Audit (fail on moderate+)
-        run: pnpm audit --audit-level moderate
-
-  smoke:
-    name: 起動スモーク (build → start → curl 200 + marker)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-
-      - name: Install (frozen lockfile)
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm -r build
+      # e2e と slow を除外する理由は AGENTS.md「Testing instructions」に明記。
+      # 除外分は手動実行の手順を同ファイルに残してある（黙って除外しない）。
+      - name: Test (pytest)
+        run: uv run pytest -m "not e2e and not slow" -q
 
       # 到達性を外部事実(HTTP 200＋本文マーカー)で縛る。スクショにしない。
-      - name: Smoke (next start → curl 200 + 'cc-v2 monorepo')
+      # GET / は静的な UI を返すだけで、ナレッジ revision の初期化を要求しない。
+      - name: Smoke (uvicorn → curl 200 + marker)
         run: |
-          pnpm --filter web start &
+          uv run uvicorn src.api:app --host 127.0.0.1 --port 8010 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
 
-          # 起動待ち（最大60秒）
           ready=0
           for i in $(seq 1 30); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 || true)
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8010/ || true)
             if [ "$code" = "200" ]; then ready=1; break; fi
             sleep 2
           done
@@ -85,28 +64,30 @@ jobs:
             exit 1
           fi
 
-          # 本文に既知マーカーを含むこと
-          body=$(curl -sf http://localhost:3000)
-          if ! printf '%s' "$body" | grep -q 'cc-v2 monorepo'; then
-            echo "FAIL: body did not contain marker 'cc-v2 monorepo'"
+          body=$(curl -sf http://127.0.0.1:8010/)
+          if ! printf '%s' "$body" | grep -q 'medguide-rag 運用ワークベンチ'; then
+            echo "FAIL: body did not contain marker 'medguide-rag 運用ワークベンチ'"
             exit 1
           fi
 
-          echo "SMOKE OK: HTTP 200 かつ本文に 'cc-v2 monorepo' を確認"
+          echo "SMOKE OK: HTTP 200 かつ本文に 'medguide-rag 運用ワークベンチ' を確認"
 
   # 集約ゲート＝branch protection が要求する「安定した1つの必須チェック」。
-  # 内部ジョブ(quality/smoke)の名前や中身が変わっても context 名は 'ci-green' で不変。
+  # 内部ジョブ(quality)の名前や中身が変わっても context 名は 'ci-green' で不変。
   # scripts/setup.sh はこの 'ci-green' だけを必須指定する。
+  # ⚠ 上流ジョブを増減させたら needs: と下の比較式の両方を必ず同時に直すこと。
+  #    片方だけだと workflow が startup failure になり、ci-green の check run が
+  #    生成されず branch protection が永久に待ち状態になる。
   gate:
     name: ci-green
-    needs: [quality, smoke]
+    needs: [quality]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: 上流ジョブが全て success か検査（1つでも失敗/スキップなら赤）
         run: |
-          if [ "${{ needs.quality.result }}" != "success" ] || [ "${{ needs.smoke.result }}" != "success" ]; then
-            echo "ci-green: FAIL (quality=${{ needs.quality.result }} smoke=${{ needs.smoke.result }})"
+          if [ "${{ needs.quality.result }}" != "success" ]; then
+            echo "ci-green: FAIL (quality=${{ needs.quality.result }})"
             exit 1
           fi
-          echo "ci-green: OK（quality / smoke ともに success）"
+          echo "ci-green: OK（quality が success）"

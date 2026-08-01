@@ -11,14 +11,19 @@ name: auto-merge
 # ※ private 無料プランでも動くよう、branch protection の auto-merge 機能ではなく
 #   トークンによる明示マージで実装する（GITHUB_TOKEN が主体）。
 
+# ⚠ 一時無効化中（自動トリガーを外し、手動実行でのみ動く状態にしてある）。
+#
+# 理由: このワークフローは `gh pr merge --squash --delete-branch` を人手の承認なしに
+# 実行する。main には branch protection がまだ掛かっておらず、これが唯一かつ
+# 制御不能なマージ経路になっていた。medguide-rag の 13 コミットの開発履歴は
+# ポートフォリオの成果物そのもの（セッションレポートが commit SHA を evidence として
+# 参照している）であり、squash されると到達不能になる。
+#
+# 再有効化の条件: AGENTS.md「手順0」の branch protection / Ruleset を main に適用し、
+# `ci-green` が必須チェックとして機能していることを確認したうえで、squash ではなく
+# マージコミットを作る方式に直してから、下の on: を元に戻すこと。
 on:
-  check_suite:
-    types: [completed]
-  status: {}
-  pull_request_review:
-    types: [submitted, dismissed, edited]
-  pull_request:
-    types: [labeled, unlabeled, ready_for_review, reopened]
+  workflow_dispatch:
 
 permissions:
   contents: write
