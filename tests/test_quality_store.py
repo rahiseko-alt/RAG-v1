@@ -9,7 +9,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from src.quality import WorkbenchConflictError, WorkbenchStore  # noqa: E402
+from src.quality import WorkbenchConflictError, WorkbenchNotFoundError, WorkbenchStore  # noqa: E402
 from src.rag import engine_fingerprint  # noqa: E402
 from src.quality.store import sha256_file  # noqa: E402
 
@@ -215,3 +215,103 @@ def test_approval_rejects_rejected_or_tampered_revision(tmp_path):
             reason="hash mismatch",
             engine_fingerprint=engine_fingerprint(),
         )
+
+
+def _coverage_item(question, *, disposition, failure_cause=None, candidate_reason=""):
+    return {
+        "question": question,
+        "intent": "test",
+        "external_answer": {"role": "external", "answer": "A の回答", "status": "ok"},
+        "knowledge_answer": {"role": "knowledge", "answer": "記載がありません", "status": "released"},
+        "fact_check": {
+            "external_status": "pass",
+            "knowledge_status": "abstain",
+            "same_answer": False,
+            "failure_cause": failure_cause,
+        },
+        "disposition": disposition,
+        "add_knowledge_candidate": disposition == "add_candidate",
+        "candidate_reason": candidate_reason,
+    }
+
+
+def test_save_coverage_loop_items_maps_disposition_to_ledger_status(tmp_path):
+    """add_candidate lands on auto_classified, not auto_approved: promoting further
+    needs a before/after check the design-doc marks as separate future work."""
+    store = _store(tmp_path)
+    revision = store.get_active_revision()
+    items = [
+        _coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge"),
+        _coverage_item("q2", disposition="rejected", failure_cause="ambiguous_question"),
+        _coverage_item("q3", disposition="quarantined", failure_cause="needs_quarantine"),
+        _coverage_item("q4", disposition="no_gap"),
+    ]
+
+    saved = store.save_coverage_loop_items(revision["id"], items)
+
+    status_by_question = {candidate["question"]: candidate["status"] for candidate in saved}
+    assert status_by_question == {
+        "q1": "auto_classified",
+        "q2": "auto_rejected",
+        "q3": "auto_quarantined",
+        "q4": "no_gap",
+    }
+    persisted = store.list_coverage_candidates(revision["id"])
+    assert len(persisted) == 4
+    assert {event["event_type"] for event in store.list_events()} >= {"coverage_candidate_created"}
+
+
+def test_list_coverage_candidates_filters_by_status(tmp_path):
+    store = _store(tmp_path)
+    revision = store.get_active_revision()
+    store.save_coverage_loop_items(
+        revision["id"],
+        [
+            _coverage_item("q1", disposition="add_candidate"),
+            _coverage_item("q2", disposition="rejected"),
+        ],
+    )
+
+    quarantined = store.list_coverage_candidates(revision["id"], status="auto_quarantined")
+    assert quarantined == []
+    rejected = store.list_coverage_candidates(revision["id"], status="auto_rejected")
+    assert [candidate["question"] for candidate in rejected] == ["q2"]
+
+
+def test_resolve_coverage_candidate_only_leaves_quarantine(tmp_path):
+    store = _store(tmp_path)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="quarantined", failure_cause="needs_quarantine")],
+    )
+    candidate_id = saved[0]["id"]
+
+    resolved = store.resolve_coverage_candidate(
+        candidate_id, status="auto_approved", reason="human confirmed the source"
+    )
+    assert resolved["status"] == "auto_approved"
+    assert resolved["status_reason"] == "human confirmed the source"
+
+    with pytest.raises(WorkbenchConflictError):
+        store.resolve_coverage_candidate(candidate_id, status="auto_rejected", reason="too late")
+
+    with pytest.raises(WorkbenchNotFoundError):
+        store.resolve_coverage_candidate("missing-id", status="auto_approved", reason="n/a")
+
+    non_quarantined = store.save_coverage_loop_items(
+        revision["id"], [_coverage_item("q2", disposition="rejected")]
+    )[0]
+    with pytest.raises(WorkbenchConflictError):
+        store.resolve_coverage_candidate(non_quarantined["id"], status="auto_approved", reason="n/a")
+
+
+def test_resolve_coverage_candidate_rejects_invalid_target_status(tmp_path):
+    store = _store(tmp_path)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="quarantined", failure_cause="needs_quarantine")],
+    )
+    with pytest.raises(ValueError):
+        store.resolve_coverage_candidate(saved[0]["id"], status="implemented", reason="n/a")

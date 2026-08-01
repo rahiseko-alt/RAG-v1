@@ -21,6 +21,24 @@ MAX_ACTIVE_JOBS = 2
 MAX_REVISIONS = 100
 MAX_RUNTIME_SOURCE_BYTES = 500 * 1024 * 1024
 
+# Maps a `classify_coverage_item` disposition to the initial ledger status
+# (docs/session-reports/2026-08-01-coverage-loop-design.md: candidate ->
+# auto_classified -> auto_approved/auto_rejected/auto_quarantined -> ... ->
+# active). `add_candidate` lands on `auto_classified`, not `auto_approved`:
+# promoting further also requires a before/after improvement check (design-doc
+# step 6, not implemented yet) — auto-approving without it would be exactly
+# the self-graded "it works" this repo's verification discipline forbids.
+COVERAGE_DISPOSITION_TO_STATUS = {
+    "add_candidate": "auto_classified",
+    "rejected": "auto_rejected",
+    "quarantined": "auto_quarantined",
+    "no_gap": "no_gap",
+}
+# A quarantined candidate is the only state a human resolves by hand (design-
+# doc: "隔離だけまとめてユーザー確認する"); resolution can only land on one of
+# these two terminal auto_* states, not an arbitrary status.
+COVERAGE_QUARANTINE_RESOLUTIONS = frozenset({"auto_approved", "auto_rejected"})
+
 
 class WorkbenchConflictError(RuntimeError):
     """The requested state transition conflicts with persisted workbench state."""
@@ -174,11 +192,35 @@ class WorkbenchStore:
                     created_at TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS coverage_candidates (
+                    id TEXT PRIMARY KEY,
+                    revision_id TEXT NOT NULL REFERENCES revisions(id),
+                    question TEXT NOT NULL,
+                    intent TEXT NOT NULL DEFAULT '',
+                    disposition TEXT NOT NULL CHECK(disposition IN (
+                        'add_candidate', 'rejected', 'quarantined', 'no_gap'
+                    )),
+                    failure_cause TEXT,
+                    candidate_reason TEXT NOT NULL DEFAULT '',
+                    external_answer_json TEXT NOT NULL,
+                    knowledge_answer_json TEXT NOT NULL,
+                    fact_check_json TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN (
+                        'no_gap', 'auto_classified', 'auto_approved', 'auto_rejected',
+                        'auto_quarantined', 'implemented', 'verified', 'active'
+                    )),
+                    status_reason TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_events_revision ON events(revision_id, id);
                 CREATE INDEX IF NOT EXISTS idx_jobs_revision ON jobs(revision_id, kind, created_at);
                 CREATE INDEX IF NOT EXISTS idx_runs_revision ON runs(revision_id, created_at);
                 CREATE INDEX IF NOT EXISTS idx_async_runs_status ON async_runs(status, created_at);
                 CREATE INDEX IF NOT EXISTS idx_adjustments_created ON adjustments(created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_coverage_candidates_revision
+                    ON coverage_candidates(revision_id, status, created_at);
 
                 CREATE TRIGGER IF NOT EXISTS revisions_no_update
                 BEFORE UPDATE ON revisions BEGIN
@@ -894,6 +936,141 @@ class WorkbenchStore:
         result["request"] = self._decode(result.pop("request_json"), {})
         result["result"] = self._decode(result.pop("result_json"), None)
         return result
+
+    def _coverage_candidate_dict(self, row: sqlite3.Row) -> dict[str, Any]:
+        result = dict(row)
+        result["external_answer"] = self._decode(result.pop("external_answer_json"), {})
+        result["knowledge_answer"] = self._decode(result.pop("knowledge_answer_json"), {})
+        result["fact_check"] = self._decode(result.pop("fact_check_json"), {})
+        return result
+
+    def save_coverage_loop_items(
+        self,
+        revision_id: str,
+        items: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Persist coverage-loop items into the coverage-candidate ledger (design-doc step 3).
+
+        `items` are `CoverageLoopItem.model_dump()` dicts from `run_coverage_loop`;
+        each one's `disposition` is mapped to an initial ledger status via
+        `COVERAGE_DISPOSITION_TO_STATUS` — see that constant's docstring for why
+        `add_candidate` does not land directly on `auto_approved`.
+        """
+        self.get_revision(revision_id)
+        now = utc_now()
+        candidate_ids: list[str] = []
+        with self._connect() as connection:
+            for item in items:
+                disposition = item["disposition"]
+                status = COVERAGE_DISPOSITION_TO_STATUS[disposition]
+                fact_check = item["fact_check"]
+                candidate_id = uuid.uuid4().hex
+                connection.execute(
+                    """
+                    INSERT INTO coverage_candidates(
+                        id, revision_id, question, intent, disposition, failure_cause,
+                        candidate_reason, external_answer_json, knowledge_answer_json,
+                        fact_check_json, status, status_reason, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        candidate_id,
+                        revision_id,
+                        item["question"],
+                        item.get("intent", ""),
+                        disposition,
+                        fact_check.get("failure_cause"),
+                        item.get("candidate_reason", ""),
+                        self._json(item["external_answer"]),
+                        self._json(item["knowledge_answer"]),
+                        self._json(fact_check),
+                        status,
+                        f"auto: {disposition}",
+                        now,
+                        now,
+                    ),
+                )
+                self._append_event(
+                    connection,
+                    "coverage_candidate_created",
+                    revision_id=revision_id,
+                    payload={"candidate_id": candidate_id, "disposition": disposition, "status": status},
+                )
+                candidate_ids.append(candidate_id)
+        return [self.get_coverage_candidate(candidate_id) for candidate_id in candidate_ids]
+
+    def list_coverage_candidates(
+        self,
+        revision_id: str | None = None,
+        *,
+        status: str | None = None,
+    ) -> list[dict[str, Any]]:
+        query = "SELECT * FROM coverage_candidates"
+        conditions: list[str] = []
+        params: list[Any] = []
+        if revision_id is not None:
+            conditions.append("revision_id = ?")
+            params.append(revision_id)
+        if status is not None:
+            conditions.append("status = ?")
+            params.append(status)
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY created_at DESC, id DESC"
+        with self._connect() as connection:
+            rows = connection.execute(query, params).fetchall()
+        return [self._coverage_candidate_dict(row) for row in rows]
+
+    def get_coverage_candidate(self, candidate_id: str) -> dict[str, Any]:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM coverage_candidates WHERE id = ?", (candidate_id,)
+            ).fetchone()
+        if row is None:
+            raise WorkbenchNotFoundError(f"coverage candidate not found: {candidate_id}")
+        return self._coverage_candidate_dict(row)
+
+    def resolve_coverage_candidate(
+        self,
+        candidate_id: str,
+        *,
+        status: str,
+        reason: str,
+        operator: str | None = None,
+    ) -> dict[str, Any]:
+        """Manually resolve a quarantined coverage candidate (design-doc step 5).
+
+        Only `auto_quarantined -> auto_approved / auto_rejected` is allowed — this
+        is the "隔離だけまとめてユーザー確認する" path, not a general status editor.
+        """
+        if status not in COVERAGE_QUARANTINE_RESOLUTIONS:
+            raise ValueError(
+                f"coverage candidates can only be resolved to one of {sorted(COVERAGE_QUARANTINE_RESOLUTIONS)}"
+            )
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM coverage_candidates WHERE id = ?", (candidate_id,)
+            ).fetchone()
+            if row is None:
+                raise WorkbenchNotFoundError(f"coverage candidate not found: {candidate_id}")
+            if row["status"] != "auto_quarantined":
+                raise WorkbenchConflictError(
+                    f"coverage candidate cannot be resolved from status {row['status']}"
+                )
+            connection.execute(
+                """
+                UPDATE coverage_candidates SET status = ?, status_reason = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (status, reason, utc_now(), candidate_id),
+            )
+            self._append_event(
+                connection,
+                "coverage_candidate_resolved",
+                revision_id=str(row["revision_id"]),
+                payload={"candidate_id": candidate_id, "status": status, "reason": reason, "operator": operator},
+            )
+        return self.get_coverage_candidate(candidate_id)
 
     def _insert_adjustment(
         self,

@@ -190,6 +190,13 @@ class CoverageLoopRequest(BaseModel):
     answer_mode: Literal["strict", "standard", "explore"] = "standard"
     allow_llm_agents: bool = False
     run_knowledge_answerer: bool = False
+    persist: bool = True
+
+
+class CoverageCandidateResolutionRequest(BaseModel):
+    status: Literal["auto_approved", "auto_rejected"]
+    reason: str = Field(default="", max_length=500)
+    operator: str | None = Field(default=None, max_length=120)
 
 
 _RAG_CACHE: dict[str, Any] = {}
@@ -930,6 +937,7 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
                 answer_mode=request.answer_mode,
                 allow_llm_agents=request.allow_llm_agents,
                 run_knowledge_answerer=request.run_knowledge_answerer,
+                persist=request.persist,
             )
         except WorkbenchNotFoundError as exc:
             raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
@@ -937,6 +945,34 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=safe_error_message(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=500, detail=safe_error_message(exc)) from exc
+
+    @app.get("/workbench/revisions/{revision_id}/coverage-candidates")
+    def list_coverage_candidates(
+        revision_id: str,
+        status: str | None = None,
+    ) -> dict[str, Any]:
+        try:
+            wb.store.get_revision(revision_id)
+            return {"items": wb.store.list_coverage_candidates(revision_id, status=status)}
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/coverage-candidates/{candidate_id}/resolve")
+    def resolve_coverage_candidate(
+        candidate_id: str,
+        payload: CoverageCandidateResolutionRequest,
+    ) -> dict[str, Any]:
+        try:
+            return wb.store.resolve_coverage_candidate(
+                candidate_id,
+                status=payload.status,
+                reason=payload.reason.strip(),
+                operator=(payload.operator.strip() if payload.operator else None),
+            )
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except (WorkbenchConflictError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
 
     @app.post("/workbench/revisions/{revision_id}/approve")
     def approve_revision(
