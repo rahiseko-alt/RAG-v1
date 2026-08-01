@@ -51,16 +51,6 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-markers = [
-    "slow: integration tests that build indexes or call heavier dependencies",
-    "e2e: browser-based workbench flow tests",
-]
-filterwarnings = [
-    "default",
-]
-
 [tool.ruff]
 target-version = "py312"
 line-length = 100

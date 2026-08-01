@@ -58,6 +58,8 @@ const state = {
   pollTimers: new Map(),
   approval: { allowed: false, revisionId: "" },
   loadedTabs: new Set(["question"]),
+  runEvents: [],
+  runEventSource: null,
 };
 
 const pendingProcessSteps = [
@@ -581,6 +583,155 @@ function renderProcessSteps(steps) {
     .join("");
 }
 
+function closeRunEventSource() {
+  if (state.runEventSource) {
+    state.runEventSource.close();
+    state.runEventSource = null;
+  }
+}
+
+function eventPayload(event) {
+  return event?.payload || {};
+}
+
+function eventSummary(event) {
+  const payload = eventPayload(event);
+  const fields = [];
+  if (payload.summary) fields.push(payload.summary);
+  if (payload.revision_id) fields.push(`revision ${payload.revision_id}`);
+  if (payload.source_sha256) fields.push(`source ${String(payload.source_sha256).slice(0, 12)}`);
+  if (payload.structured_sha256) fields.push(`structured ${String(payload.structured_sha256).slice(0, 12)}`);
+  if (payload.structured_hits !== undefined) fields.push(`構造化hit ${payload.structured_hits}`);
+  if (payload.retrieved_sources !== undefined) fields.push(`取得根拠 ${payload.retrieved_sources}`);
+  if (payload.claim_count !== undefined) fields.push(`主張 ${payload.claim_count}`);
+  if (payload.delivery_status) fields.push(`出荷 ${payload.delivery_status}`);
+  if (payload.blocked_reason) fields.push(`停止理由 ${payload.blocked_reason}`);
+  if (payload.error) fields.push(payload.error);
+  return fields.join(" / ") || JSON.stringify(payload);
+}
+
+function renderRunEventSteps(events) {
+  const steps = pendingProcessSteps.map((step) => ({ ...step, status: "pending" }));
+  const byId = Object.fromEntries(steps.map((step) => [step.id, step]));
+  const mark = (id, status, event, overrides = {}) => {
+    const step = byId[id];
+    if (!step) return;
+    const summary = event ? eventSummary(event) : "";
+    Object.assign(step, {
+      status,
+      input: overrides.input || step.input,
+      process: overrides.process || `実イベント ${event?.event_type || ""} を受信しました。`,
+      output: overrides.output || summary || step.output,
+      check: overrides.check || step.check,
+    });
+  };
+
+  for (const event of events) {
+    const payload = eventPayload(event);
+    switch (event.event_type) {
+      case "queued":
+        mark("received", "active", event, { output: "runを作成し、処理キューへ登録しました。" });
+        break;
+      case "running":
+      case "question_received":
+        mark("received", "completed", event, {
+          input: `質問長 ${payload.input?.question_length ?? "—"} / mode ${payload.answer_mode || "—"}`,
+        });
+        break;
+      case "knowledge_selected":
+        mark("knowledge", "completed", event);
+        break;
+      case "retrieve_started":
+        mark("searching", "active", event);
+        mark("evidence-review", "active", event);
+        break;
+      case "generate_completed":
+        mark("searching", "completed", event);
+        mark("evidence-review", "completed", event);
+        mark("generating", "completed", event);
+        break;
+      case "verify_completed":
+        mark("verification", payload.release_allowed ? "completed" : "blocked", event);
+        break;
+      case "gate_completed":
+        mark("release", payload.delivery_status === "blocked" ? "blocked" : "completed", event);
+        break;
+      case "completed":
+        mark("audit", "completed", event);
+        break;
+      case "failed":
+        mark("audit", "failed", event);
+        break;
+      default:
+        break;
+    }
+  }
+  renderProcessSteps(steps);
+}
+
+async function waitForRun(runId) {
+  state.runEvents = [];
+  renderRunEventSteps(state.runEvents);
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      closeRunEventSource();
+      reject(new Error("run event stream timed out"));
+    }, 70000);
+    const finish = async () => {
+      window.clearTimeout(timeout);
+      closeRunEventSource();
+      const status = await apiFetch(`/runs/${encodeURIComponent(runId)}`);
+      resolve(status);
+    };
+
+    if (!window.EventSource) {
+      const poll = async () => {
+        const status = await apiFetch(`/runs/${encodeURIComponent(runId)}`);
+        state.runEvents = status.events || [];
+        renderRunEventSteps(state.runEvents);
+        if (["completed", "failed"].includes(status.status)) {
+          window.clearTimeout(timeout);
+          resolve(status);
+          return;
+        }
+        window.setTimeout(poll, 750);
+      };
+      poll().catch(reject);
+      return;
+    }
+
+    closeRunEventSource();
+    state.runEventSource = new EventSource(`/runs/${encodeURIComponent(runId)}/events`);
+    state.runEventSource.onmessage = () => {};
+    const eventTypes = [
+      "queued",
+      "running",
+      "question_received",
+      "knowledge_selected",
+      "retrieve_started",
+      "generate_completed",
+      "verify_completed",
+      "gate_completed",
+      "completed",
+      "failed",
+    ];
+    for (const type of eventTypes) {
+      state.runEventSource.addEventListener(type, (message) => {
+        const event = JSON.parse(message.data);
+        state.runEvents.push(event);
+        renderRunEventSteps(state.runEvents);
+        if (type === "completed" || type === "failed") {
+          finish().catch(reject);
+        }
+      });
+    }
+    state.runEventSource.onerror = () => {
+      closeRunEventSource();
+      apiFetch(`/runs/${encodeURIComponent(runId)}`).then(resolve).catch(reject);
+    };
+  });
+}
+
 function showAskFailure(message) {
   setAnswerState("failed");
   elements.answer.textContent = message;
@@ -606,7 +757,7 @@ async function askQuestion(question) {
   renderProcessSteps(pendingProcessSteps);
 
   try {
-    const data = await apiFetch("/ask", {
+    const created = await apiFetch("/runs", {
       method: "POST",
       body: JSON.stringify({
         question,
@@ -615,6 +766,17 @@ async function askQuestion(question) {
         trace_tags: ["workbench", "non-engineer-review"],
       }),
     });
+    setGlobalStatus(`処理を開始しました。run ID: ${created.run_id}`);
+    const run = await waitForRun(created.run_id);
+    if (run.status === "failed") {
+      showAskFailure(firstValue(run.error_message, "回答処理に失敗しました。"));
+      return;
+    }
+    const data = run.response;
+    if (!data) {
+      showAskFailure("runは完了しましたが、回答レスポンスが保存されていません。");
+      return;
+    }
     const deliveryStatus = normalizedDeliveryStatus(data);
 
     if (deliveryStatus === "blocked") {

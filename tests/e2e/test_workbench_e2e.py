@@ -85,6 +85,55 @@ def _blocked_response() -> dict[str, object]:
     }
 
 
+def _run_events() -> list[dict[str, object]]:
+    return [
+        {"id": 1, "event_type": "queued", "payload": {"summary": "queued"}},
+        {"id": 2, "event_type": "running", "payload": {"summary": "running"}},
+        {
+            "id": 3,
+            "event_type": "question_received",
+            "payload": {"input": {"question_length": 20}, "answer_mode": "standard"},
+        },
+        {
+            "id": 4,
+            "event_type": "knowledge_selected",
+            "payload": {"revision_id": "rev", "source_sha256": "a" * 64},
+        },
+        {
+            "id": 5,
+            "event_type": "retrieve_started",
+            "payload": {"structured_hits": 0},
+        },
+        {
+            "id": 6,
+            "event_type": "generate_completed",
+            "payload": {"retrieved_sources": 1, "candidate_answer_saved": True},
+        },
+        {
+            "id": 7,
+            "event_type": "verify_completed",
+            "payload": {"status": "block", "claim_count": 1, "release_allowed": False},
+        },
+        {
+            "id": 8,
+            "event_type": "gate_completed",
+            "payload": {"delivery_status": "blocked", "blocked_reason": "quality_gate_failed"},
+        },
+        {
+            "id": 9,
+            "event_type": "completed",
+            "payload": {"delivery_status": "blocked", "blocked_reason": "quality_gate_failed"},
+        },
+    ]
+
+
+def _sse_body(events: list[dict[str, object]]) -> str:
+    return "".join(
+        f"id: {event['id']}\nevent: {event['event_type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
+        for event in events
+    )
+
+
 def _assert_base_layout(page) -> None:
     page.goto(BASE_URL, wait_until="networkidle")
     assert page.locator('[role="tab"]').count() == 4
@@ -106,12 +155,44 @@ def test_workbench_main_layout_and_blocked_answer_do_not_leak_candidate() -> Non
         browser = playwright.chromium.launch(headless=True)
         try:
             desktop = browser.new_page(viewport={"width": 1280, "height": 900})
+            response = _blocked_response()
+            events = _run_events()
             desktop.route(
-                "**/ask",
+                "**/runs",
+                lambda route: route.fulfill(
+                    status=202,
+                    content_type="application/json",
+                    body=json.dumps(
+                        {"run_id": "e2e-run", "status": "queued", "events_url": "/runs/e2e-run/events"},
+                        ensure_ascii=False,
+                    ),
+                ),
+            )
+            desktop.route(
+                "**/runs/e2e-run/events",
+                lambda route: route.fulfill(
+                    status=200,
+                    content_type="text/event-stream",
+                    body=_sse_body(events),
+                ),
+            )
+            desktop.route(
+                "**/runs/e2e-run",
                 lambda route: route.fulfill(
                     status=200,
                     content_type="application/json",
-                    body=json.dumps(_blocked_response(), ensure_ascii=False),
+                    body=json.dumps(
+                        {
+                            "run_id": "e2e-run",
+                            "status": "completed",
+                            "revision_id": "rev",
+                            "question": "E2E blocked question",
+                            "answer_mode": "standard",
+                            "response": response,
+                            "events": events,
+                        },
+                        ensure_ascii=False,
+                    ),
                 ),
             )
             _assert_base_layout(desktop)
