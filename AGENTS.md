@@ -94,7 +94,7 @@ uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別�
 「検証の規律」が求める **型チェックと依存脆弱性のゲートが、現時点では CI に入っていない**。
 埋めるまでは「型は未検査」と理解して扱うこと。
 
-- **型（mypy）**：`uv run mypy src` は現在 **34 errors in 6 files**。大半は
+- **型（mypy）**：`uv run mypy src` は現在 **40 errors in 8 files**（2026-08-01 実測）。大半は
   `WorkbenchStore.get_active_revision()` が `dict | None` を返すのに絞り込まずに添字アクセス
   している箇所。修正は移行作業の範囲を超えるため未着手。**直したうえで CI に追加すること。**
 - **依存の脆弱性**：pnpm 時代の `pnpm audit --audit-level moderate` に相当するゲートが無い。
