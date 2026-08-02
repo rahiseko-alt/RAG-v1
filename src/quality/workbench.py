@@ -142,6 +142,29 @@ class RevisionCorpusProber:
             corpus=self.corpus(),
         )
 
+    def surfaced_texts(self, *, knowledge_answer: AgentAnswer) -> list[dict[str, Any]]:
+        """Resolve B's retrieved chunk ids back to full chunk text, for the judge.
+
+        Looked up from the corpus by chunk id rather than carried on the answer, so this
+        works identically for a live B-answer and an injected one — an injected answer
+        records which chunks were retrieved, not their contents.
+        """
+        by_id = {chunk.chunk_id: chunk.text for chunk in self.corpus()}
+        texts: list[dict[str, Any]] = []
+        for chunk in knowledge_answer.retrieved_chunks:
+            text = by_id.get(str(chunk.chunk_id))
+            if text is None:
+                continue
+            texts.append(
+                {
+                    "rank": chunk.rank,
+                    "chunk_id": chunk.chunk_id,
+                    "citation": chunk.citation,
+                    "text": text,
+                }
+            )
+        return texts
+
 
 class QualityWorkbench:
     """Coordinate revision-specific engines, verification, audit, and persistence."""
@@ -665,6 +688,11 @@ class QualityWorkbench:
             ),
         )
         result_dict = result.model_dump()
+        for item in result_dict["items"]:
+            # Judge-only channel: D needed the full chunk text to rule out
+            # generation_failure, but neither the ledger nor the API response may carry
+            # a second copy of the corpus. Dropped here, after judging, before both.
+            item["knowledge_answer"].pop("surfaced_texts", None)
         if persist:
             saved = self.store.save_coverage_loop_items(str(revision["id"]), result_dict["items"])
             saved_by_question = {candidate["question"]: candidate for candidate in saved}

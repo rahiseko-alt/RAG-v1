@@ -300,6 +300,9 @@ def test_run_coverage_loop_attaches_the_probe_to_b_before_judging():
                 corpus=_CORPUS,
             )
 
+        def surfaced_texts(self, *, knowledge_answer):
+            return []
+
     class Generator:
         def generate(self, *, focus, seed_questions, previous_findings, max_questions):
             return [CoverageQuestion(question=q) for q in seed_questions]
@@ -323,3 +326,48 @@ def test_run_coverage_loop_attaches_the_probe_to_b_before_judging():
     assert "縛り" in seen["probe"].present_but_unsurfaced
     # and it survives onto the item, so the ledger persists what D was shown
     assert result.items[0].knowledge_answer.corpus_probe is not None
+
+
+def test_surfaced_texts_reach_the_judge_but_not_the_persisted_item():
+    """The 240-char snippet is what made D miscall generation_failure as
+    missing_knowledge; the judge needs full chunk text. The ledger must not get it —
+    that would be a second copy of the corpus in SQLite."""
+    from src.coverage_loop import CoverageQuestion, run_coverage_loop
+
+    seen = {}
+
+    class RecordingChecker:
+        def check(self, *, question, external_answer, knowledge_answer):
+            seen["texts"] = knowledge_answer.surfaced_texts
+            return FactCheckJudgment(external_status="pass", knowledge_status="fail")
+
+    class Prober:
+        def probe(self, *, question, external_answer, knowledge_answer):
+            return None
+
+        def surfaced_texts(self, *, knowledge_answer):
+            return [{"rank": 1, "chunk_id": "1", "text": "全文"}]
+
+    class Generator:
+        def generate(self, *, focus, seed_questions, previous_findings, max_questions):
+            return [CoverageQuestion(question=q) for q in seed_questions]
+
+    result = run_coverage_loop(
+        revision_id="rev",
+        focus=None,
+        seed_questions=["質問"],
+        external_answers={"質問": "A の回答"},
+        knowledge_answers={"質問": {"answer": "記載がありません"}},
+        rounds=1,
+        max_questions_per_round=1,
+        question_generator=Generator(),
+        external_answerer=None,
+        fact_checker=RecordingChecker(),
+        knowledge_answerer=None,
+        answer_mode="standard",
+        corpus_prober=Prober(),
+    )
+    assert seen["texts"] == [{"rank": 1, "chunk_id": "1", "text": "全文"}]
+    # `run_revision_coverage_loop` is what strips it; the loop itself keeps it on the
+    # model so the judge can read it.
+    assert result.items[0].knowledge_answer.surfaced_texts

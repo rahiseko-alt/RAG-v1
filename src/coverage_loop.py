@@ -116,10 +116,12 @@ class RetrievedChunk(BaseModel):
 
 CORPUS_PROBE_METHOD = (
     "lexical term presence across the whole corpus, tokenized the same way the BM25 "
-    "retrieval lane tokenizes. A term missing from every chunk is strong evidence the "
-    "corpus cannot state any fact about it. A term being present is weak evidence only: "
+    "retrieval lane tokenizes. IT CANNOT SEE PARAPHRASE: a term reported absent means "
+    "no chunk contains that exact string, NOT that the corpus is silent on the idea — "
+    "the corpus may state the same thing in different words. Presence is weaker still: "
     "a corpus can name an entity without carrying the causal link, condition, or "
-    "exception a question asks about."
+    "exception a question asks about. Never conclude missing_knowledge from absent "
+    "terms alone; check the surfaced chunk text first."
 )
 
 
@@ -163,8 +165,9 @@ class CorpusProbe(BaseModel):
     reports, for each, which corpus chunks contain it and which of those B's retriever
     actually surfaced. That yields three positively-assertable readings:
 
-    - `absent_from_corpus`      -> the corpus has no wording for this at all, so
-                                   `missing_knowledge` is assertable.
+    - `absent_from_corpus`      -> no chunk contains that exact string, so
+                                   `missing_knowledge` is assertable *only after* the
+                                   surfaced chunk text has been checked (see below).
     - `present_but_unsurfaced`  -> the corpus has it and retrieval did not return it,
                                    so `retrieval_failure` is assertable.
     - `present_in_surfaced`     -> B was handed the wording and still failed, which is
@@ -179,6 +182,15 @@ class CorpusProbe(BaseModel):
     the corpus never draws between terms it does mention. Narrowing D's options on
     lexical grounds would reintroduce exactly the kind of unsupported leap the taxonomy
     exists to prevent. The probe widens what D can assert; D still judges.
+
+    Measured failure mode, from adversarial verification of the 2026-08-02 re-run (see
+    `docs/session-reports/2026-08-02-coverage-loop-30q-run.md`): with the probe added
+    but D still limited to 240-character snippets, 2 of 8 spot-checked judgments were
+    wrong, and both were regressions — items the pre-probe run had correctly called
+    `generation_failure` became `missing_knowledge` because the sentence answering the
+    question sat inside a surfaced chunk, worded differently from A. Absent terms
+    therefore rank *below* the surfaced chunk text, never above it, which is what
+    `AgentAnswer.surfaced_texts` exists to make possible.
     """
 
     method: str = CORPUS_PROBE_METHOD
@@ -202,6 +214,15 @@ class AgentAnswer(BaseModel):
     confidence: float | None = None
     evidence: list[EvidenceSource] = Field(default_factory=list)
     retrieved_chunks: list[RetrievedChunk] = Field(default_factory=list)
+    # Full text of the chunks B was handed, for the judge only. `sources[*].snippet` is
+    # truncated to 240 characters, which is enough to show *that* a chunk was retrieved
+    # and not enough to show whether it answered the question: in the 2026-08-02 re-run,
+    # both misclassified items had their answer inside a surfaced chunk past the 240th
+    # character, so D could not see the one thing the retrieval evidence positively
+    # proves. This field is stripped before the loop result is persisted or returned —
+    # see `QualityWorkbench.run_revision_coverage_loop` — because the ledger and the API
+    # response must not carry a second copy of the corpus.
+    surfaced_texts: list[dict[str, Any]] = Field(default_factory=list)
     # Set on the role="knowledge" answer only. It lives here rather than on the item so
     # it reaches D and the ledger through the paths that already carry B's retrieval
     # evidence (the D prompt dumps this model; the ledger persists it as
@@ -295,6 +316,9 @@ class CorpusProber(Protocol):
         knowledge_answer: AgentAnswer,
     ) -> CorpusProbe | None:
         """Locate A's terms in the whole corpus, relative to what B surfaced."""
+
+    def surfaced_texts(self, *, knowledge_answer: AgentAnswer) -> list[dict[str, Any]]:
+        """Full text of the chunks B retrieved, for the judge (see `surfaced_texts`)."""
 
 
 def build_corpus_probe(
@@ -553,12 +577,26 @@ class LLMFactChecker:
                 "single chunk carries it). B's own evidence cannot tell those three apart — for "
                 "that you need the corpus probe below, and without it use needs_quarantine."
             ),
+            "evidence_order_you_must_follow": (
+                "1. Read `knowledge_only_answer_B.surfaced_texts` — the FULL text of the "
+                "chunks B was handed. If any of them answers the question, in any wording, "
+                "the cause is generation_failure and you are done. Do not skip this step: "
+                "in a measured run, every judgment that got the cause wrong got it wrong "
+                "here, by treating a chunk as silent because A's exact words were not in "
+                "it. `sources[*].snippet` is truncated at 240 characters, so never treat a "
+                "snippet as the whole chunk. 2. Only if step 1 excludes generation_failure "
+                "may you use `corpus_probe` to choose between missing_knowledge and "
+                "retrieval_failure. 3. If neither step decides it, use needs_quarantine."
+            ),
             "how_to_use_the_corpus_probe": (
                 "`knowledge_only_answer_B.corpus_probe`, when present, supplies the corpus-side "
                 "evidence B's own output lacks. It takes the terms A's answer introduced and "
                 "reports where each occurs across the WHOLE corpus, including chunks retrieval "
-                "never returned. Terms in `absent_from_corpus` appear nowhere in the corpus, so "
-                "missing_knowledge is supportable. Terms in `present_but_unsurfaced` exist in "
+                "never returned. It matches exact strings and CANNOT SEE PARAPHRASE, so a term "
+                "in `absent_from_corpus` means the corpus never uses that wording — not that "
+                "the corpus is silent on the idea. Use it only after step 1 above has ruled "
+                "out generation_failure. Terms in `absent_from_corpus` then support "
+                "missing_knowledge. Terms in `present_but_unsurfaced` exist in "
                 "the corpus but retrieval did not return their chunks, so retrieval_failure is "
                 "supportable. Terms in `present_in_surfaced` were handed to B, so "
                 "generation_failure is supportable; if they are scattered across several "
@@ -781,16 +819,24 @@ def run_coverage_loop(
             knowledge = provided_knowledge_answer(question, knowledge_answers)
             if knowledge is None:
                 knowledge = knowledge_answerer(question=question, answer_mode=answer_mode)
-            if corpus_prober is not None and knowledge.corpus_probe is None:
-                # Attached before the judgment so D sees it, and left alone when a
-                # caller already supplied one with an injected B-answer.
-                probe = corpus_prober.probe(
-                    question=question,
-                    external_answer=external,
-                    knowledge_answer=knowledge,
-                )
-                if probe is not None:
-                    knowledge = knowledge.model_copy(update={"corpus_probe": probe})
+            if corpus_prober is not None:
+                # Attached before the judgment so D sees both, and left alone when a
+                # caller already supplied them with an injected B-answer.
+                update: dict[str, Any] = {}
+                if knowledge.corpus_probe is None:
+                    probe = corpus_prober.probe(
+                        question=question,
+                        external_answer=external,
+                        knowledge_answer=knowledge,
+                    )
+                    if probe is not None:
+                        update["corpus_probe"] = probe
+                if not knowledge.surfaced_texts:
+                    update["surfaced_texts"] = corpus_prober.surfaced_texts(
+                        knowledge_answer=knowledge
+                    )
+                if update:
+                    knowledge = knowledge.model_copy(update=update)
             judgment = fact_checker.check(
                 question=question,
                 external_answer=external,
