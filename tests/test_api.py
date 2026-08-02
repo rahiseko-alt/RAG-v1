@@ -15,6 +15,7 @@ if _ROOT not in sys.path:
 import src.api as api  # noqa: E402
 from src.coverage_loop import AgentAnswer, CoverageQuestion, FactCheckJudgment  # noqa: E402
 from src.quality import OnlineVerifier, QualityWorkbench, WorkbenchStore  # noqa: E402
+from src.quality.workbench import retrieved_chunks_from_sources  # noqa: E402
 from src.rag import engine_fingerprint  # noqa: E402
 from src.structured_extraction import ExtractedKnowledgeBatch  # noqa: E402
 from src.structured_knowledge import EvidenceRef, KnowledgeFact, StructuredKnowledgeStore  # noqa: E402
@@ -545,6 +546,218 @@ def test_coverage_loop_marks_external_pass_b_abstention_as_add_candidate(monkeyp
         params={"status": "auto_rejected"},
     )
     assert filtered.json()["items"] == []
+
+
+def test_coverage_loop_30_question_fixture_is_well_formed_and_api_submittable():
+    """Design-doc step 6 needs a *fixed* 30-question set: before/after comparison is
+    meaningless if the questions are regenerated per run. The previous session's set
+    was never persisted and was lost, so this pins the replacement down — including
+    that it still fits `CoverageLoopRequest`'s 30-question ceiling in one call.
+    """
+    fixture = json.loads(
+        (Path(_ROOT) / "data" / "eval" / "coverage-loop-30-questions.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    questions = fixture["questions"]
+
+    assert len(questions) == 30
+    per_role = {role: 0 for role in fixture["roles"]}
+    for item in questions:
+        per_role[item["role"]] += 1
+    assert per_role == {"C-1": 10, "C-2": 10, "C-3": 10}
+
+    ids = [item["id"] for item in questions]
+    texts = [item["question"] for item in questions]
+    assert len(set(ids)) == 30, "duplicate id would collide when aggregating the weakness table"
+    # run_coverage_loop de-duplicates by question text, so a duplicate would silently
+    # shrink the run below 30 and skew every per-role count computed from it.
+    assert len(set(texts)) == 30, "duplicate question text would be dropped by the loop"
+    assert all(item["intent"].strip() for item in questions)
+
+    request = api.CoverageLoopRequest(questions=texts)
+    assert len(request.questions) == 30
+
+
+def test_retrieved_chunks_from_sources_normalizes_public_sources():
+    """Design-doc step 7: B's retrieval evidence is derived from the public sources
+    only — a locator, never the passage text, which stays in `sources[*].snippet`."""
+    chunks = retrieved_chunks_from_sources(
+        [
+            {"rank": 1, "source": "sample.md", "page": 3, "chunk_id": 7, "score": 0.859,
+             "snippet": "本文の抜粋"},
+            {"rank": 2, "source": "sample.md", "page": None, "chunk_id": None, "score": None},
+        ]
+    )
+
+    assert [chunk.model_dump() for chunk in chunks] == [
+        {"chunk_id": "7", "score": 0.859, "citation": "sample.md p.3", "rank": 1},
+        {"chunk_id": "", "score": None, "citation": "sample.md", "rank": 2},
+    ]
+
+
+def test_retrieved_chunks_from_sources_keeps_chunk_id_zero_and_rejects_bad_ranks():
+    """`chunk_id` is a 0-based counter (`src/ingest`), so a falsy test would blank out
+    the first chunk of every document — the one retrieval surfaces most often. `rank`
+    is 1-based and doubles as the `[N]` citation marker, so 0 and bool must not pass
+    through as ranks or the marker stops correlating with its source record."""
+    chunks = retrieved_chunks_from_sources(
+        [
+            {"rank": 0, "source": "sample.md", "page": 0, "chunk_id": 0, "score": 0.5},
+            {"rank": True, "source": "sample.md", "page": 1, "chunk_id": "abc", "score": True},
+        ]
+    )
+
+    assert [chunk.model_dump() for chunk in chunks] == [
+        {"chunk_id": "0", "score": 0.5, "citation": "sample.md p.0", "rank": 1},
+        {"chunk_id": "abc", "score": None, "citation": "sample.md p.1", "rank": 2},
+    ]
+
+
+def test_retrieved_chunks_from_sources_is_empty_when_nothing_was_retrieved():
+    """"B retrieved nothing" must stay distinguishable from "B was never asked",
+    so an empty/absent source list produces an empty list rather than a fake row."""
+    assert retrieved_chunks_from_sources(None) == []
+    assert retrieved_chunks_from_sources([]) == []
+
+
+def test_coverage_loop_records_b_retrieval_evidence_in_the_ledger(monkeypatch, tmp_path):
+    """Design-doc step 7: when B is run locally, the chunks its retriever surfaced are
+    recorded on the B-answer and persisted with the candidate.
+
+    Without this, a D judgment only sees B's final text, so `missing_knowledge`
+    (nothing relevant was retrievable) is indistinguishable from `retrieval_failure`
+    (a relevant chunk was retrieved but ranked too low) — the exact conflation the
+    failure taxonomy exists to prevent.
+    """
+    monkeypatch.setattr(api, "is_generation_configured", lambda: True)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    # Answerable from outside, but absent from the indexed document, so B abstains
+    # while its retriever still surfaces (irrelevant) chunks.
+    question = "呪術廻戦の全台詞を引用できますか？"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {
+                question: {"answer": "全台詞の網羅的な引用は権利上できない。", "status": "ok"}
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "missing_knowledge",
+                    "reason": "B abstained and no retrieved chunk carried the answer.",
+                }
+            },
+            "run_knowledge_answerer": True,
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+
+    assert res.status_code == 200
+    item = res.json()["items"][0]
+    assert item["disposition"] == "add_candidate"
+    assert item["knowledge_answer"]["retrieved_chunks"] == [
+        {"chunk_id": "3", "score": 0.859, "citation": "sample.md p.0", "rank": 1}
+    ]
+
+    # The evidence has to survive into the ledger: the 30-question experiment
+    # (design-doc step 6) is analysed from stored candidates, not from the response.
+    candidate = client.get(
+        f"/workbench/revisions/{revision_id}/coverage-candidates"
+    ).json()["items"][0]
+    assert candidate["knowledge_answer"]["retrieved_chunks"] == [
+        {"chunk_id": "3", "score": 0.859, "citation": "sample.md p.0", "rank": 1}
+    ]
+
+
+def test_coverage_loop_keeps_injected_b_answers_free_of_invented_retrieval_evidence(
+    monkeypatch, tmp_path
+):
+    """An injected B-answer (subagent output, prior log) that carries no retrieval
+    evidence must stay empty rather than have a locator synthesised from its
+    `sources`. Fabricated evidence would let D "confirm" a cause it cannot see."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "虎杖が簡易領域を習得できた理由を答えろ。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {question: {"answer": "入れ替え修行で日下部から学んだ。", "status": "ok"}},
+            "knowledge_answers": {
+                question: {
+                    "answer": "提供された文書には記載がありません。",
+                    "status": "released",
+                    "sources": [{"source": "local-rag-log", "snippet": "fixture"}],
+                }
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "missing_knowledge",
+                }
+            },
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+
+    assert res.status_code == 200
+    assert res.json()["items"][0]["knowledge_answer"]["retrieved_chunks"] == []
+
+
+def test_coverage_loop_accepts_injected_retrieval_evidence(monkeypatch, tmp_path):
+    """A subagent or replayed log that *did* record retrieval evidence can supply it
+    directly, so offline runs reach D with the same evidence a local B run would."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "虎杖が簡易領域を習得できた理由を答えろ。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {question: {"answer": "入れ替え修行で日下部から学んだ。", "status": "ok"}},
+            "knowledge_answers": {
+                question: {
+                    "answer": "提供された文書には記載がありません。",
+                    "status": "released",
+                    "retrieved_chunks": [
+                        {"chunk_id": "12", "score": 0.41, "citation": "sample.md p.5", "rank": 1}
+                    ],
+                }
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "retrieval_failure",
+                }
+            },
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+
+    assert res.status_code == 200
+    assert res.json()["items"][0]["knowledge_answer"]["retrieved_chunks"] == [
+        {"chunk_id": "12", "score": 0.41, "citation": "sample.md p.5", "rank": 1}
+    ]
 
 
 def test_coverage_candidate_quarantine_can_be_resolved_by_hand(monkeypatch, tmp_path):

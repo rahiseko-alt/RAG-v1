@@ -77,10 +77,29 @@ class EvidenceSource(BaseModel):
 class RetrievedChunk(BaseModel):
     """One chunk B's retriever surfaced (session-report step 2/7: 取得chunk/score/引用箇所/検索順位).
 
-    Recording this per-answer is what will let a later D judgment distinguish
-    `missing_knowledge` (nothing relevant was retrievable) from `retrieval_failure`
-    (a relevant chunk was retrieved but not used) instead of guessing from the
-    final answer text alone.
+    Recording this per-answer is what lets a D judgment separate failure modes that
+    B's answer text alone cannot. Note what it does and does not prove:
+
+    - Positively: a surfaced chunk already carried the needed fact and B still
+      failed -> `generation_failure`.
+    - Not provable from here: the fact being absent from the surfaced chunks is
+      equally consistent with `missing_knowledge` (the corpus lacks it),
+      `retrieval_failure` (the corpus has it, retrieval did not surface it), and
+      `chunking_failure` (it is split across chunks). Separating those needs corpus
+      evidence, not this list — see `LLMFactChecker`'s prompt.
+
+    Field meanings, so that externally injected B-answers (subagent output, a
+    prior run's log) record the same thing our own runtime does:
+
+    - `chunk_id`  : the retriever's identifier for the chunk (opaque key).
+    - `score`     : the retrieval score, higher = closer match.
+    - `citation`  : human-readable *where it came from*, e.g. `"sample.md p.3"`.
+      Deliberately a locator and not the passage text — the passage already
+      travels in `AgentAnswer.sources[*].snippet`, and duplicating it here would
+      double the size of every persisted ledger row.
+    - `rank`      : 1-based retrieval order. This is also the number used by the
+      `[N]` citation markers in B's answer text (see `verifier.CITATION_PATTERN`),
+      so D can check whether B actually cited the chunk that carried the answer.
     """
 
     chunk_id: str = ""
@@ -355,6 +374,17 @@ class LLMFactChecker:
                 "simply out of this knowledge base's scope. If A has no sources, be conservative: "
                 "pass only when the answer is basic and internally coherent. If you cannot decide "
                 "confidently between two causes, choose needs_quarantine rather than guessing."
+            ),
+            "how_to_use_B_retrieval_evidence": (
+                "B's `retrieved_chunks` and `sources` show what its retriever actually surfaced. "
+                "They prove one thing positively: if a surfaced chunk already carries the needed "
+                "fact and B still failed, that is generation_failure. They do NOT prove the "
+                "reverse. The fact being absent from the surfaced chunks is equally consistent "
+                "with missing_knowledge (the corpus lacks it), retrieval_failure (the corpus has "
+                "it but retrieval did not surface it), and chunking_failure (it is split so no "
+                "single chunk carries it). You are not given the corpus, so do not pick "
+                "missing_knowledge from B's evidence alone — choose it only with evidence that "
+                "the corpus lacks the fact, and use needs_quarantine otherwise."
             ),
             "question": question,
             "external_answer_A": external_answer.model_dump(),

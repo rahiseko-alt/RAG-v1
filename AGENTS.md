@@ -66,6 +66,7 @@
 ```bash
 uv sync --locked --extra dev        # ← --extra dev は必須（後述）
 uv run ruff check src tests         # Lint（対象は src tests に限定。後述）
+uv run mypy src                     # 型（CI 接続済み。エラー 0 を維持する）
 uv run pytest -q                    # 実テスト（e2e/slow は pytest.ini で既定除外）
 uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別シェルで curl）
 ```
@@ -89,14 +90,24 @@ uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別�
 | `e2e` | Playwright のブラウザバイナリと、`127.0.0.1:8010` で起動済みの uvicorn を要求する | `uv run playwright install --with-deps chromium` → 別シェルで uvicorn を起動 → `uv run pytest tests/e2e -m e2e` |
 | `slow` | HuggingFace から埋め込みモデルを取得し、リポジトリ直下に `chroma/` を作る（外部ネットワーク依存） | `uv run pytest -m slow` |
 
+### 型ゲート（mypy）— `ci-green` に接続済み・エラー 0 を維持する
+
+- `uv run mypy src` は **0 errors**（17 files・2026-08-02 に解消）。`ci.yml` の `quality` ジョブに
+  `Types (mypy)` ステップとして繋いであり、`quality` が落ちれば `ci-green` も落ちる。
+- **新しいジョブではなくステップ**にしてある。`ci-green` の `needs:` と比較式に触らずに済ませる
+  ため（下記「CI の中身を変えるとき」の警告を参照）と、重い依存の install を二重に払わないため。
+- **エラー 0 を維持すること。** `# type: ignore` を足すときは、なぜ実行時には正しいのかを
+  コメントで必ず書く（`warn_unused_ignores = true` なので、不要になった ignore も赤くなる）。
+- 現存する `type: ignore` は `src/rag/__init__.py` の 2 箇所のみ。いずれも langchain 側の
+  pydantic フィールド別名（`model_name`↔`model` / `max_tokens`↔`max_tokens_to_sample`）と
+  プラグイン生成 `__init__` の食い違いで、`populate_by_name=True` のため実行時は正しい。
+  **実装のバグ抑制ではない。** ただし `ignore[call-arg]` は呼び出し全体に掛かるため、
+  この2行は他の引数ミスも報告されなくなる。その穴は
+  `tests/test_rag.py::test_langchain_constructor_kwargs_still_exist` が埋めている
+  （依存更新でキーワードが受理されなくなれば CI が落ちる）。**このテストを消さないこと。**
+
 ### 現在 `ci-green` に入っていないゲート（既知の欠落・要対応）
 
-「検証の規律」が求める **型チェックと依存脆弱性のゲートが、現時点では CI に入っていない**。
-埋めるまでは「型は未検査」と理解して扱うこと。
-
-- **型（mypy）**：`uv run mypy src` は現在 **40 errors in 8 files**（2026-08-01 実測）。大半は
-  `WorkbenchStore.get_active_revision()` が `dict | None` を返すのに絞り込まずに添字アクセス
-  している箇所。修正は移行作業の範囲を超えるため未着手。**直したうえで CI に追加すること。**
 - **依存の脆弱性**：pnpm 時代の `pnpm audit --audit-level moderate` に相当するゲートが無い。
   `pip-audit` 等の導入を検討する（Dependabot は `.github/dependabot.yml` で `uv` を監視中）。
 
@@ -152,7 +163,7 @@ uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別�
 - IaC / デプロイ: **無し**（ローカル起動のみ）
 - テスト: **pytest**（`tests/`。e2e は Playwright）
 - CI: GitHub Actions（`.github/workflows/ci.yml`）
-- Lint: **ruff** ／ 型: **mypy**（設定はあるが CI 未接続。「Testing instructions」の既知の欠落を参照）
+- Lint: **ruff** ／ 型: **mypy**（CI 接続済み・エラー 0。「Testing instructions」参照）
 - 監査ログ: **Langfuse Cloud**（任意連携。環境変数が設定されている時だけ有効）
 
 主要コマンドは「Testing instructions」を参照。CLI は `uv run python -m src.rag.cli "質問"`。

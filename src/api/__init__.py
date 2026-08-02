@@ -314,16 +314,20 @@ def _summarize_indexed_chunks(vs: Any) -> str:
     except Exception as exc:
         return f"索引チャンク一覧の取得に失敗: {safe_error_message(exc)}"
 
-    rows: list[tuple[int, str]] = []
+    rows: list[tuple[tuple[int, int], str]] = []
     documents = raw.get("documents", []) or []
     metadatas = raw.get("metadatas", []) or []
     for doc, metadata in zip(documents, metadatas):
         metadata = metadata or {}
         chunk_id = metadata.get("chunk_id")
         try:
-            sort_key = int(chunk_id)
-        except (TypeError, ValueError):
-            sort_key = 999999
+            # Rank by validity first so an unusable id always sorts last, however
+            # large a real id gets — the previous 999999 sentinel would have been
+            # overtaken by a genuine id past that count. OverflowError is caught
+            # alongside because int() raises it (not ValueError) for float("inf").
+            sort_key: tuple[int, int] = (1, 0) if chunk_id is None else (0, int(chunk_id))
+        except (TypeError, ValueError, OverflowError):
+            sort_key = (1, 0)
         snippet = " ".join(str(doc).split())[:90]
         rows.append(
             (

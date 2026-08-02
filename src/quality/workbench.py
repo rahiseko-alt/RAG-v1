@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, TypeGuard
 
 from src.coverage_loop import (
     AgentAnswer,
@@ -16,6 +16,7 @@ from src.coverage_loop import (
     MissingExternalAnswerer,
     ProvidedFactChecker,
     CoverageQuestionGenerator,
+    RetrievedChunk,
     run_coverage_loop,
 )
 from src.ingest import load_and_chunk
@@ -28,6 +29,7 @@ from src.observability import (
 )
 from src.rag import ask as rag_ask
 from src.rag import (
+    RAGState,
     bm25_rescue_search,
     engine_fingerprint,
     expand_with_neighbor_chunks,
@@ -46,6 +48,54 @@ from .store import WorkbenchConflictError, WorkbenchStore, sha256_file
 from .verifier import CANONICAL_ABSTENTION, AnswerMode, OnlineVerifier, public_verification
 
 
+def _is_real_number(value: Any) -> TypeGuard[int | float]:
+    """True for an int/float score. `bool` is an int subclass, so exclude it explicitly."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _is_positive_rank(value: Any) -> TypeGuard[int]:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 1
+
+
+def retrieved_chunks_from_sources(sources: list[dict[str, Any]] | None) -> list[RetrievedChunk]:
+    """Normalize `answer_question`'s public sources into coverage-loop retrieval evidence.
+
+    Design-doc step 7: a coverage-loop B-answer must carry the chunks its retriever
+    actually surfaced, so D can tell `missing_knowledge` (nothing relevant was
+    retrievable) apart from `retrieval_failure` / `generation_failure` (something
+    relevant was retrieved but ranked too low or ignored). Without this, D only sees
+    B's final text and has to guess, which is exactly the false-positive path the
+    failure taxonomy exists to close.
+
+    This runs on the *public* source dicts (the ones already returned to callers and
+    persisted with the run), not on private evidence, so nothing new is exposed and
+    the ledger row stays free of full chunk text.
+    """
+    chunks: list[RetrievedChunk] = []
+    for index, source in enumerate(sources or [], start=1):
+        raw_chunk_id = source.get("chunk_id")
+        raw_rank = source.get("rank")
+        raw_score = source.get("score")
+        page = source.get("page")
+        origin = str(source.get("source") or "").strip()
+        # Locator only — the passage itself stays in `sources[*].snippet`.
+        citation = f"{origin} p.{page}" if origin and page not in (None, "") else origin
+        chunks.append(
+            RetrievedChunk(
+                # `chunk_id` is an opaque 0-based counter (`src/ingest`), so a falsy
+                # test would blank out the first chunk of every document — which is
+                # also the one retrieval surfaces most often.
+                chunk_id="" if raw_chunk_id is None else str(raw_chunk_id),
+                score=float(raw_score) if _is_real_number(raw_score) else None,
+                citation=citation,
+                # `rank` is 1-based and doubles as the `[N]` citation marker, so a 0
+                # or a stray bool must not pass through as a rank.
+                rank=raw_rank if _is_positive_rank(raw_rank) else index,
+            )
+        )
+    return chunks
+
+
 class QualityWorkbench:
     """Coordinate revision-specific engines, verification, audit, and persistence."""
 
@@ -55,7 +105,9 @@ class QualityWorkbench:
         *,
         verifier: OnlineVerifier | None = None,
         rag_factory: Callable[..., tuple[Any, Any, int]] = make_rag,
-        ask_fn: Callable[..., dict[str, Any]] = rag_ask,
+        # RAGState is a TypedDict, which is not assignable to `dict[str, Any]`, so the
+        # previous annotation rejected the real `rag.ask` it defaults to.
+        ask_fn: Callable[..., RAGState] = rag_ask,
         structured_store: StructuredKnowledgeStore | None = None,
         structured_extractor: StructuredExtractor | None = None,
         coverage_question_generator: CoverageQuestionGenerator | None = None,
@@ -522,12 +574,17 @@ class QualityWorkbench:
                     status="error",
                     notes=safe_error_message(exc),
                 )
+            sources = list(outcome.get("sources") or [])
             return AgentAnswer(
                 role="knowledge",
                 answer=outcome.get("answer"),
                 status=str(outcome.get("delivery_status") or "unknown"),
-                sources=list(outcome.get("sources") or []),
+                sources=sources,
                 notes=str(outcome.get("blocked_reason") or ""),
+                # Recorded even when the quality gate blocked the answer (`answer`
+                # is None then): "B produced nothing" and "B retrieved nothing" are
+                # different failures, and only the retrieval evidence separates them.
+                retrieved_chunks=retrieved_chunks_from_sources(sources),
             )
 
         result = run_coverage_loop(
