@@ -596,6 +596,24 @@ def test_retrieved_chunks_from_sources_normalizes_public_sources():
     ]
 
 
+def test_retrieved_chunks_from_sources_keeps_chunk_id_zero_and_rejects_bad_ranks():
+    """`chunk_id` is a 0-based counter (`src/ingest`), so a falsy test would blank out
+    the first chunk of every document — the one retrieval surfaces most often. `rank`
+    is 1-based and doubles as the `[N]` citation marker, so 0 and bool must not pass
+    through as ranks or the marker stops correlating with its source record."""
+    chunks = retrieved_chunks_from_sources(
+        [
+            {"rank": 0, "source": "sample.md", "page": 0, "chunk_id": 0, "score": 0.5},
+            {"rank": True, "source": "sample.md", "page": 1, "chunk_id": "abc", "score": True},
+        ]
+    )
+
+    assert [chunk.model_dump() for chunk in chunks] == [
+        {"chunk_id": "0", "score": 0.5, "citation": "sample.md p.0", "rank": 1},
+        {"chunk_id": "abc", "score": None, "citation": "sample.md p.1", "rank": 2},
+    ]
+
+
 def test_retrieved_chunks_from_sources_is_empty_when_nothing_was_retrieved():
     """"B retrieved nothing" must stay distinguishable from "B was never asked",
     so an empty/absent source list produces an empty list rather than a fake row."""

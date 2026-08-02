@@ -77,10 +77,16 @@ class EvidenceSource(BaseModel):
 class RetrievedChunk(BaseModel):
     """One chunk B's retriever surfaced (session-report step 2/7: 取得chunk/score/引用箇所/検索順位).
 
-    Recording this per-answer is what lets a D judgment distinguish
-    `missing_knowledge` (nothing relevant was retrievable) from `retrieval_failure`
-    (a relevant chunk was retrieved but not used) instead of guessing from the
-    final answer text alone.
+    Recording this per-answer is what lets a D judgment separate failure modes that
+    B's answer text alone cannot. Note what it does and does not prove:
+
+    - Positively: a surfaced chunk already carried the needed fact and B still
+      failed -> `generation_failure`.
+    - Not provable from here: the fact being absent from the surfaced chunks is
+      equally consistent with `missing_knowledge` (the corpus lacks it),
+      `retrieval_failure` (the corpus has it, retrieval did not surface it), and
+      `chunking_failure` (it is split across chunks). Separating those needs corpus
+      evidence, not this list — see `LLMFactChecker`'s prompt.
 
     Field meanings, so that externally injected B-answers (subagent output, a
     prior run's log) record the same thing our own runtime does:
@@ -371,12 +377,14 @@ class LLMFactChecker:
             ),
             "how_to_use_B_retrieval_evidence": (
                 "B's `retrieved_chunks` and `sources` show what its retriever actually surfaced. "
-                "Use them instead of inferring the cause from B's answer text alone: if no chunk "
-                "carries the needed fact, that points to missing_knowledge or chunking_failure; if "
-                "a chunk does carry it, B failed to retrieve it highly enough (retrieval_failure) "
-                "or retrieved it and ignored it (generation_failure). When B reports no retrieval "
-                "evidence at all, you cannot tell these apart — prefer needs_quarantine over "
-                "guessing missing_knowledge."
+                "They prove one thing positively: if a surfaced chunk already carries the needed "
+                "fact and B still failed, that is generation_failure. They do NOT prove the "
+                "reverse. The fact being absent from the surfaced chunks is equally consistent "
+                "with missing_knowledge (the corpus lacks it), retrieval_failure (the corpus has "
+                "it but retrieval did not surface it), and chunking_failure (it is split so no "
+                "single chunk carries it). You are not given the corpus, so do not pick "
+                "missing_knowledge from B's evidence alone — choose it only with evidence that "
+                "the corpus lacks the fact, and use needs_quarantine otherwise."
             ),
             "question": question,
             "external_answer_A": external_answer.model_dump(),

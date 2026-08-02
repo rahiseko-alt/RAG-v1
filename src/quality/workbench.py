@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, TypeGuard
 
 from src.coverage_loop import (
     AgentAnswer,
@@ -47,6 +47,15 @@ from .store import WorkbenchConflictError, WorkbenchStore, sha256_file
 from .verifier import CANONICAL_ABSTENTION, AnswerMode, OnlineVerifier, public_verification
 
 
+def _is_real_number(value: Any) -> TypeGuard[int | float]:
+    """True for an int/float score. `bool` is an int subclass, so exclude it explicitly."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _is_positive_rank(value: Any) -> TypeGuard[int]:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 1
+
+
 def retrieved_chunks_from_sources(sources: list[dict[str, Any]] | None) -> list[RetrievedChunk]:
     """Normalize `answer_question`'s public sources into coverage-loop retrieval evidence.
 
@@ -63,18 +72,24 @@ def retrieved_chunks_from_sources(sources: list[dict[str, Any]] | None) -> list[
     """
     chunks: list[RetrievedChunk] = []
     for index, source in enumerate(sources or [], start=1):
-        rank = source.get("rank")
-        score = source.get("score")
+        raw_chunk_id = source.get("chunk_id")
+        raw_rank = source.get("rank")
+        raw_score = source.get("score")
         page = source.get("page")
         origin = str(source.get("source") or "").strip()
         # Locator only — the passage itself stays in `sources[*].snippet`.
         citation = f"{origin} p.{page}" if origin and page not in (None, "") else origin
         chunks.append(
             RetrievedChunk(
-                chunk_id=str(source.get("chunk_id") or ""),
-                score=float(score) if isinstance(score, (int, float)) else None,
+                # `chunk_id` is an opaque 0-based counter (`src/ingest`), so a falsy
+                # test would blank out the first chunk of every document — which is
+                # also the one retrieval surfaces most often.
+                chunk_id="" if raw_chunk_id is None else str(raw_chunk_id),
+                score=float(raw_score) if _is_real_number(raw_score) else None,
                 citation=citation,
-                rank=int(rank) if isinstance(rank, int) else index,
+                # `rank` is 1-based and doubles as the `[N]` citation marker, so a 0
+                # or a stray bool must not pass through as a rank.
+                rank=raw_rank if _is_positive_rank(raw_rank) else index,
             )
         )
     return chunks
