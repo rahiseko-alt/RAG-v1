@@ -548,6 +548,37 @@ def test_coverage_loop_marks_external_pass_b_abstention_as_add_candidate(monkeyp
     assert filtered.json()["items"] == []
 
 
+def test_coverage_loop_30_question_fixture_is_well_formed_and_api_submittable():
+    """Design-doc step 6 needs a *fixed* 30-question set: before/after comparison is
+    meaningless if the questions are regenerated per run. The previous session's set
+    was never persisted and was lost, so this pins the replacement down — including
+    that it still fits `CoverageLoopRequest`'s 30-question ceiling in one call.
+    """
+    fixture = json.loads(
+        (Path(_ROOT) / "data" / "eval" / "coverage-loop-30-questions.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    questions = fixture["questions"]
+
+    assert len(questions) == 30
+    per_role = {role: 0 for role in fixture["roles"]}
+    for item in questions:
+        per_role[item["role"]] += 1
+    assert per_role == {"C-1": 10, "C-2": 10, "C-3": 10}
+
+    ids = [item["id"] for item in questions]
+    texts = [item["question"] for item in questions]
+    assert len(set(ids)) == 30, "duplicate id would collide when aggregating the weakness table"
+    # run_coverage_loop de-duplicates by question text, so a duplicate would silently
+    # shrink the run below 30 and skew every per-role count computed from it.
+    assert len(set(texts)) == 30, "duplicate question text would be dropped by the loop"
+    assert all(item["intent"].strip() for item in questions)
+
+    request = api.CoverageLoopRequest(questions=texts)
+    assert len(request.questions) == 30
+
+
 def test_retrieved_chunks_from_sources_normalizes_public_sources():
     """Design-doc step 7: B's retrieval evidence is derived from the public sources
     only — a locator, never the passage text, which stays in `sources[*].snippet`."""
