@@ -6,55 +6,62 @@
 
 ## ①今回実施
 
-`docs/session-reports/2026-08-01-coverage-loop-design.md`「次にやるべきこと」の項目1〜5を実装した
-（PR #18/#19）。加えて、チェックアウト運用のルール不備をユーザー指摘で修正した（PR #20）。
+PR #22（1本にまとめてマージ）。設計レポートの項目7と、`AGENTS.md` が「既知の欠落」としていた
+型ゲートを片付けた。
 
-- **項目1（PR #18・別セッションでマージ済み）**：`coverage-loop` の D 判定に失敗原因分類
-  （`missing_knowledge` / `retrieval_failure` / `generation_failure` / `chunking_failure` /
-  `ambiguous_question` / `invalid_A` / `out_of_scope` / `needs_quarantine`）を追加。
-- **項目2（PR #19）**：`src/coverage_loop.py` の `AgentAnswer` に evidence metadata
-  （`EvidenceSource`: url/source_type/span/updated_at、`RetrievedChunk`: chunk_id/score/citation/rank、
-  `confidence`）を追加。デフォルト空のオプションフィールドで既存呼び出し元は無変更。
-- **項目3〜5（PR #19）**：`src/quality/store.py` に `coverage_candidates` テーブルを追加し、
-  `run_revision_coverage_loop()` が各候補を自動保存するようにした（`persist: bool = True` 既定オン）。
-  `classify_coverage_item` の disposition を初期状態へマッピング：
-  `add_candidate -> auto_classified` / `rejected -> auto_rejected` / `quarantined -> auto_quarantined` /
-  `no_gap -> no_gap`。`GET /workbench/revisions/{id}/coverage-candidates`（status フィルタ対応）と
-  `POST /workbench/coverage-candidates/{id}/resolve`（`auto_quarantined -> auto_approved/auto_rejected`
-  のみ許可）を追加。ローカル `uvicorn` を実際に起動し、coverage-loop → 一覧 → resolve（409になる
-  ケース含む）まで curl で手元検証済み。
-- **PR #20（チェックアウト運用ルールの修正）**：`AGENTS.md` と `checkin-checkout` スキルを改訂し、
-  「チェックアウト（handoff編集・commit・push・PR・mainへのマージという一連の操作）は、ユーザーが
-  その全範囲を明示的に指示した時にのみ発火する」を明記した。CodeRabbitの指摘で、範囲を絞った指示
-  （「引継ぎ書いて」等）を全範囲発火の例から明確に切り離す追加修正も行った。詳細は
-  `docs/failures.md`「指示されていないチェックアウトを自己判断で開始し…」を参照。
+- **項目7（B回答の取得証跡を配線）**：`RetrievedChunk` はスキーマだけあって誰も値を詰めておらず、
+  D判定はB回答の最終テキストしか見えていなかった。`retrieved_chunks_from_sources()` を追加し、
+  ローカル実行したB回答に取得チャンク（`chunk_id`/`score`/`source p.N`/`rank`）を載せるようにした。
+  **品質ゲートでブロックされた場合も記録する**（「何も生成しなかった」と「何も引けなかった」は
+  別の失敗のため）。記録するのは locator のみで本文は入れない（本文は `sources[*].snippet` にあり、
+  二重に持つと台帳の1行が倍になる）。**注入されたB回答には証跡を合成しない**（取っていないログから
+  作ると偽の evidence になる）。台帳はB回答全体をJSONで持つためスキーマ変更不要だった。
+- **30問セットを版管理下に復元**：項目6に着手して、前回生成した30問が**どこにも保存されておらず
+  失われていた**ことが判明。`data/eval/coverage-loop-30-questions.json` として作り直した
+  （C-1/C-2/C-3 各10問）。前回の10問ループで確定済みの不足領域と重なる設問には `prior_10q_gap`
+  を立ててあり、新規発見を二重計上しないようにしてある。
+- **型ゲートを `ci-green` に接続（mypy 40 errors → 0）**：40件のうち25件は
+  `get_active_revision()` の署名1つが原因（既定では None を返さず raise するのに戻り値型が
+  無条件に union だった）。`@overload` で実挙動どおりに宣言して解消。残りは発生源で修正した。
+  **ゲートは新ジョブではなく既存 `quality` ジョブのステップ**として追加してある（`ci-green` の
+  `needs:` と比較式に触らないため＋重い依存の install を二重に払わないため）。
+- **CodeRabbit レビュー3巡対応**：指摘のうち実害のあるもの2件と文書の自己矛盾1件を修正、
+  成立しない指摘2件は根拠を示して返信した（詳細は②と `docs/failures.md`）。
 
-PR #19・#20 ともマージコミット方式でマージ済み（`1bce374` / `08bef3a`）。どちらもCI（`ci-green`）
-緑を確認してからマージした。
+最終コミット `aeed57a` で CI 全緑（`ci-green` / `lint`・`mypy`・`pytest`・起動スモーク / CodeQL）。
+`Types (mypy)` ステップが実際に実行され success したことはジョブログで確認済み。
 
 ## ②今回トラブル
 
-**指示されていないチェックアウトを自己判断で開始し、コードPR（#19）と引継ぎPR（#20）を分けて
-しまった。** ユーザー指摘を受けて `AGENTS.md` / `checkin-checkout` スキルを修正済み（①参照）。
-根因・教訓は `docs/failures.md` に記録した。
+**自分が今回入れた変更に、実害のあるバグを2件仕込んでレビューで指摘された。** 根因と教訓は
+`docs/failures.md` に3件 append した（下記2件＋30問セット紛失）。要約：
 
-設計判断として1点明記しておく：**`add_candidate` はあえて `auto_classified` 止まりで
-`auto_approved` にはしていない。** 設計文書の自動採用条件案は before/after 改善確認（項目6・未実装）
-も必須にしており、それを飛ばして自動承認すると「本人採点」と同じ誤りになるため。項目6を実装する
-までは、この保守的な挙動を変えないこと。
+1. **`chunk_id=0` の locator を落としていた**：`str(chunk_id or "")` と書いたが `chunk_id` は
+   0 始まりの連番なので、各文書の先頭チャンク（検索で最も頻繁に引かれる位置）の位置情報が
+   常に空になっていた。ローカルテストは通っていた（0 のケースを書いていなかったため）。
+2. **証跡から言えない結論をD向けプロンプトに書いた**：「surfaced chunk に事実が無ければ
+   `missing_knowledge` を示唆する」と書いたが、これは taxonomy が防ごうとしている飛躍そのもの。
+   surfaced chunk に無いことは「コーパスに無い」「あるが検索が出せなかった」「分割で分断された」の
+   いずれとも等しく整合し、Dはコーパスを渡されていないため区別できない。
+
+**項目6（30問をA/B/Dへ流す）は実行できなかった。** このコンテナに LLM の APIキーが無く
+（`.env` 無し・環境変数無し）、A役・D役・B役の生成をどれも実行できないため。ネットワーク自体は
+疎通している（HuggingFace / OpenAI いずれも到達可）ので、**キーさえあれば実行できる状態**。
+
+前回からの設計判断は維持している：**`add_candidate` はあえて `auto_classified` 止まりで
+`auto_approved` にしない**。自動採用条件には before/after 改善確認（項目6の実行結果）が必須で、
+それを飛ばして自動承認すると「本人採点」と同じ誤りになるため。
 
 ## ③次回やる事
 
-1. **本題：`docs/session-reports/2026-08-01-coverage-loop-design.md`「次にやるべきこと」の
-   項目6・7**：
-   - 6: 30問セット（C-1/C-2/C-3、計30問）をA/B/Dへ流し、問い型別弱点分類表を作る。
-   - 7: `missing_knowledge` と `retrieval_failure` を分けるため、B回答時の retrieved chunks /
-     scores / citations を必ず保存する（`RetrievedChunk` スキーマは項目2で用意済み・配線は未着手）。
-   - 7が終わると、before/after改善確認（項目6の実行結果）を使って `auto_classified -> auto_approved`
-     の自動昇格ロジックを実装できるようになる。これが今回あえてやらなかった部分。
-2. **積み残しのゲート**（`memory.md` からも継続）：`mypy src` の型エラーを直して型ゲートを
-   `ci-green` に追加。依存脆弱性ゲート（`pip-audit` 等）の導入。
-3. **Dependabot PR の処理**：前回セッションから積み残っている `dependabot/uv/*` 等。
-4. **`auto-merge.yml` の再有効化**：手順0 適用後、squash ではなくマージコミットを作る方式に
+1. **本題：項目6の実行**（`docs/session-reports/2026-08-01-coverage-loop-design.md`）。
+   `data/eval/coverage-loop-30-questions.json` を A/B/D へ流し、問い型別の弱点分類表を作る。
+   **APIキーの設定が前提**（`.env` に `OPENAI_API_KEY` または `ANTHROPIC_API_KEY`）。
+   設問セットは版管理下にあるので、実行は coverage-loop API へのリクエスト1本で再現できる。
+2. **項目6の結果を使って `auto_classified -> auto_approved` の自動昇格を実装する。**
+   before/after 改善確認が取れて初めて着手できる部分。
+3. **Dependabot PR の処理**：8件滞留（#3, #4, #10〜#15）。
+4. **依存脆弱性ゲート**：`pip-audit` 等の導入（`ci-green` に残る唯一の既知の欠落）。
+5. quarantine 一覧の UI（`src/api/static/app.js`）。API は実装済みだが画面は未着手。
+6. **`auto-merge.yml` の再有効化**：手順0 適用後、squash ではなくマージコミットを作る方式に
    直してから `on:` を戻す。現在は `workflow_dispatch` のみ。
-5. quarantine 一覧の UI（`src/api/static/app.js`）は今回未着手。API（項目5）のみ実装済み。

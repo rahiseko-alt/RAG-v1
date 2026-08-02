@@ -10,9 +10,13 @@
 
 ## P1: 現在地・引継ぎミッション（絶対に消さない）
 
-> 直近 plan: RAG弱点仮説生成・検証ワークフロー（A/B/C/D coverage loop）を構造化ナレッジ改善ワークベンチへ接続中。次は `docs/session-reports/2026-08-01-coverage-loop-design.md` を読むこと。
+> 直近 plan: RAG弱点仮説生成・検証ワークフロー（A/B/C/D coverage loop）を構造化ナレッジ改善ワークベンチへ接続中。設計レポートの項目1〜5・7は実装済み、**残るは項目6（30問実行・APIキー必須）とその先の自動昇格**。次は `docs/session-reports/2026-08-01-coverage-loop-design.md` を読むこと。
 
 - **[importance:H][2026-08-01] 現在の主題は呪術廻戦ナレッジそのものではなく、任意ドメインRAGの弱点仮説生成・検証ワークフロー。A/B/C/Dループは「ナレッジ不足確定」ではなく「BがAより弱く見えた差分」を出すだけ。`missing_knowledge / retrieval_failure / generation_failure / chunking_failure / invalid_A / ambiguous_question / out_of_scope / needs_quarantine` への原因分類は実装済み（PR #18）。evidence metadata・coverage台帳のSQLite永続化・auto_classified/auto_rejected/auto_quarantined 状態遷移・隔離解決APIも実装済み（PR #19）。残りは項目6（30問A/B/D全実行→弱点分類表）・項目7（B側retrieved chunks保存の配線）・その先の `auto_classified -> auto_approved` 自動昇格（before/after改善確認が前提、未実装）。詳細は `docs/handoff.md` 参照。**
+- **[importance:H][2026-08-02] 項目7（B回答の取得証跡の配線）は実装済み（PR #22）。残るは項目6（30問をA/B/Dへ流して弱点分類表を作る）＝**APIキー設定が前提**、その先の `auto_classified -> auto_approved` 自動昇格（項目6の before/after 結果が前提）。設問セットは `data/eval/coverage-loop-30-questions.json` に版管理済み。**
+- **[importance:H][2026-08-02] 取得証跡（`RetrievedChunk`）が積極的に証明できるのは一方向だけ：surfaced chunk が事実を含むのに B が失敗 → `generation_failure`。「surfaced chunk に事実が無い」ことは `missing_knowledge` / `retrieval_failure` / `chunking_failure` のいずれとも等しく整合し、D はコーパスを渡されないため区別できない。証跡だけから `missing_knowledge` を選ばせない（`needs_quarantine` に落とす）。この飛躍を一度自分で持ち込んで指摘された（`docs/failures.md` 2026-08-02）。**
+- **[importance:H][2026-08-02] 実験の入力（設問セット・固定パラメータ）は必ず版管理下のファイルに置く。before/after 比較は固定評価セットが前提で、毎回生成し直すと両側が比較不能になる。前回30問セットをレポート要約だけで済ませて失った（`docs/failures.md` 2026-08-02）。**
+- **[importance:H][2026-08-02] 型ゲート（`uv run mypy src`）は `ci-green` に接続済み・エラー 0。0 を維持すること。`type: ignore` は `src/rag/__init__.py` の 2 箇所のみで、langchain の pydantic 別名との食い違い（実行時は正しい）。`ignore[call-arg]` は呼び出し全体に掛かるため、その穴は `tests/test_rag.py::test_langchain_constructor_kwargs_still_exist` が埋めている。**このテストを消さないこと。** 詳細は `AGENTS.md`「型ゲート（mypy）」節。**
 - **[importance:H][2026-08-01] ユーザー都度承認は禁止方針。処理が止まるため。通常候補は自動採用/自動却下/隔離に分岐し、隔離だけ日次・週次・任意タイミングでまとめてユーザー確認する。**
 - **[importance:H][2026-08-01] 製品API内でA/C/Dを毎回LLM実行しない。A/B/D結果はサブエージェント、人間、外部ツール、既存ログから注入可能にする。製品APIは候補化・台帳化・before/after比較を担う。**
 - **[importance:M][2026-08-01] C役は3人化済み設計: C-1 因果xマニアック、C-2 因果x複数人/組織、C-3 条件/例外x時系列/比較。敵対検証により実ユーザーログ由来・曖昧質問・手順系・エラー系・権限系・no-answer系も追加すべき。**
