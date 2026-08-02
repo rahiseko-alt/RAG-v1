@@ -18,6 +18,7 @@ from src.coverage_loop import (  # noqa: E402
     REJECTED_CAUSES,
     AgentAnswer,
     CorpusChunk,
+    EvidenceSource,
     FactCheckJudgment,
     RetrievedChunk,
     build_corpus_probe,
@@ -25,8 +26,18 @@ from src.coverage_loop import (  # noqa: E402
 )
 
 
-def _external(status: str = "ok") -> AgentAnswer:
-    return AgentAnswer(role="external", answer="A の回答", status=status)
+def _external(status: str = "ok", *, source_type: str = "reliable_secondary") -> AgentAnswer:
+    """An A-answer that clears the auto-adoption sourcing bar unless told otherwise.
+
+    The bar is the default here because every add_candidate case now depends on it;
+    `source_type="fan"` is the explicit way to test the other side.
+    """
+    return AgentAnswer(
+        role="external",
+        answer="A の回答",
+        status=status,
+        evidence=[EvidenceSource(url="https://example.test/a", source_type=source_type)],
+    )
 
 
 def _knowledge(*, answer: str = "記載がありません", status: str = "released") -> AgentAnswer:
@@ -370,3 +381,76 @@ def test_surfaced_texts_reach_the_judge_and_stay_on_the_loop_result():
     )
     assert seen["texts"] == [{"rank": 1, "chunk_id": "1", "text": "全文"}]
     assert result.items[0].knowledge_answer.surfaced_texts
+
+
+# --- A の出典要件 -----------------------------------------------------------
+#
+# 設計レポートの自動採用条件（A の source_type が official / primary /
+# reliable_secondary）は、これまでどこにも実装されていなかった。D の裁量に委ねた結果は
+# 実測でコイン投げだったので、採用側だけ機械で縛る。
+
+def test_fan_only_source_cannot_become_an_auto_candidate():
+    """Same judgment, weaker sourcing: the gap may be real, but it is not adoptable
+    on a fan-only citation, so it goes to a human instead of into the candidate list."""
+    judgment = FactCheckJudgment(
+        external_status="pass",
+        knowledge_status="fail",
+        same_answer=False,
+        failure_cause="missing_knowledge",
+    )
+    disposition, reason = classify_coverage_item(
+        external_answer=_external(source_type="fan"),
+        knowledge_answer=_knowledge(status="error"),
+        judgment=judgment,
+    )
+    assert disposition == "quarantined"
+    assert "not auto-adoptable" in reason
+
+
+def test_unsourced_external_answer_cannot_become_an_auto_candidate():
+    judgment = FactCheckJudgment(
+        external_status="pass",
+        knowledge_status="fail",
+        same_answer=False,
+        failure_cause="missing_knowledge",
+    )
+    disposition, _ = classify_coverage_item(
+        external_answer=AgentAnswer(role="external", answer="出典なしのA"),
+        knowledge_answer=_knowledge(status="error"),
+        judgment=judgment,
+    )
+    assert disposition == "quarantined"
+
+
+def test_sourcing_bar_does_not_turn_a_gap_into_a_rejection():
+    """Quarantine, not reject: weak sourcing says nothing about whether the knowledge
+    base is missing something, and `rejected` is where candidates go to die."""
+    for source_type in ("fan", "unknown", ""):
+        judgment = FactCheckJudgment(
+            external_status="pass",
+            knowledge_status="fail",
+            same_answer=False,
+            failure_cause="retrieval_failure",
+        )
+        disposition, _ = classify_coverage_item(
+            external_answer=_external(source_type=source_type),
+            knowledge_answer=_knowledge(status="error"),
+            judgment=judgment,
+        )
+        assert disposition == "quarantined", source_type
+
+
+def test_acceptable_source_types_still_produce_candidates():
+    for source_type in ("official", "primary", "reliable_secondary", "Reliable_Secondary"):
+        judgment = FactCheckJudgment(
+            external_status="pass",
+            knowledge_status="fail",
+            same_answer=False,
+            failure_cause="missing_knowledge",
+        )
+        disposition, _ = classify_coverage_item(
+            external_answer=_external(source_type=source_type),
+            knowledge_answer=_knowledge(status="error"),
+            judgment=judgment,
+        )
+        assert disposition == "add_candidate", source_type

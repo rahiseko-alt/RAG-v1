@@ -451,3 +451,59 @@ def test_word_novel_does_not_count_as_fan_theory_label():
 
     assert result["authority_alignment"] is False
     assert result["release_allowed"] is False
+
+
+# --- 部分回答＋部分留保 -------------------------------------------------------
+#
+# The 2026-08-02 30-question run measured every B-answer taking the shape "answer what
+# the excerpts support, then mark the rest undetermined", and 25 of 30 were blocked —
+# all of them on citation_coverage, because the closing sentence has nothing to cite.
+# The gate was rejecting the most careful answers the system produces. These pin the
+# narrow exemption that fixes it, and its limits.
+
+def test_partial_answer_with_canonical_reservation_can_release():
+    class PartialVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "c1",
+                        "claim": "抜粋は結論を支持しています [1]。",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "private model explanation"}],
+                        "reason": "private model explanation",
+                    }
+                ],
+            }
+
+    result = OnlineVerifier(PartialVerifier(), timeout_seconds=1).evaluate(
+        question="仕組みを説明してください。",
+        candidate_answer=(
+            "抜粋は結論を支持しています [1]。"
+            "その仕組みの詳細は、提供された抜粋からは特定できません。"
+        ),
+        evidence=EVIDENCE,
+    )
+
+    assert result["deterministic"]["all_pass"] is True
+    assert result["release_allowed"] is True
+
+
+def test_reservation_exemption_does_not_cover_an_uncited_assertion():
+    """The exemption is for sentences that assert nothing. A plain uncited claim in the
+    same answer must still block, or the phrase becomes a way to skip citations."""
+    result = OnlineVerifier(StaticVerifier(), timeout_seconds=1).evaluate(
+        question="仕組みを説明してください。",
+        candidate_answer=(
+            "Supported answer."
+            "詳細は、提供された抜粋からは特定できません。"
+            "五条悟は最強である。"
+        ),
+        evidence=EVIDENCE,
+    )
+
+    assert result["deterministic"]["all_pass"] is False
+    assert result["release_allowed"] is False

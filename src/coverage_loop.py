@@ -57,6 +57,32 @@ REJECTED_CAUSES: frozenset[str] = frozenset(
     {"ambiguous_question", "invalid_A", "out_of_scope"}
 )
 
+# 自動採用の出典要件（設計レポート「自動採用条件案」: A の source_type が
+# official / primary / reliable_secondary）。
+#
+# これを機械側に置く理由は、D の裁量に任せた結果が実測で割れたため。2026-08-02 の30問では、
+# 出典がファンサイト単独の16件が `invalid_A` 9 対 `missing_knowledge` 7 とほぼ半々に分かれ、
+# 実際の判別軸は「A 自身が原典未確認を notes に書いたか」という文書化されていないルールだった。
+# 同じ品質の A が、片方は永久却下、片方はナレッジ追加候補になっていた。
+#
+# ここで縛るのは**採用**だけで、却下ではない。要件を満たさない A は候補にせず隔離へ送る
+# （＝人が見る）。「fan 出典しか無い問いは弱点ではない」とは言えないため、捨てはしない。
+ACCEPTABLE_EXTERNAL_SOURCE_TYPES: frozenset[str] = frozenset(
+    {"official", "primary", "reliable_secondary"}
+)
+
+
+def has_acceptable_external_evidence(external_answer: AgentAnswer) -> bool:
+    """True when A cites at least one source type the design doc allows auto-adoption on."""
+    return any(
+        str(source.source_type or "").strip().casefold() in ACCEPTABLE_EXTERNAL_SOURCE_TYPES
+        for source in external_answer.evidence
+    )
+
+
+# Per-term id lists are examples, not the full set — see `CorpusTermEvidence`.
+MAX_REPORTED_CHUNK_IDS = 10
+
 
 class CoverageQuestion(BaseModel):
     """A question generated to probe causal, hierarchical, or edge-case gaps."""
@@ -68,10 +94,11 @@ class CoverageQuestion(BaseModel):
 class EvidenceSource(BaseModel):
     """One reference backing an A-answer (session-report step 2: 出典URL/出典種別/根拠span/更新日).
 
-    Kept optional on `AgentAnswer` so existing callers/fixtures that predate this
-    taxonomy keep working unchanged. `classify_coverage_item` does not yet read
-    this field — wiring evidence completeness into auto-reject/quarantine is step
-    4 (ledger state transitions), tracked separately.
+    Optional on `AgentAnswer` so callers that predate the taxonomy keep working, but
+    no longer inert: `classify_coverage_item` reads `source_type` and refuses to turn
+    a gap into an auto-adoptable candidate unless one source clears
+    `ACCEPTABLE_EXTERNAL_SOURCE_TYPES`. An A-answer with no evidence therefore lands in
+    quarantine rather than in the candidate list.
     """
 
     url: str = ""
@@ -146,6 +173,14 @@ class CorpusTermEvidence(BaseModel):
 
     term: str
     source: Literal["question", "external_answer", "both"] = "external_answer"
+    # Counts are exact; the id lists are capped at `MAX_REPORTED_CHUNK_IDS`. A common
+    # term hits most of the corpus, and this model is persisted per candidate — on a
+    # 40k-chunk corpus the uncapped lists would put megabytes into a single ledger row,
+    # reintroducing by id the corpus duplication that keeping chunk text out avoids.
+    # What the judge needs is whether a term is anywhere, whether it is in what B saw,
+    # and a few examples; the exact id set is reproducible from the corpus.
+    corpus_hit_count: int = 0
+    surfaced_hit_count: int = 0
     corpus_chunk_ids: list[str] = Field(default_factory=list)
     surfaced_chunk_ids: list[str] = Field(default_factory=list)
 
@@ -416,8 +451,10 @@ def build_corpus_probe(
                     else "question" if in_question
                     else "external_answer"
                 ),
-                corpus_chunk_ids=corpus_hits,
-                surfaced_chunk_ids=surfaced_hits,
+                corpus_hit_count=len(corpus_hits),
+                surfaced_hit_count=len(surfaced_hits),
+                corpus_chunk_ids=corpus_hits[:MAX_REPORTED_CHUNK_IDS],
+                surfaced_chunk_ids=surfaced_hits[:MAX_REPORTED_CHUNK_IDS],
             )
         )
         if not corpus_hits:
@@ -836,6 +873,18 @@ def classify_coverage_item(
             # D named a cause but none of B's own signals show a failure.
             # Likely a stale/copy-pasted judgment; do not act on it silently.
             return "quarantined", reason
+        if not has_acceptable_external_evidence(external_answer):
+            # The design doc's auto-adoption condition, enforced here rather than left
+            # to D — see `ACCEPTABLE_EXTERNAL_SOURCE_TYPES`. Quarantine, not reject:
+            # the gap may well be real, it just cannot be adopted on this sourcing.
+            return "quarantined", " / ".join(
+                part
+                for part in (
+                    reason,
+                    "A has no official/primary/reliable_secondary source — not auto-adoptable",
+                )
+                if part
+            )
         return "add_candidate", reason
 
     # Unknown cause value slipped past validation somehow (e.g. future taxonomy

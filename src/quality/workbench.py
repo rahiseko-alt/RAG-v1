@@ -314,6 +314,7 @@ class QualityWorkbench:
         job_id: str | None = None,
         run_id: str | None = None,
         answer_mode: AnswerMode = "strict",
+        include_blocked_candidate: bool = False,
     ) -> dict[str, Any]:
         revision = (
             self.store.get_revision(revision_id)
@@ -422,7 +423,7 @@ class QualityWorkbench:
             trace_url=audit.trace_url,
             job_id=job_id,
         )
-        return {
+        result: dict[str, Any] = {
             "run_id": run_id,
             "revision": revision,
             "answer_mode": answer_mode,
@@ -442,6 +443,14 @@ class QualityWorkbench:
                 "trace_url": audit.trace_url,
             },
         }
+        if include_blocked_candidate:
+            # Opt-in, and never set on the API path: `answer` is None when the gate
+            # blocks, which is correct for delivery but blinds the coverage loop's judge
+            # exactly when it most needs to see B's text. Without it, D has to classify
+            # why B failed while being shown nothing B wrote — the 30-question run
+            # measured 25 of 30 answers arriving that way.
+            result["candidate_answer"] = candidate
+        return result
 
     def create_revision(
         self,
@@ -643,6 +652,7 @@ class QualityWorkbench:
                     revision_id=str(revision["id"]),
                     trace_tags=["coverage-loop"],
                     answer_mode=answer_mode,
+                    include_blocked_candidate=True,
                 )
             except Exception as exc:
                 return AgentAnswer(
@@ -652,12 +662,22 @@ class QualityWorkbench:
                     notes=safe_error_message(exc),
                 )
             sources = list(outcome.get("sources") or [])
+            blocked_reason = str(outcome.get("blocked_reason") or "")
+            delivered = outcome.get("answer")
+            blocked_candidate = outcome.get("candidate_answer")
             return AgentAnswer(
                 role="knowledge",
-                answer=outcome.get("answer"),
+                # The blocked text stands in when the gate withheld delivery. `status`
+                # still says `blocked`, so nothing here makes a withheld answer look
+                # shipped — it only stops D from having to judge an empty string.
+                answer=delivered if delivered is not None else blocked_candidate,
                 status=str(outcome.get("delivery_status") or "unknown"),
                 sources=sources,
-                notes=str(outcome.get("blocked_reason") or ""),
+                notes=(
+                    f"{blocked_reason} (gate withheld this text from delivery)"
+                    if delivered is None and blocked_candidate
+                    else blocked_reason
+                ),
                 # Recorded even when the quality gate blocked the answer (`answer`
                 # is None then): "B produced nothing" and "B retrieved nothing" are
                 # different failures, and only the retrieval evidence separates them.

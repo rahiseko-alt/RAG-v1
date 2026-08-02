@@ -156,3 +156,45 @@ def test_injected_evidence_cannot_replace_what_the_prober_produced(tmp_path):
     assert isinstance(texts, list) and texts
     assert all("捏造された本文" != entry["text"] for entry in texts)
     assert seen["probe"] is not None
+
+
+def test_blocked_b_answer_still_reaches_the_judge(tmp_path):
+    """In production the gate blocks and `answer` becomes None — measured at 25 of 30
+    questions. D then has to classify why B failed while being shown nothing B wrote.
+    The text is handed over with `status` still saying blocked, so a withheld answer
+    never looks shipped."""
+    store, revision = _revision(tmp_path)
+    seen: dict[str, object] = {}
+
+    class RecordingChecker:
+        def check(self, *, question, external_answer, knowledge_answer):
+            seen["answer"] = knowledge_answer.answer
+            seen["status"] = knowledge_answer.status
+            seen["notes"] = knowledge_answer.notes
+            return FactCheckJudgment(external_status="pass", knowledge_status="fail")
+
+    def blocked_answer_question(*, question, **_kwargs):
+        return {
+            "run_id": "run",
+            "answer": None,
+            "candidate_answer": "抜粋によれば呪力は負の感情から生じます [1]。",
+            "delivery_status": "blocked",
+            "blocked_reason": "quality_gate_failed",
+            "sources": [{"rank": 1, "chunk_id": 0, "source": "corpus.md", "page": 0}],
+        }
+
+    workbench = QualityWorkbench(store, coverage_fact_checker=RecordingChecker())
+    workbench.answer_question = blocked_answer_question  # type: ignore[method-assign]
+    question = "呪力とは何ですか。"
+    workbench.run_revision_coverage_loop(
+        str(revision["id"]),
+        questions=[question],
+        external_answers={question: {"answer": "A の回答"}},
+        run_knowledge_answerer=True,
+        allow_llm_agents=True,
+        persist=False,
+    )
+
+    assert seen["answer"] == "抜粋によれば呪力は負の感情から生じます [1]。"
+    assert seen["status"] == "blocked"
+    assert "withheld" in str(seen["notes"])

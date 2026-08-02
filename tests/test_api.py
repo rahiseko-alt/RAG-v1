@@ -643,7 +643,21 @@ def test_coverage_loop_records_b_retrieval_evidence_in_the_ledger(monkeypatch, t
         json={
             "questions": [question],
             "external_answers": {
-                question: {"answer": "全台詞の網羅的な引用は権利上できない。", "status": "ok"}
+                question: {
+                    "answer": "全台詞の網羅的な引用は権利上できない。",
+                    "status": "ok",
+                    # Without an acceptable source type the gap is real but not
+                    # auto-adoptable, and the item quarantines instead — see
+                    # `ACCEPTABLE_EXTERNAL_SOURCE_TYPES`.
+                    "evidence": [
+                        {
+                            "url": "https://www.shonenjump.com/j/rensai/jujutsu/",
+                            "source_type": "official",
+                            "span": "無断転載を禁じます",
+                            "updated_at": "2026-08-02",
+                        }
+                    ],
+                }
             },
             "fact_checks": {
                 question: {

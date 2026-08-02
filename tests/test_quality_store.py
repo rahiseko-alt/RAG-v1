@@ -278,7 +278,7 @@ def test_list_coverage_candidates_filters_by_status(tmp_path):
     assert [candidate["question"] for candidate in rejected] == ["q2"]
 
 
-def test_resolve_coverage_candidate_only_leaves_quarantine(tmp_path):
+def test_resolve_coverage_candidate_leaves_quarantine_and_rejection(tmp_path):
     store = _store(tmp_path)
     revision = store.get_active_revision()
     saved = store.save_coverage_loop_items(
@@ -293,17 +293,40 @@ def test_resolve_coverage_candidate_only_leaves_quarantine(tmp_path):
     assert resolved["status"] == "auto_approved"
     assert resolved["status_reason"] == "human confirmed the source"
 
+    # An accepted decision is closed: nothing reopens auto_approved.
     with pytest.raises(WorkbenchConflictError):
         store.resolve_coverage_candidate(candidate_id, status="auto_rejected", reason="too late")
 
     with pytest.raises(WorkbenchNotFoundError):
         store.resolve_coverage_candidate("missing-id", status="auto_approved", reason="n/a")
 
-    non_quarantined = store.save_coverage_loop_items(
+
+def test_auto_rejected_candidates_can_still_be_reopened(tmp_path):
+    """`invalid_A` is a judge call measured to be a coin flip on identical sourcing, and
+    it writes straight to auto_rejected. If that state were terminal, a wrong rejection
+    would be unrecoverable and invisible — the one outcome with no human path back."""
+    store = _store(tmp_path)
+    revision = store.get_active_revision()
+    rejected = store.save_coverage_loop_items(
         revision["id"], [_coverage_item("q2", disposition="rejected")]
     )[0]
+    assert rejected["status"] == "auto_rejected"
+
+    reopened = store.resolve_coverage_candidate(
+        rejected["id"], status="auto_approved", reason="A was re-sourced and holds up"
+    )
+    assert reopened["status"] == "auto_approved"
+
+
+def test_no_gap_candidates_stay_closed(tmp_path):
+    """A and B agreed; there is no decision to revisit."""
+    store = _store(tmp_path)
+    revision = store.get_active_revision()
+    settled = store.save_coverage_loop_items(
+        revision["id"], [_coverage_item("q3", disposition="no_gap")]
+    )[0]
     with pytest.raises(WorkbenchConflictError):
-        store.resolve_coverage_candidate(non_quarantined["id"], status="auto_approved", reason="n/a")
+        store.resolve_coverage_candidate(settled["id"], status="auto_approved", reason="n/a")
 
 
 def test_resolve_coverage_candidate_rejects_invalid_target_status(tmp_path):
