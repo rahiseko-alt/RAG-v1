@@ -28,8 +28,17 @@ PR #22（1本にまとめてマージ）。設計レポートの項目7と、`AG
 - **CodeRabbit レビュー3巡対応**：指摘のうち実害のあるもの2件と文書の自己矛盾1件を修正、
   成立しない指摘2件は根拠を示して返信した（詳細は②と `docs/failures.md`）。
 
-最終コミット `aeed57a` で CI 全緑（`ci-green` / `lint`・`mypy`・`pytest`・起動スモーク / CodeQL）。
-`Types (mypy)` ステップが実際に実行され success したことはジョブログで確認済み。
+**CI evidence**（自己申告ではなく偽造不能な外部事実。`AGENTS.md`「検証の規律」）。コード変更の
+最終コミットは `aeed57a7c8bc61afd74006ea407897d306fb9e66`：
+
+- `ci-green`（branch protection が参照する集約ゲート・success）:
+  https://github.com/rahiseko-alt/RAG-v1/actions/runs/30729821812
+- CodeQL / analyze（success）:
+  https://github.com/rahiseko-alt/RAG-v1/actions/runs/30729821793
+
+`lint / test / 起動スモーク` ジョブ内で `Types (mypy)` ステップが実際に実行され success したことも
+ジョブログで確認済み（型ゲートが機械で効いていることの証跡）。これ以降のコミットは本引継ぎ
+（`docs/` と `memory.md` のみ）で、コードは変更していない。
 
 ## ②今回トラブル
 
