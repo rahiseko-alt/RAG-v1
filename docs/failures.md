@@ -113,3 +113,23 @@
   積極的に証明できるのは一方向だけ（surfaced chunk が事実を含むのに B が失敗 → `generation_failure`）。
   言えない側は `needs_quarantine` に落とす。**既存のコメント・docstring を引き継ぐときは、
   正しさを確認してから引き継ぐ**（誤りはコピーで増殖する）。
+
+## 2026-08-02 `uv run` が dev 依存を venv から外し、PATH 上の別ツールが黙って代役した
+
+- **事象**：`uv sync --locked --extra dev` の後に `uv run python -m scripts.…` を実行したところ、
+  uv が既定環境（extras 無し）へ同期し直し、**`ruff` / `mypy` / `pytest` を venv から削除**した。
+  その状態で `uv run pytest -q` を叩くと、venv に pytest が無いため PATH 上の
+  `/root/.local/bin/pytest`（システムの Python 3.11）が実行され、`ModuleNotFoundError:
+  No module named 'fastapi'` などの収集エラーが9件出た。同時に `uv run mypy src` も別バージョンで
+  走り、**本来 0 件のはずの `unused-ignore` が2件出た**。`src/rag/__init__.py` の
+  `type: ignore` を「不要になったから消す」と判断しかけたが、実際にはコードは何も壊れていなかった。
+- **根因**：`uv run <cmd>` は `--extra` を指定しないと既定環境へ同期し直す。AGENTS.md は
+  「`uv sync` に `--extra dev` を付けろ」とは書いていたが、**その後の `uv run` が同じ理由で
+  環境を巻き戻す**ことは書いていなかった。さらに悪いことに、同名ツールが PATH 上に存在したため
+  **コマンドは失敗せずに『違う環境で成功／失敗』した**。エラーが「依存が無い」ではなく
+  「テストが壊れた」「型注釈が不要になった」の形で現れ、原因の切り分けを誤らせた。
+- **教訓**：**品質チェックは常に `uv run --extra dev <cmd>` で叩く**（`uv sync` 側だけでは足りない）。
+  そして**チェックが想定外の結果を出したら、まず実行主体（インタプリタとツールの実体パス）を疑う**。
+  今回は traceback の `/usr/lib/python3.11/` と `uv run which pytest` の
+  `/root/.local/bin/pytest` が決め手だった。**PATH 上に同名ツールがある環境では、
+  「動いた」ことは「正しい環境で動いた」ことを意味しない。**

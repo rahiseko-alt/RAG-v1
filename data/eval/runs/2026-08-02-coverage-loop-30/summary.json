@@ -1,0 +1,744 @@
+{
+  "aggregation": {
+    "total_questions": 30,
+    "add_candidates": 2,
+    "disposition_counts": {
+      "no_gap": 3,
+      "quarantined": 24,
+      "add_candidate": 2,
+      "rejected": 1
+    },
+    "cause_counts": {
+      "needs_quarantine": 24,
+      "generation_failure": 2,
+      "invalid_A": 1
+    },
+    "disposition_by_role": {
+      "C-1": {
+        "no_gap": 3,
+        "quarantined": 6,
+        "add_candidate": 1
+      },
+      "C-2": {
+        "quarantined": 10
+      },
+      "C-3": {
+        "add_candidate": 1,
+        "rejected": 1,
+        "quarantined": 8
+      }
+    },
+    "cause_by_role": {
+      "C-1": {
+        "None": 3,
+        "needs_quarantine": 6,
+        "generation_failure": 1
+      },
+      "C-2": {
+        "needs_quarantine": 10
+      },
+      "C-3": {
+        "generation_failure": 1,
+        "invalid_A": 1,
+        "needs_quarantine": 8
+      }
+    },
+    "disposition_by_role_new_only": {
+      "C-1": {
+        "no_gap": 2,
+        "quarantined": 4
+      },
+      "C-2": {
+        "quarantined": 9
+      },
+      "C-3": {
+        "add_candidate": 1,
+        "quarantined": 6
+      }
+    },
+    "prior_gap_dispositions": {
+      "False": {
+        "no_gap": 2,
+        "quarantined": 19,
+        "add_candidate": 1
+      },
+      "True": {
+        "quarantined": 5,
+        "add_candidate": 1,
+        "no_gap": 1,
+        "rejected": 1
+      }
+    },
+    "a_source_type_counts": {
+      "fan": 28,
+      "reliable_secondary": 13
+    },
+    "b_deterministic_pass_counts": {
+      "fail": 25,
+      "pass": 5
+    }
+  },
+  "rows": [
+    {
+      "id": "C1-01",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "no_gap",
+      "failure_cause": null,
+      "external_status": "pass",
+      "knowledge_status": "pass",
+      "same_answer": true,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "8bade92948b44c7ca32ba648be308764",
+      "ledger_status": "no_gap",
+      "missing_knowledge": "",
+      "reason": "A は reliable_secondary（ciatr）の原文引用を持ち、「威力2倍」はファン解釈だと自ら明示していて内部矛盾も無い。B も rank2（chunk 18）と rank6（chunk 35）から「呪力＝負の感情から生じるエネルギー」「反転術式＝負の呪力を掛け合わせて正のエネルギーを作る」「術式反転＝その正のエネルギーを術式に流す応用」を取り出しており、A の中核（作る側／流す側の区別、五条の赫）と実質同じ内容に到達している。B が留保した「なぜ掛け合わせると正になるか」は A 自身も比喩以上の説明が無いと認めている部分なので、B の失敗とは扱わない。"
+    },
+    {
+      "id": "C1-02",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "unclear",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "d619f09b8c21467fae114e8fa567802d",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A の出典は個人考察ブログ（fan）1ドメインのみで、「誤差0.000001秒」「威力2.5乗」という定量的主張を無留保で提示しており、公式事実の基準として採るには弱い（ただし『呪力の核心に近づく』という中核はナレッジ側の記述とも一致する）。B は rank2（chunk 18）から「黒閃の経験者は呪力の核心に近づく」までは提示できているが、それが精度向上に結びつく機序には答えられていない。引けたスニペットにその機序は見当たらず、コーパスに元々無いのか・引けていないのか・分断されているのかを B の証跡だけでは区別できないため隔離とする（A 自身も機序は作中で比喩以上に説明されていないと述べている点も、判断を保留する理由になる）。"
+    },
+    {
+      "id": "C1-03",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "no_gap",
+      "failure_cause": null,
+      "external_status": "pass",
+      "knowledge_status": "pass",
+      "same_answer": true,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "8bd5f4a2205d4d74bf89fea9941e0240",
+      "ledger_status": "no_gap",
+      "missing_knowledge": "",
+      "reason": "A の出典は個人ブログ（fan）のみだが、内容は「代償に対してリターンが返る収支」という基本的な整理で内部矛盾が無く、宿儺の台詞は未特定だと自ら断っている。B も rank2（chunk 18）と rank3（chunk 28）から「条件や制約と引き換えに効果を得る取引」「無料の強化ではなく相応の制限・代償・リスクを負う」を提示しており、A の中核と実質同じ。両者とも『なぜ制約が力に変換されるのか』は説明されていないと同じ留保を付けているため、B の敗北とは見なさない。"
+    },
+    {
+      "id": "C1-04",
+      "role": "C-1",
+      "prior_10q_gap": true,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "9cc3dc83a8d44015a09e12c7c99a6f8f",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は「常時発動には反転術式が不可欠」という中核の因果を reliable_secondary（ciatr）で裏取りしており、巻・話数の一次出典に届いていない点も自己申告している。B は無下限呪術・六眼の一般説明と懐玉・玉折が転機である点までしか出せず、甚爾戦での反転術式会得という経緯に届いていない。引けたスニペットには chunk 37 の「五条の強みは…反転術式」や chunk 16 の甚爾の説明といった隣接情報はあるが経緯そのものは無く、コーパス欠落か検索漏れか分断かを B の証跡だけでは決められないため隔離とする。"
+    },
+    {
+      "id": "C1-05",
+      "role": "C-1",
+      "prior_10q_gap": true,
+      "disposition": "add_candidate",
+      "failure_cause": "generation_failure",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "e91fcbf41f754427aa50aea1428f75b0",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "",
+      "reason": "rank 4（chunk 20）のスニペットに「無下限呪術は五条悟の術式。…六眼により極めて精密な呪力操作が可能。六眼は…呪力の認識・操作効率に関わり」と、コスト低減の理由に相当する『精密な操作＝効率』が明示されている。B はこの chunk を [4] として実際に引用しながら、「運用コストをどう下げるのかは特定できません」と結論の接続を放棄しており、引けた事実で答えられるのに答えていない。A（fan 出典2件のみだが中核はナレッジ側の記述と一致し内部矛盾なし）の「精密に見えるので呪力ロスが減る」と同じ答えは、この rank 4 のスニペットだけで構成可能である。"
+    },
+    {
+      "id": "C1-06",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "6cd750d42d354b56854aafeb6b835333",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は出典がファンサイトのみだが、機序（なぜ必中を無効化できるか）は「どのページにも明記が無い」と自ら断ったうえで、可動性の有無・術式付与の有無という差異を2サイトの一致で述べており、内部矛盾が無いので pass とした。B は「必中効果の中和」「術式の中和」という定義の対比までしか答えられず、A が示した可動性の差にも触れていないため fail。ただし B が引いた24件のスニペットは240字で切られており、rank1(chunk18) の用語辞典の続きに簡易領域の項が入っている可能性を排除できない一方、機序や可動性の記述が含まれていたことも示せない。コーパス本体を見ていない以上、missing_knowledge / retrieval_failure / chunking_failure のどれとも整合するため needs_quarantine。付随所見として、rank と score が単調でない（rank1=0.851 に対し rank2=0.866）ことと、スコアが 0.82〜0.87 に密集していることから、順位付けが実質的に弁別できていない疑いがあり、retrieval 側の調査対象になり得る。"
+    },
+    {
+      "id": "C1-07",
+      "role": "C-1",
+      "prior_10q_gap": true,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "03205b17b1af4e4db99b3106ae273897",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は reliable_secondary（ciatr）で「閉じない＝縛り→必中効果の範囲拡張・最大半径200m」という因果を裏取りしており、代償の記述は自分の導出だと明示しているため pass。B は rank1(chunk22) の「結界を閉じない領域として語られることが多い」という事実記述までしか出せず、成立理由と代償の双方を特定できないとしており fail。B の証跡には成立理由も代償も現れていないが、rank9(chunk28) の縛り解説は240字で途切れており（「宿儺の縛りについて聞かれたら、「宿儺」で切断）、続きに宿儺の縛りの説明がある可能性を排除できない。コーパス未参照のため missing_knowledge とは断定できず needs_quarantine。"
+    },
+    {
+      "id": "C1-08",
+      "role": "C-1",
+      "prior_10q_gap": true,
+      "disposition": "no_gap",
+      "failure_cause": null,
+      "external_status": "pass",
+      "knowledge_status": "pass",
+      "same_answer": true,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "9985b37499f44acd97aa3041dc286c9d",
+      "ledger_status": "no_gap",
+      "missing_knowledge": "",
+      "reason": "質問の核である「制約と能力向上の対応」を、B は rank1(chunk19)『天与呪縛: 生まれつき大きな制約を受ける代わりに別の能力が高まる現象』と rank2(chunk16)『伏黒甚爾は…呪力を持たない代わりに極限の身体能力を持つ天与呪縛の人物』から正しく組み立てており、A の中核主張（呪力ゼロという代償と身体能力というリターンの対応）と実質同じ内容に到達している。A の追加情報（呪力ゼロゆえ感知されない・天逆鉾）は設問の因果そのものではなく補足であり、B の劣後とは見なさない。なお rank13(chunk28) に『縛りは無料の強化ではない。何かを得るには、相応の制限…を負う必要がある』という比例原理があり、A の「代償の大きさ＝リターンの大きさ」に相当するが、天与呪縛が縛りの一種であるという橋渡しの記述は引けたスニペットに現れておらず、B が接続を控えたのは保守的判断として妥当と見た（この点だけを取れば generation_failure 寄りだが、橋渡し事実の存在を証明できないため失敗とはしない）。"
+    },
+    {
+      "id": "C1-09",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "a2540636daae40069e9ddd30d0cce7db",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は出典がファンサイト2件のみだが、147話由来とされる作製手順（魂情報の複製→相性の良い魂の核を三つ内蔵→三つの魂が互いを観測し続けることで魂が安定し自我が芽生える）が独立した2サイトで一致し、内部矛盾も無く、未確定部分（夜蛾の息子説）を自ら排除しているため pass とした。B は rank2(chunk13)『夜蛾正道が作った突然変異呪骸。人語を話し、感情を持つ。複数の核を持つ』と rank3(chunk19)『呪骸: 呪力を宿した人形や存在。パンダは突然変異呪骸』までしか出せず、自我獲得の経緯を答えていないので fail。『複数の核を持つ』という記述はあるが、核と自我を結ぶ機序は引けた証跡に無く、それがコーパスに無いのか・引けなかったのか・分断されているのかを B の証跡だけでは区別できないため needs_quarantine。"
+    },
+    {
+      "id": "C1-10",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "d44090648b1f4634bf9ba97c9edcc3e9",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は出典がファンサイト1件で、三条件の列挙自体は A による整理だと明示しているものの、定義（呪いが人の肉を得て顕現する）・器が乗っ取られること・虎杖の耐性という例外性はいずれも引用に裏付けがあり、条件の整理もその引用から素直に導けるため pass とした。B は受肉の定義と「宿儺の指を虎杖が取り込んで受肉した」（rank4/chunk15）までで、器側の適性・耐性という条件を答えられておらず fail。引けたスニペットには器の条件に触れる記述が見当たらないが、コーパス本体を見ていないため欠落か検索漏れか分断かを区別できず needs_quarantine。"
+    },
+    {
+      "id": "C2-01",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "89fbcd5c6fad40169c340336c07e4e48",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は英語版Wikipedia（reliable_secondary）で襲撃・理子の死・非術師への幻滅・離反という骨格が裏取りされ、112人などファン依拠の箇所も自己申告で区別しているため使える。B は「天内理子の事件と非術師をめぐる思想の違いで決別した」という要因の列挙で止まり、質問の核である順を追った因果を出していないので fail。ただし可視スニペット（rank1/chunk23、rank4/chunk15、rank7/chunk16）はいずれも「事件があった」ことしか示さず、240字の窓の外に経緯が書かれている可能性を排除できないため、missing_knowledge・retrieval_failure・chunking_failure を区別できず needs_quarantine とした。"
+    },
+    {
+      "id": "C2-02",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "b6c18352491b4a28a9e4397d6b33339c",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は「羂索が夏油の遺体に宿り五条を封印した」「呪霊操術と身体能力を得た」までは reliable_secondary 2件で裏取りされており、総監部・加茂家の掌握は考察依拠だと本文で明示しているので基準としては使える（引用したファンブログの文面が明らかに文字化けしている点は減点材料）。B は羂索が夏油の肉体を使ったこと自体は述べるが、それが呪術界の意思決定にどう作用したかを出せず fail。可視スニペットには夏油の肉体奪取に触れた行が1つも無く（B の[1]は240字窓の外の記述）、意思決定への波及に至っては手掛かりが全く見えないため、コーパス不在なのか窓の外にあるのか判別不能で needs_quarantine。"
+    },
+    {
+      "id": "C2-03",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "18b3efdc516b495b9f5c31259209d79e",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は術式至上主義・天与呪縛・家を出て高専入学までを英語版Wikipediaとファン記事の双方で支えており使える（男尊女卑の描写はファン依拠だと自己申告済み）。B は禪院家の価値観と真希が低く見られた立場、呪具と身体能力で道を開いたことまでは答えており部分的には成立しているが、質問後半の「選択」（家を出る・高専入学・当主になる宣言）を特定できないと明言しているので fail 扱いとした。B が引用した男尊女卑や直哉との対立の記述は可視スニペットに現れていない＝240字窓の外にある証拠であり、残りの事実が窓の外にあるのかコーパスに無いのかを B の証跡だけでは決められないため needs_quarantine。なお本問は rank1 が chunk22（領域展開の一覧）という無関係チャンクで、スコアも0.84〜0.88にほぼ張り付き、rank順とscore順が一致していない（検索側の異常の疑い）。"
+    },
+    {
+      "id": "C2-04",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "d7d0967dd22a4fd3bd82c94505ca84fd",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は脹相が呪胎九相図の長男で呪霊と人間の混血である点を英語版Wikipediaで裏取りしており、憲紀の庶子出自と嫡男入りはファン記事依拠だと注記しているため基準として使える。B は「同じ赤血操術でも出自と立場が異なる」という対比の一文（rank1/chunk23、可視）を引けているが、その出自の中身と立場差の理由を出せず fail。可視部分は対比を宣言するだけで理由を含んでおらず、理由が窓の外にあるのか、この要約ナレッジ自体が持っていないのかを B の証跡から判定できないため needs_quarantine。"
+    },
+    {
+      "id": "C2-05",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "unclear",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "78bc0b8ec61043b4855f84480b523da3",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A の出典は3件すべて source_type=fan で、最も load-bearing な総監部通達の文面（五条の永久追放・虎杖の死刑執行）は一次資料に到達できなかったと A 自身が認めており、公式事実の基準として採るには弱いので external_status は unclear とした（五条封印＝最大戦力の喪失という骨格自体は無理のない内容）。B は五条が均衡に影響する突出した個人であること、渋谷事変後に秩序が変わり虎杖の処分・上層部の判断・羂索の計画へつながったこと（rank2/chunk10、可視）までは引用できており、抜粋が支える粒度では答えているが、勢力均衡の具体的な移動を特定できないとして打ち切っているため fail。A 側の未検証部分に起因する見かけの差なのか（invalid_A）、ナレッジ側の欠落なのかを切り分けられないため needs_quarantine。"
+    },
+    {
+      "id": "C2-06",
+      "role": "C-2",
+      "prior_10q_gap": true,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "90996c22755942888a500f45f9a30e50",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A はファンサイト中心だが英語版Wikipedia（reliable_secondary）が「死滅回游＝天元と日本人全体の同化のために呪力を集めるバトルロイヤル」という骨格を裏付けており、内部矛盾も無いので pass とした。B は「死滅回游は羂索が仕組んだ結界ゲーム」「渋谷事変で五条封印」「渋谷事変後に羂索の計画と天元との接触」までは述べたが、準備工程の内容・順序・因果を答えられておらず fail。引けたスニペットには九相図・虎杖の母の乗っ取り・夏油の死体奪取・約1000人のマーキングといった準備の記述が見えず、さらに上位に YouTube/ファン論点観測系のメタチャンク（rank1=33, rank4=36, rank5=38）が並ぶなど検索の当たりも良くないが、コーパス本体を見ていない以上「無い」のか「あるが引けていない/分断されている」のかは区別できないため needs_quarantine とする。"
+    },
+    {
+      "id": "C2-07",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "939c145f237941779eec36e78d3b36c5",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A はアニメイトタイムズ（reliable_secondary）で「母・虎杖香織の身体も羂索が乗っ取っていた」「脹相と虎杖には同じ羂索の血が通っている」を直接引用しており、羂索側＝計画の駒／脹相側＝血縁という二面の説明が内部整合しているので pass（『宿儺の器として設計された身体』の因果部分は自己申告どおり無出典なので、そこだけは弱い）。B は rank1（chunk 23）の『虎杖悠仁は単なる偶然の器ではなく…出自が重要になる。詳細は物語後半の核心に関わる』という記述をそのまま引き写して「理由は特定できません」と述べており fail。引けたチャンクに理由の中身が見えないのは事実だが、この記述はコーパス側が意図的に詳細を伏せているようにも、別チャンクに書かれているようにも読めるため missing_knowledge とは断定できず needs_quarantine。"
+    },
+    {
+      "id": "C2-08",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "3d0d25e6297342eca462d0060aa8e478",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A の出典は全て日本語ファンサイト（RENOTE）だが、映画館での順平と真人の接触、七海が虎杖に順平の調査を命じたこと、虎杖の目の前での七海殺害と釘崎への致命傷という連鎖の要所が span で直接押さえられ、内部矛盾も無いので pass とした（ただし東堂の介入タイミングと釘崎の生死は無出典で、A 自身も事前知識で補ったと認めている）。B は幼魚と逆罰編→宵祭り編→渋谷事変編という編単位の順序までしか出せず、個々の出来事の連鎖を答えていないので fail。引けたスニペット（rank2=chunk9 の幼魚と逆罰編、rank3=chunk10 の渋谷事変編）は編の要約止まりで事件レベルの記述が見えないが、これがコーパスに無いためか引けていないためかは B の証跡だけでは区別できないため needs_quarantine。"
+    },
+    {
+      "id": "C2-09",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "7ddb1c6473ed4fdeb68eda81869eb2ab",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は ciatr（fan）に加えて英語版Wikipedia の『Initially betraying his peers by allying with Mahito to heal his condition, he later turns against the curses.』が動機と離反の骨格を裏付けており、天与呪縛の代償→身体を治すための取引→契約条件の破綻という因果も内部整合するので pass。B は与幸吉が京都校側で天与呪縛による制約を持つこと、宵祭り編で真人・夏油側との関係が焦点になることまでしか述べられず、双方に関わった動機（身体を治すための縛り）を答えていないので fail。引けたスニペットは真人・夏油側との関係を『焦点になる』と示すだけで動機の記述が見えないが、スニペットは各チャンク240字の切り出しに過ぎず（rank1=chunk14 は与幸吉に触れる前で切れている）、コーパスに無いとは言えないため needs_quarantine。"
+    },
+    {
+      "id": "C2-10",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "6f20bedac57645989a9bf0970253f79b",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は英語版Wikipedia で禪院家の血統と十種影法術の関係を、ファンサイトで『六眼を持つ術師を打ち破ったことがある』『禪院家の正統な術式』を裏付けており、宿儺が術式（特に魔虚羅）目当てで伏黒を器に選んだという因果も内部整合するので pass。B は rank1（chunk 23）の『伏黒恵は禪院家相伝の十種影法術を持ち、宿儺からも強い関心を向けられる』という事実提示までで、関心の理由を答えていないので fail。ただし rank14（chunk 37）に『宿儺の強みは…魔虚羅の適応利用…』、rank10（chunk 20）に『魔虚羅は適応能力を持つ強力な式神』とあり、宿儺が魔虚羅の適応を実際に利用しているという関連事実は引けていながら B の回答に一切現れていない。理由そのものを明示した文ではないため generation_failure と断定はできないが、活かせたはずの検索結果を落としている疑いがあるので needs_quarantine とし、この点を要確認事項として残す。"
+    },
+    {
+      "id": "C3-01",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "generation_failure",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "13518e7b8af14705a47a6935e30db3fa",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "",
+      "reason": "A は編集方針のある二次情報（アニメイトタイムズ）を含む複数出典で6つの対抗策を挙げており、内部矛盾も無いため pass とした。B は rank 6（chunk 18・術式/用語辞典）を [6] として引用し「簡易領域は必中効果を中和する」「領域展延は相手の術式を中和する」と自ら書きながら、末尾で「必中効果が働かない例外を列挙した記述は特定できません」と結論しており、手元にある2件の例外を例外として認識できていない合成失敗である。残りの項目（落花の情・領域外への離脱・フィジカルギフテッド・不完全な領域）がコーパスに在るかは B の証跡だけでは判定できないため、そこは未決として扱う。"
+    },
+    {
+      "id": "C3-02",
+      "role": "C-3",
+      "prior_10q_gap": true,
+      "disposition": "rejected",
+      "failure_cause": "invalid_A",
+      "external_status": "unclear",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "1736a817673b4b0298e7a5d2d0ead253",
+      "ledger_status": "auto_rejected",
+      "missing_knowledge": "",
+      "reason": "A の出典は個人ファンブログ1件のみで、「4分11秒」という検証不能な精密値と、A 自身が notes で認める記述の揺れを含む。しかも中核主張は「反転術式を習得していない者が自動で反転術式を行う」という一般則に対する例外的メカニズムであり、単一ファンブログを公式事実の基準として扱うには弱すぎる。したがって B が A に劣って見えること自体が信頼できる比較になっておらず、A の妥当性を先に解決すべき事案と判定した。"
+    },
+    {
+      "id": "C3-03",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "30323d7ae1484a67a9046cef06dc445d",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は独立した2つのファンサイトで没収・処刑人の剣が一致し、内部的にも整合しているため pass とした（無罪分岐は A 自身が引用スパン未取得と明示している）。B は rank 1（chunk 17）と rank 2（chunk 21）から「没収・死刑・処刑人の剣」「没収や死刑判決が戦闘結果に影響する」までは取れているが、有罪と無罪で結果が分岐するという条件記述は引けたスニペットには現れておらず、それがコーパスに無いのか・在るが引けていないのか・分断されているのかを B の証跡だけでは区別できない。"
+    },
+    {
+      "id": "C3-04",
+      "role": "C-3",
+      "prior_10q_gap": true,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "unclear",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "31938ab3e59a42e9bc5cdb90803149e8",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A の使い分け（呪力の有無で捌／解）は考察系ファンブログ1件のみが出典で confidence も 0.58 と低く、公式事実の基準として断定はできないため external は unclear とした（ただし A は推測部分を自ら分離しており、明確な誤りとまでは言えない）。B 側は解・捌が御厨子系の技として名前が挙がるスニペットしか引けておらず、対象別の使い分けがコーパスに無いのか引けなかっただけなのかを B の証跡から区別できない。A の信頼性と B の欠落理由の双方が未解決のため隔離とする。"
+    },
+    {
+      "id": "C3-05",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "3f08fd7504154c6799185b562e787038",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は単一ファンサイト出典だが、内容は基本的で内部矛盾が無く、抑制策（語彙をおにぎりの具に絞る）はナレッジ側の chunk 13 とも独立に一致するため pass とした。B は質問の後半（狗巻がどう抑えているか＝発話制限・おにぎりの具）を rank 1・rank 2 から正しく答えている一方、前半の「反動が強まる条件」（強い言葉・格上の相手・使いすぎ）と喉スプレーには届いていない。その条件記述がコーパスに無いのか引けなかったのかは B の証跡だけでは判別できないため隔離とする。"
+    },
+    {
+      "id": "C3-06",
+      "role": "C-3",
+      "prior_10q_gap": true,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "unclear",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "bd7966c0792140aca19030b91c1e1eda",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は「階級換算で2級以上の差」「主従関係のある呪霊は不可」といった具体的な機構を単一のファンWiki（comicjiten）だけを根拠に述べており、A 自身も pixiv が取得できず取り込み上限の原文引用も無いと注記しているため、正解の基準として確定できず external は unclear とした。B は 24 件のスニペット（rank1-24）を見る限り呪霊操術の記述は rank7/chunk15 の「夏油傑は…呪霊操術を使う」だけで、取り込みの等級条件・調伏・主従関係に触れた記述はどのスニペットにも現れていないため、generation_failure は成立しない。一方でスニペットは各 240 字の切り詰めであり、コーパス本体を参照していない以上、この事実が「コーパスに無い」のか「引けなかった/分断された」のかは区別できないので needs_quarantine とした。"
+    },
+    {
+      "id": "C3-07",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "28a73f4d22d14df1a2369403bf6ec73c",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A はアニメイトタイムズ（reliable_secondary）の「結界を閉じ切れていないため『必殺』はおろか『必中』の効果も付与されていません」をほぼ原文で押さえており、因果（閉じた結界の欠如→必中・必殺の不付与）も内部整合しているので pass。B は rank3/chunk22 の「伏黒恵の嵌合暗翳庭は…未完成寄りの領域として描かれる」までしか引けておらず、同チャンク内の「結界を閉じない」という記述は宿儺の伏魔御厨子に対するもので、嵌合暗翳庭に転用すれば不当な推論になるため generation_failure とは言えない。欠けている因果がコーパスに無いのか引けなかっただけなのかは B の証跡だけでは決まらないため needs_quarantine。"
+    },
+    {
+      "id": "C3-08",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "d648278f17ad47c39d684646405ad4db",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A の中核（帳に条件を加えて出入りを制限できる）は、ファンサイト単独出典ではあるがナレッジ側の帳の定義（rank1/chunk19「条件付きで出入りを制限したりする結界」）と独立に一致しており pass とした（ただし「制限対象は呪力にまつわるモノだけ」「五条だけを排除する設定例」はファン出典のみで、公式基準としては弱い）。B は前半（誰でも自由に出入りできるとは限らない）を rank1/chunk19 から正しく答えている点で部分的に成功しているが、質問の後半である条件の中身（誰が設定するか・何を対象にできるか）は 24 件のスニペットのどこにも現れておらず、コーパス欠落か検索漏れかを B の証跡だけで区別できないため needs_quarantine。"
+    },
+    {
+      "id": "C3-09",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "unclear",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "c051216fcf1245638c2e5ca9044080ac",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A の出典は個人ブログ系ファン記事2件のみで、しかも A 自身が「なぜアウトプットが可能なのかという原理は原作でも明示されていない」「才能差という説明もファン解釈の域を出ない」と認めているため、質問の「何に由来するか」に対する確定した正解が立っておらず external は unclear。B は rank1/chunk18 の反転術式の定義と「使える者は限られる」までを正しく使い、由来は特定できないと明示的に留保している。他者治療可否を分ける要因に触れたスニペットは 24 件中に存在せず、欠落・検索漏れ・分断のいずれとも整合するため needs_quarantine。"
+    },
+    {
+      "id": "C3-10",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "needs_quarantine",
+      "external_status": "unclear",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": false,
+      "b_failed_checks": [
+        "citation_coverage"
+      ],
+      "candidate_id": "cb1352577a5a4ac3a83b90a3b51ff60c",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "A は「100得点を消費して管理者（コガネ）と交渉し総則を1つ追加できる」「管理者は永続に著しく障る場合を除き認めなければならない」という条文レベルの主張を単一のファンまとめサイトのみから取っており、A 自身も公式総則原文には到達していないと注記しているため、確定した基準としては使えず unclear とした（内部矛盾は無く、実例2件も同一ページで整合している）。B は rank2/chunk20「泳者…ポイントやルール追加の対象になる」、rank3/chunk27・rank4/chunk36 の要素列挙までしか引けておらず、得点消費量・交渉相手・承認義務といった条件を含むスニペットは 24 件中に無いため generation_failure は成立せず、コーパス欠落か検索漏れかも区別できないので needs_quarantine。"
+    }
+  ]
+}
