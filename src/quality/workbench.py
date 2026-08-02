@@ -8,6 +8,9 @@ from typing import Any, Callable, TypeGuard
 
 from src.coverage_loop import (
     AgentAnswer,
+    CorpusChunk,
+    CorpusProbe,
+    CorpusProber,
     ExternalAnswerer,
     FactChecker,
     LLMCoverageQuestionGenerator,
@@ -17,6 +20,7 @@ from src.coverage_loop import (
     ProvidedFactChecker,
     CoverageQuestionGenerator,
     RetrievedChunk,
+    build_corpus_probe,
     run_coverage_loop,
 )
 from src.ingest import load_and_chunk
@@ -96,6 +100,49 @@ def retrieved_chunks_from_sources(sources: list[dict[str, Any]] | None) -> list[
     return chunks
 
 
+class RevisionCorpusProber:
+    """Probe a revision's *whole* chunk set, not the subset retrieval surfaced.
+
+    Reads the revision's own immutable source snapshot and chunks it with the same
+    `load_and_chunk` the index was built from, so a chunk id in the probe means the
+    same chunk id as in B's `retrieved_chunks`. Chunking is done once per prober and
+    reused, since a coverage-loop run probes every question against the same corpus.
+
+    Note this deliberately goes to the source rather than to the vector store: the
+    probe's value is telling D about chunks retrieval *never returned*, so it must not
+    be built from a retrieval result.
+    """
+
+    def __init__(self, source_path: Path) -> None:
+        self.source_path = source_path
+        self._corpus: list[CorpusChunk] | None = None
+
+    def corpus(self) -> list[CorpusChunk]:
+        if self._corpus is None:
+            self._corpus = [
+                CorpusChunk(
+                    chunk_id=str(document.metadata.get("chunk_id", index)),
+                    text=str(document.page_content),
+                )
+                for index, document in enumerate(load_and_chunk(self.source_path))
+            ]
+        return self._corpus
+
+    def probe(
+        self,
+        *,
+        question: str,
+        external_answer: AgentAnswer,
+        knowledge_answer: AgentAnswer,
+    ) -> CorpusProbe | None:
+        return build_corpus_probe(
+            question=question,
+            external_answer=external_answer,
+            knowledge_answer=knowledge_answer,
+            corpus=self.corpus(),
+        )
+
+
 class QualityWorkbench:
     """Coordinate revision-specific engines, verification, audit, and persistence."""
 
@@ -113,6 +160,7 @@ class QualityWorkbench:
         coverage_question_generator: CoverageQuestionGenerator | None = None,
         coverage_external_answerer: ExternalAnswerer | None = None,
         coverage_fact_checker: FactChecker | None = None,
+        coverage_corpus_prober: CorpusProber | None = None,
     ) -> None:
         self.store = store
         self.verifier = verifier or OnlineVerifier()
@@ -128,6 +176,7 @@ class QualityWorkbench:
         self.coverage_question_generator = coverage_question_generator
         self.coverage_external_answerer = coverage_external_answerer
         self.coverage_fact_checker = coverage_fact_checker
+        self.coverage_corpus_prober = coverage_corpus_prober
         self._rag_cache: dict[tuple[str, str], tuple[Any, Any, int]] = {}
 
     def clear_rag_cache(self) -> None:
@@ -608,6 +657,12 @@ class QualityWorkbench:
             ),
             knowledge_answerer=knowledge_answerer,
             answer_mode=answer_mode,
+            # Runs on injected loops too: it needs no model, and an injected run is
+            # precisely where D would otherwise have no corpus-side evidence at all.
+            corpus_prober=(
+                self.coverage_corpus_prober
+                or RevisionCorpusProber(Path(str(revision["source_path"])))
+            ),
         )
         result_dict = result.model_dump()
         if persist:

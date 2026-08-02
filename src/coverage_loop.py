@@ -9,6 +9,12 @@ from pydantic import BaseModel, Field
 
 from src.rag import AnswerMode, build_chat_model, get_generation_model
 
+# Imported rather than reimplemented so the probe splits text the same way the BM25
+# retrieval lane does. A probe that tokenized differently from the retriever would
+# report "the corpus does not contain this" for wording the retriever can in fact
+# match, which is the exact mistake the probe exists to prevent.
+from src.rag import _expand_iteration_marks, _query_terms
+
 
 AgentRole = Literal["external", "knowledge"]
 FactStatus = Literal["pass", "fail", "abstain", "unclear"]
@@ -108,6 +114,82 @@ class RetrievedChunk(BaseModel):
     rank: int | None = None
 
 
+CORPUS_PROBE_METHOD = (
+    "lexical term presence across the whole corpus, tokenized the same way the BM25 "
+    "retrieval lane tokenizes. A term missing from every chunk is strong evidence the "
+    "corpus cannot state any fact about it. A term being present is weak evidence only: "
+    "a corpus can name an entity without carrying the causal link, condition, or "
+    "exception a question asks about."
+)
+
+
+class CorpusChunk(BaseModel):
+    """One chunk of the *entire* corpus — including chunks retrieval never surfaced."""
+
+    chunk_id: str = ""
+    text: str = ""
+
+
+class CorpusTermEvidence(BaseModel):
+    """Where one probed term occurs corpus-wide, and whether B's retriever surfaced it.
+
+    `source` says where the term came from. It is reported rather than filtered on: an
+    earlier draft probed only the terms A introduced that the question did not already
+    use, on the theory that the question's own vocabulary tells D nothing new. That is
+    wrong in the decisive case — for "黒閃を経験した術師が…なぜですか", the single most
+    informative finding is that the corpus never says 黒閃 at all, and filtering by the
+    question would have dropped exactly that term. Extra terms only cost D some reading;
+    a dropped term costs a cause it could have named.
+    """
+
+    term: str
+    source: Literal["question", "external_answer", "both"] = "external_answer"
+    corpus_chunk_ids: list[str] = Field(default_factory=list)
+    surfaced_chunk_ids: list[str] = Field(default_factory=list)
+
+
+class CorpusProbe(BaseModel):
+    """Corpus-side evidence that lets D separate causes B's own output cannot.
+
+    `RetrievedChunk` deliberately proves only one direction: a surfaced chunk carried
+    the fact and B still failed -> `generation_failure`. The reverse — the fact not
+    being in the surfaced chunks — is equally consistent with `missing_knowledge`,
+    `retrieval_failure`, and `chunking_failure`, and D is not given the corpus, so it
+    cannot choose between them. The 2026-08-02 30-question run is what that costs:
+    24 of 30 items landed on `needs_quarantine`, which is correct behavior and also
+    useless as a weakness table.
+
+    This probe supplies the missing side. It takes the terms A's answer introduced and
+    reports, for each, which corpus chunks contain it and which of those B's retriever
+    actually surfaced. That yields three positively-assertable readings:
+
+    - `absent_from_corpus`      -> the corpus has no wording for this at all, so
+                                   `missing_knowledge` is assertable.
+    - `present_but_unsurfaced`  -> the corpus has it and retrieval did not return it,
+                                   so `retrieval_failure` is assertable.
+    - `present_in_surfaced`     -> B was handed the wording and still failed, which is
+                                   `generation_failure` territory; if the terms are
+                                   spread across several surfaced chunks with no single
+                                   chunk carrying them together, that is the
+                                   `chunking_failure` signature.
+
+    What it deliberately does NOT do is decide. `classify_coverage_item` gained no new
+    gate from this: term presence is not fact presence, so a probe showing every term
+    present cannot refute a genuine `missing_knowledge` call about a causal bridge that
+    the corpus never draws between terms it does mention. Narrowing D's options on
+    lexical grounds would reintroduce exactly the kind of unsupported leap the taxonomy
+    exists to prevent. The probe widens what D can assert; D still judges.
+    """
+
+    method: str = CORPUS_PROBE_METHOD
+    corpus_chunk_count: int = 0
+    surfaced_chunk_count: int = 0
+    probed_terms: list[CorpusTermEvidence] = Field(default_factory=list)
+    absent_from_corpus: list[str] = Field(default_factory=list)
+    present_but_unsurfaced: list[str] = Field(default_factory=list)
+    present_in_surfaced: list[str] = Field(default_factory=list)
+
+
 class AgentAnswer(BaseModel):
     """One answer produced by an agent participating in the coverage loop."""
 
@@ -120,6 +202,12 @@ class AgentAnswer(BaseModel):
     confidence: float | None = None
     evidence: list[EvidenceSource] = Field(default_factory=list)
     retrieved_chunks: list[RetrievedChunk] = Field(default_factory=list)
+    # Set on the role="knowledge" answer only. It lives here rather than on the item so
+    # it reaches D and the ledger through the paths that already carry B's retrieval
+    # evidence (the D prompt dumps this model; the ledger persists it as
+    # `knowledge_answer_json`), with no schema migration. The terms it probes come from
+    # A's answer — it is evidence about B's retrieval, queried with A's vocabulary.
+    corpus_probe: CorpusProbe | None = None
 
 
 class FactCheckJudgment(BaseModel):
@@ -196,6 +284,86 @@ class FactChecker(Protocol):
         knowledge_answer: AgentAnswer,
     ) -> FactCheckJudgment:
         """Judge whether A is valid and B missed the needed knowledge."""
+
+
+class CorpusProber(Protocol):
+    def probe(
+        self,
+        *,
+        question: str,
+        external_answer: AgentAnswer,
+        knowledge_answer: AgentAnswer,
+    ) -> CorpusProbe | None:
+        """Locate A's terms in the whole corpus, relative to what B surfaced."""
+
+
+def build_corpus_probe(
+    *,
+    question: str,
+    external_answer: AgentAnswer,
+    knowledge_answer: AgentAnswer,
+    corpus: list[CorpusChunk],
+    max_terms: int = 40,
+) -> CorpusProbe:
+    """Build the corpus-side evidence described in `CorpusProbe`.
+
+    Deterministic and model-free on purpose: it must run on fully injected loops
+    (`allow_llm_agents=false`), which is how this workbench is meant to be driven, and
+    a probe that needed an API key would be absent exactly when it is most needed.
+    """
+    question_terms = _query_terms(question)
+    answer_terms = _query_terms(str(external_answer.answer or ""))
+    question_term_set = set(question_terms)
+    answer_term_set = set(answer_terms)
+    # A's terms first — they are the disputed content — then any the question raised on
+    # its own. See `CorpusTermEvidence.source` for why question terms are kept.
+    terms = answer_terms + [term for term in question_terms if term not in answer_term_set]
+
+    surfaced_ids = {
+        str(chunk.chunk_id)
+        for chunk in knowledge_answer.retrieved_chunks
+        if str(chunk.chunk_id)
+    }
+    normalized_corpus = [
+        (chunk.chunk_id, _expand_iteration_marks(chunk.text)) for chunk in corpus
+    ]
+
+    probed: list[CorpusTermEvidence] = []
+    absent: list[str] = []
+    unsurfaced: list[str] = []
+    surfaced: list[str] = []
+    for term in terms[:max_terms]:
+        corpus_hits = [chunk_id for chunk_id, text in normalized_corpus if term in text]
+        surfaced_hits = [chunk_id for chunk_id in corpus_hits if chunk_id in surfaced_ids]
+        in_question = term in question_term_set
+        in_answer = term in answer_term_set
+        probed.append(
+            CorpusTermEvidence(
+                term=term,
+                source=(
+                    "both" if in_question and in_answer
+                    else "question" if in_question
+                    else "external_answer"
+                ),
+                corpus_chunk_ids=corpus_hits,
+                surfaced_chunk_ids=surfaced_hits,
+            )
+        )
+        if not corpus_hits:
+            absent.append(term)
+        elif surfaced_hits:
+            surfaced.append(term)
+        else:
+            unsurfaced.append(term)
+
+    return CorpusProbe(
+        corpus_chunk_count=len(corpus),
+        surfaced_chunk_count=len(surfaced_ids),
+        probed_terms=probed,
+        absent_from_corpus=absent,
+        present_but_unsurfaced=unsurfaced,
+        present_in_surfaced=surfaced,
+    )
 
 
 class MissingExternalAnswerer:
@@ -382,9 +550,24 @@ class LLMFactChecker:
                 "reverse. The fact being absent from the surfaced chunks is equally consistent "
                 "with missing_knowledge (the corpus lacks it), retrieval_failure (the corpus has "
                 "it but retrieval did not surface it), and chunking_failure (it is split so no "
-                "single chunk carries it). You are not given the corpus, so do not pick "
-                "missing_knowledge from B's evidence alone — choose it only with evidence that "
-                "the corpus lacks the fact, and use needs_quarantine otherwise."
+                "single chunk carries it). B's own evidence cannot tell those three apart — for "
+                "that you need the corpus probe below, and without it use needs_quarantine."
+            ),
+            "how_to_use_the_corpus_probe": (
+                "`knowledge_only_answer_B.corpus_probe`, when present, supplies the corpus-side "
+                "evidence B's own output lacks. It takes the terms A's answer introduced and "
+                "reports where each occurs across the WHOLE corpus, including chunks retrieval "
+                "never returned. Terms in `absent_from_corpus` appear nowhere in the corpus, so "
+                "missing_knowledge is supportable. Terms in `present_but_unsurfaced` exist in "
+                "the corpus but retrieval did not return their chunks, so retrieval_failure is "
+                "supportable. Terms in `present_in_surfaced` were handed to B, so "
+                "generation_failure is supportable; if they are scattered across several "
+                "surfaced chunks with none carrying them together, that is chunking_failure. "
+                "Respect the asymmetry: absence is strong evidence, presence is weak. A corpus "
+                "can name every entity in A's answer and still never draw the causal link, "
+                "condition, or exception the question asks for — that is still "
+                "missing_knowledge. When the probe is absent, or its terms do not bear on the "
+                "disputed fact, choose needs_quarantine rather than guessing."
             ),
             "question": question,
             "external_answer_A": external_answer.model_dump(),
@@ -574,6 +757,7 @@ def run_coverage_loop(
     fact_checker: FactChecker,
     knowledge_answerer: Any,
     answer_mode: AnswerMode,
+    corpus_prober: CorpusProber | None = None,
 ) -> CoverageLoopResult:
     """Run C -> A/B -> D loop and return knowledge-gap candidates."""
     items: list[CoverageLoopItem] = []
@@ -597,6 +781,16 @@ def run_coverage_loop(
             knowledge = provided_knowledge_answer(question, knowledge_answers)
             if knowledge is None:
                 knowledge = knowledge_answerer(question=question, answer_mode=answer_mode)
+            if corpus_prober is not None and knowledge.corpus_probe is None:
+                # Attached before the judgment so D sees it, and left alone when a
+                # caller already supplied one with an injected B-answer.
+                probe = corpus_prober.probe(
+                    question=question,
+                    external_answer=external,
+                    knowledge_answer=knowledge,
+                )
+                if probe is not None:
+                    knowledge = knowledge.model_copy(update={"corpus_probe": probe})
             judgment = fact_checker.check(
                 question=question,
                 external_answer=external,
