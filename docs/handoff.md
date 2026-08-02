@@ -69,7 +69,9 @@ PR #22（1本にまとめてマージ）。設計レポートの項目7と、`AG
    設問セットは版管理下にあるので、実行は coverage-loop API へのリクエスト1本で再現できる。
 2. **項目6の結果を使って `auto_classified -> auto_approved` の自動昇格を実装する。**
    before/after 改善確認が取れて初めて着手できる部分。
-3. **Dependabot PR の処理**：8件滞留（#3, #4, #10〜#15）。
+3. **Dependabot PR の処理**：8件滞留（#3, #4, #10〜#15）。**うち #4（`github/codeql-action`
+   v3 → v4）は期限付き**：v3 は 2026年12月に廃止予定で、それまでに上げないと CodeQL が動かなく
+   なる。他の7件より優先度が高い。
 4. **依存脆弱性ゲート**：`pip-audit` 等の導入（`ci-green` に残る唯一の既知の欠落）。
 5. quarantine 一覧の UI（`src/api/static/app.js`）。API は実装済みだが画面は未着手。
 6. **`auto-merge.yml` の再有効化**：手順0 適用後、squash ではなくマージコミットを作る方式に
