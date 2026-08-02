@@ -76,7 +76,12 @@ class E5Embeddings(HuggingFaceEmbeddings):
 def get_embeddings() -> E5Embeddings:
     """ローカル多言語埋め込みモデルを返す（初回はモデルDLが走る）。"""
     return E5Embeddings(
-        model_name=EMBED_MODEL,
+        # HuggingFaceEmbeddings declares this field as `model_name` with alias `model`.
+        # The pydantic plugin builds __init__ from the alias, so mypy only accepts
+        # `model=`; the field name works at runtime because populate_by_name is True.
+        # Kept as the documented `model_name` rather than switching to the alias to
+        # satisfy the checker.
+        model_name=EMBED_MODEL,  # type: ignore[call-arg]
         encode_kwargs={"normalize_embeddings": True},  # cosine 前提で正規化
     )
 
@@ -172,7 +177,12 @@ def build_chat_model(model: str | None = None):
             ) from exc
         return ChatOpenAI(model=model, timeout=60)
     # temperature 等のサンプリング引数は渡さない（opus-4-8 等では 400 になるため）
-    return ChatAnthropic(model=model, max_tokens=1024, timeout=60, stop=None)
+    # `model` / `max_tokens` are the field names; ChatAnthropic aliases them to
+    # `model_name` / `max_tokens_to_sample`, and the pydantic plugin builds __init__
+    # from those aliases, so mypy rejects the field names that work at runtime
+    # (populate_by_name is True). Suppressed rather than switched to the aliases:
+    # `max_tokens_to_sample` is Anthropic's deprecated spelling.
+    return ChatAnthropic(model=model, max_tokens=1024, timeout=60, stop=None)  # type: ignore[call-arg]
 
 
 # ---- LangGraph: retrieve → generate ----
@@ -263,7 +273,9 @@ def expand_with_neighbor_chunks(
         key = document.metadata.get("chunk_id", document.page_content)
         selected[key] = (document, score)
 
-    neighbor_ids = sorted(
+    # Typed as chroma's own `$in` element union rather than `list[int]`: list is
+    # invariant, so a `list[int]` does not satisfy `list[str | int | float | bool]`.
+    neighbor_ids: list[str | int | float | bool] = sorted(
         {
             chunk_id
             for document, _score in hits
@@ -275,8 +287,13 @@ def expand_with_neighbor_chunks(
     )
     if not neighbor_ids:
         return list(selected.values())
+    # The operator key has to carry chroma's Literal type, not plain `str`, for the
+    # clause to match its `Where` union.
+    neighbor_filter: dict[Literal["$in", "$nin"], list[str | int | float | bool]] = {
+        "$in": neighbor_ids
+    }
     raw = vs.get(
-        where={"chunk_id": {"$in": neighbor_ids}},
+        where={"chunk_id": neighbor_filter},
         include=["documents", "metadatas"],
     )
     lookup: dict[int, Document] = {}

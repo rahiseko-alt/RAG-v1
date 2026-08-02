@@ -66,6 +66,7 @@
 ```bash
 uv sync --locked --extra dev        # ← --extra dev は必須（後述）
 uv run ruff check src tests         # Lint（対象は src tests に限定。後述）
+uv run mypy src                     # 型（CI 接続済み。エラー 0 を維持する）
 uv run pytest -q                    # 実テスト（e2e/slow は pytest.ini で既定除外）
 uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別シェルで curl）
 ```
@@ -91,12 +92,15 @@ uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別�
 
 ### 現在 `ci-green` に入っていないゲート（既知の欠落・要対応）
 
-「検証の規律」が求める **型チェックと依存脆弱性のゲートが、現時点では CI に入っていない**。
-埋めるまでは「型は未検査」と理解して扱うこと。
-
-- **型（mypy）**：`uv run mypy src` は現在 **40 errors in 8 files**（2026-08-01 実測）。大半は
-  `WorkbenchStore.get_active_revision()` が `dict | None` を返すのに絞り込まずに添字アクセス
-  している箇所。修正は移行作業の範囲を超えるため未着手。**直したうえで CI に追加すること。**
+- **型（mypy）**：**2026-08-02 に解消済み。** `uv run mypy src` は **0 errors**（17 files）で、
+  `ci.yml` の `quality` ジョブに `Types (mypy)` ステップとして接続済み＝`ci-green` に含まれる。
+  新しいジョブではなくステップにしてあるのは、`ci-green` の `needs:` と比較式を触らずに済ませる
+  ためと、重い依存の install を二重に払わないため。**エラー 0 を維持すること**（`# type: ignore`
+  を足すときは、なぜ実行時には正しいのかをコメントで必ず書く）。
+  - 現存する `type: ignore` は `src/rag/__init__.py` の 2 箇所のみ。いずれも
+    langchain 側の pydantic フィールド別名（`model_name`↔`model` / `max_tokens`↔
+    `max_tokens_to_sample`）とプラグイン生成 `__init__` の食い違いで、`populate_by_name=True`
+    のため実行時は正しい。**実装のバグ抑制ではない。**
 - **依存の脆弱性**：pnpm 時代の `pnpm audit --audit-level moderate` に相当するゲートが無い。
   `pip-audit` 等の導入を検討する（Dependabot は `.github/dependabot.yml` で `uv` を監視中）。
 
@@ -152,7 +156,7 @@ uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別�
 - IaC / デプロイ: **無し**（ローカル起動のみ）
 - テスト: **pytest**（`tests/`。e2e は Playwright）
 - CI: GitHub Actions（`.github/workflows/ci.yml`）
-- Lint: **ruff** ／ 型: **mypy**（設定はあるが CI 未接続。「Testing instructions」の既知の欠落を参照）
+- Lint: **ruff** ／ 型: **mypy**（CI 接続済み・エラー 0。「Testing instructions」参照）
 - 監査ログ: **Langfuse Cloud**（任意連携。環境変数が設定されている時だけ有効）
 
 主要コマンドは「Testing instructions」を参照。CLI は `uv run python -m src.rag.cli "質問"`。

@@ -29,6 +29,7 @@ from src.observability import (
 )
 from src.rag import ask as rag_ask
 from src.rag import (
+    RAGState,
     bm25_rescue_search,
     engine_fingerprint,
     expand_with_neighbor_chunks,
@@ -104,7 +105,9 @@ class QualityWorkbench:
         *,
         verifier: OnlineVerifier | None = None,
         rag_factory: Callable[..., tuple[Any, Any, int]] = make_rag,
-        ask_fn: Callable[..., dict[str, Any]] = rag_ask,
+        # RAGState is a TypedDict, which is not assignable to `dict[str, Any]`, so the
+        # previous annotation rejected the real `rag.ask` it defaults to.
+        ask_fn: Callable[..., RAGState] = rag_ask,
         structured_store: StructuredKnowledgeStore | None = None,
         structured_extractor: StructuredExtractor | None = None,
         coverage_question_generator: CoverageQuestionGenerator | None = None,

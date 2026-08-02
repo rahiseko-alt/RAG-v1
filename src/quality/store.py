@@ -9,7 +9,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Iterator, Literal, overload
 
 from src.knowledge_config import PRODUCT_ROOT, get_active_knowledge
 
@@ -577,6 +577,17 @@ class WorkbenchStore:
         if row is None:
             raise WorkbenchNotFoundError(f"revision not found: {revision_id}")
         return self._revision_dict(row, active_id=str(active["active_revision_id"]) if active else None)
+
+    # `required=True` (the default) raises instead of returning None, so callers that
+    # take the default get a plain dict. Declaring the union unconditionally made every
+    # `get_active_revision()["id"]` in this repo a type error — 25 of the 40 mypy
+    # errors that kept the type gate out of CI — and pushed callers toward asserts that
+    # would only paper over the real signature.
+    @overload
+    def get_active_revision(self, *, required: Literal[True] = ...) -> dict[str, Any]: ...
+
+    @overload
+    def get_active_revision(self, *, required: bool) -> dict[str, Any] | None: ...
 
     def get_active_revision(self, *, required: bool = True) -> dict[str, Any] | None:
         with self._connect() as connection:

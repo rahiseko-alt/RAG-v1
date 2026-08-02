@@ -40,6 +40,13 @@ jobs:
       - name: Lint (ruff)
         run: uv run ruff check src tests
 
+      # 型ゲート。新しいジョブではなくこのジョブのステップとして足している：
+      #   - ci-green の needs: と比較式を触らずに済む（片方だけ直すと startup
+      #     failure になり check run が生成されない＝上のコメント参照）
+      #   - 重い依存(約2.8GiB)の install を二重に払わない
+      - name: Types (mypy)
+        run: uv run mypy src
+
       # e2e と slow を除外する理由は AGENTS.md「Testing instructions」に明記。
       # 除外分は手動実行の手順を同ファイルに残してある（黙って除外しない）。
       - name: Test (pytest)

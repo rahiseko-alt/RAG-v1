@@ -321,7 +321,7 @@ def _summarize_indexed_chunks(vs: Any) -> str:
         metadata = metadata or {}
         chunk_id = metadata.get("chunk_id")
         try:
-            sort_key = int(chunk_id)
+            sort_key = 999999 if chunk_id is None else int(chunk_id)
         except (TypeError, ValueError):
             sort_key = 999999
         snippet = " ".join(str(doc).split())[:90]

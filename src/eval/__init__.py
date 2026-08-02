@@ -14,6 +14,7 @@ import json
 import statistics
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 from src.knowledge_config import get_active_knowledge
 
@@ -87,7 +88,10 @@ def aggregate(items: list[dict], verdicts: dict) -> dict:
     per_item = []
     for it in items:
         row = {"id": it["id"], "question": it["question"], "in_doc": it["in_doc"]}
-        axes = {}
+        # Values are heterogeneous (list of scores, median, mode), so without the
+        # annotation the inferred value type is a union and `axes[ak]["median"] >= …`
+        # below is a type error rather than a numeric comparison.
+        axes: dict[str, dict[str, Any]] = {}
         disagree = []
         for ak in AXIS_KEYS:
             # 評価者JSONに軸キーが欠けていても落ちないよう 0（未採点扱い）で補完
