@@ -15,6 +15,7 @@ if _ROOT not in sys.path:
 import src.api as api  # noqa: E402
 from src.coverage_loop import AgentAnswer, CoverageQuestion, FactCheckJudgment  # noqa: E402
 from src.quality import OnlineVerifier, QualityWorkbench, WorkbenchStore  # noqa: E402
+from src.quality.workbench import retrieved_chunks_from_sources  # noqa: E402
 from src.rag import engine_fingerprint  # noqa: E402
 from src.structured_extraction import ExtractedKnowledgeBatch  # noqa: E402
 from src.structured_knowledge import EvidenceRef, KnowledgeFact, StructuredKnowledgeStore  # noqa: E402
@@ -545,6 +546,169 @@ def test_coverage_loop_marks_external_pass_b_abstention_as_add_candidate(monkeyp
         params={"status": "auto_rejected"},
     )
     assert filtered.json()["items"] == []
+
+
+def test_retrieved_chunks_from_sources_normalizes_public_sources():
+    """Design-doc step 7: B's retrieval evidence is derived from the public sources
+    only — a locator, never the passage text, which stays in `sources[*].snippet`."""
+    chunks = retrieved_chunks_from_sources(
+        [
+            {"rank": 1, "source": "sample.md", "page": 3, "chunk_id": 7, "score": 0.859,
+             "snippet": "本文の抜粋"},
+            {"rank": 2, "source": "sample.md", "page": None, "chunk_id": None, "score": None},
+        ]
+    )
+
+    assert [chunk.model_dump() for chunk in chunks] == [
+        {"chunk_id": "7", "score": 0.859, "citation": "sample.md p.3", "rank": 1},
+        {"chunk_id": "", "score": None, "citation": "sample.md", "rank": 2},
+    ]
+
+
+def test_retrieved_chunks_from_sources_is_empty_when_nothing_was_retrieved():
+    """"B retrieved nothing" must stay distinguishable from "B was never asked",
+    so an empty/absent source list produces an empty list rather than a fake row."""
+    assert retrieved_chunks_from_sources(None) == []
+    assert retrieved_chunks_from_sources([]) == []
+
+
+def test_coverage_loop_records_b_retrieval_evidence_in_the_ledger(monkeypatch, tmp_path):
+    """Design-doc step 7: when B is run locally, the chunks its retriever surfaced are
+    recorded on the B-answer and persisted with the candidate.
+
+    Without this, a D judgment only sees B's final text, so `missing_knowledge`
+    (nothing relevant was retrievable) is indistinguishable from `retrieval_failure`
+    (a relevant chunk was retrieved but ranked too low) — the exact conflation the
+    failure taxonomy exists to prevent.
+    """
+    monkeypatch.setattr(api, "is_generation_configured", lambda: True)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    # Answerable from outside, but absent from the indexed document, so B abstains
+    # while its retriever still surfaces (irrelevant) chunks.
+    question = "呪術廻戦の全台詞を引用できますか？"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {
+                question: {"answer": "全台詞の網羅的な引用は権利上できない。", "status": "ok"}
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "missing_knowledge",
+                    "reason": "B abstained and no retrieved chunk carried the answer.",
+                }
+            },
+            "run_knowledge_answerer": True,
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+
+    assert res.status_code == 200
+    item = res.json()["items"][0]
+    assert item["disposition"] == "add_candidate"
+    assert item["knowledge_answer"]["retrieved_chunks"] == [
+        {"chunk_id": "3", "score": 0.859, "citation": "sample.md p.0", "rank": 1}
+    ]
+
+    # The evidence has to survive into the ledger: the 30-question experiment
+    # (design-doc step 6) is analysed from stored candidates, not from the response.
+    candidate = client.get(
+        f"/workbench/revisions/{revision_id}/coverage-candidates"
+    ).json()["items"][0]
+    assert candidate["knowledge_answer"]["retrieved_chunks"] == [
+        {"chunk_id": "3", "score": 0.859, "citation": "sample.md p.0", "rank": 1}
+    ]
+
+
+def test_coverage_loop_keeps_injected_b_answers_free_of_invented_retrieval_evidence(
+    monkeypatch, tmp_path
+):
+    """An injected B-answer (subagent output, prior log) that carries no retrieval
+    evidence must stay empty rather than have a locator synthesised from its
+    `sources`. Fabricated evidence would let D "confirm" a cause it cannot see."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "虎杖が簡易領域を習得できた理由を答えろ。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {question: {"answer": "入れ替え修行で日下部から学んだ。", "status": "ok"}},
+            "knowledge_answers": {
+                question: {
+                    "answer": "提供された文書には記載がありません。",
+                    "status": "released",
+                    "sources": [{"source": "local-rag-log", "snippet": "fixture"}],
+                }
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "missing_knowledge",
+                }
+            },
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+
+    assert res.status_code == 200
+    assert res.json()["items"][0]["knowledge_answer"]["retrieved_chunks"] == []
+
+
+def test_coverage_loop_accepts_injected_retrieval_evidence(monkeypatch, tmp_path):
+    """A subagent or replayed log that *did* record retrieval evidence can supply it
+    directly, so offline runs reach D with the same evidence a local B run would."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "虎杖が簡易領域を習得できた理由を答えろ。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {question: {"answer": "入れ替え修行で日下部から学んだ。", "status": "ok"}},
+            "knowledge_answers": {
+                question: {
+                    "answer": "提供された文書には記載がありません。",
+                    "status": "released",
+                    "retrieved_chunks": [
+                        {"chunk_id": "12", "score": 0.41, "citation": "sample.md p.5", "rank": 1}
+                    ],
+                }
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "retrieval_failure",
+                }
+            },
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+
+    assert res.status_code == 200
+    assert res.json()["items"][0]["knowledge_answer"]["retrieved_chunks"] == [
+        {"chunk_id": "12", "score": 0.41, "citation": "sample.md p.5", "rank": 1}
+    ]
 
 
 def test_coverage_candidate_quarantine_can_be_resolved_by_hand(monkeypatch, tmp_path):

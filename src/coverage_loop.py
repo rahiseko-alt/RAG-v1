@@ -77,10 +77,23 @@ class EvidenceSource(BaseModel):
 class RetrievedChunk(BaseModel):
     """One chunk B's retriever surfaced (session-report step 2/7: 取得chunk/score/引用箇所/検索順位).
 
-    Recording this per-answer is what will let a later D judgment distinguish
+    Recording this per-answer is what lets a D judgment distinguish
     `missing_knowledge` (nothing relevant was retrievable) from `retrieval_failure`
     (a relevant chunk was retrieved but not used) instead of guessing from the
     final answer text alone.
+
+    Field meanings, so that externally injected B-answers (subagent output, a
+    prior run's log) record the same thing our own runtime does:
+
+    - `chunk_id`  : the retriever's identifier for the chunk (opaque key).
+    - `score`     : the retrieval score, higher = closer match.
+    - `citation`  : human-readable *where it came from*, e.g. `"sample.md p.3"`.
+      Deliberately a locator and not the passage text — the passage already
+      travels in `AgentAnswer.sources[*].snippet`, and duplicating it here would
+      double the size of every persisted ledger row.
+    - `rank`      : 1-based retrieval order. This is also the number used by the
+      `[N]` citation markers in B's answer text (see `verifier.CITATION_PATTERN`),
+      so D can check whether B actually cited the chunk that carried the answer.
     """
 
     chunk_id: str = ""
@@ -355,6 +368,15 @@ class LLMFactChecker:
                 "simply out of this knowledge base's scope. If A has no sources, be conservative: "
                 "pass only when the answer is basic and internally coherent. If you cannot decide "
                 "confidently between two causes, choose needs_quarantine rather than guessing."
+            ),
+            "how_to_use_B_retrieval_evidence": (
+                "B's `retrieved_chunks` and `sources` show what its retriever actually surfaced. "
+                "Use them instead of inferring the cause from B's answer text alone: if no chunk "
+                "carries the needed fact, that points to missing_knowledge or chunking_failure; if "
+                "a chunk does carry it, B failed to retrieve it highly enough (retrieval_failure) "
+                "or retrieved it and ignored it (generation_failure). When B reports no retrieval "
+                "evidence at all, you cannot tell these apart — prefer needs_quarantine over "
+                "guessing missing_knowledge."
             ),
             "question": question,
             "external_answer_A": external_answer.model_dump(),

@@ -16,6 +16,7 @@ from src.coverage_loop import (
     MissingExternalAnswerer,
     ProvidedFactChecker,
     CoverageQuestionGenerator,
+    RetrievedChunk,
     run_coverage_loop,
 )
 from src.ingest import load_and_chunk
@@ -44,6 +45,39 @@ from src.structured_knowledge import StructuredKnowledgeStore
 
 from .store import WorkbenchConflictError, WorkbenchStore, sha256_file
 from .verifier import CANONICAL_ABSTENTION, AnswerMode, OnlineVerifier, public_verification
+
+
+def retrieved_chunks_from_sources(sources: list[dict[str, Any]] | None) -> list[RetrievedChunk]:
+    """Normalize `answer_question`'s public sources into coverage-loop retrieval evidence.
+
+    Design-doc step 7: a coverage-loop B-answer must carry the chunks its retriever
+    actually surfaced, so D can tell `missing_knowledge` (nothing relevant was
+    retrievable) apart from `retrieval_failure` / `generation_failure` (something
+    relevant was retrieved but ranked too low or ignored). Without this, D only sees
+    B's final text and has to guess, which is exactly the false-positive path the
+    failure taxonomy exists to close.
+
+    This runs on the *public* source dicts (the ones already returned to callers and
+    persisted with the run), not on private evidence, so nothing new is exposed and
+    the ledger row stays free of full chunk text.
+    """
+    chunks: list[RetrievedChunk] = []
+    for index, source in enumerate(sources or [], start=1):
+        rank = source.get("rank")
+        score = source.get("score")
+        page = source.get("page")
+        origin = str(source.get("source") or "").strip()
+        # Locator only — the passage itself stays in `sources[*].snippet`.
+        citation = f"{origin} p.{page}" if origin and page not in (None, "") else origin
+        chunks.append(
+            RetrievedChunk(
+                chunk_id=str(source.get("chunk_id") or ""),
+                score=float(score) if isinstance(score, (int, float)) else None,
+                citation=citation,
+                rank=int(rank) if isinstance(rank, int) else index,
+            )
+        )
+    return chunks
 
 
 class QualityWorkbench:
@@ -522,12 +556,17 @@ class QualityWorkbench:
                     status="error",
                     notes=safe_error_message(exc),
                 )
+            sources = list(outcome.get("sources") or [])
             return AgentAnswer(
                 role="knowledge",
                 answer=outcome.get("answer"),
                 status=str(outcome.get("delivery_status") or "unknown"),
-                sources=list(outcome.get("sources") or []),
+                sources=sources,
                 notes=str(outcome.get("blocked_reason") or ""),
+                # Recorded even when the quality gate blocked the answer (`answer`
+                # is None then): "B produced nothing" and "B retrieved nothing" are
+                # different failures, and only the retrieval evidence separates them.
+                retrieved_chunks=retrieved_chunks_from_sources(sources),
             )
 
         result = run_coverage_loop(
