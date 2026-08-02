@@ -328,10 +328,11 @@ def test_run_coverage_loop_attaches_the_probe_to_b_before_judging():
     assert result.items[0].knowledge_answer.corpus_probe is not None
 
 
-def test_surfaced_texts_reach_the_judge_but_not_the_persisted_item():
+def test_surfaced_texts_reach_the_judge_and_stay_on_the_loop_result():
     """The 240-char snippet is what made D miscall generation_failure as
-    missing_knowledge; the judge needs full chunk text. The ledger must not get it —
-    that would be a second copy of the corpus in SQLite."""
+    missing_knowledge, so the judge needs full chunk text. Stripping it for the ledger
+    is the workbench's job, verified separately in tests/test_quality_workbench.py —
+    this only pins that the loop hands it to the judge and keeps it on the result."""
     from src.coverage_loop import CoverageQuestion, run_coverage_loop
 
     seen = {}
@@ -368,6 +369,4 @@ def test_surfaced_texts_reach_the_judge_but_not_the_persisted_item():
         corpus_prober=Prober(),
     )
     assert seen["texts"] == [{"rank": 1, "chunk_id": "1", "text": "全文"}]
-    # `run_revision_coverage_loop` is what strips it; the loop itself keeps it on the
-    # model so the judge can read it.
     assert result.items[0].knowledge_answer.surfaced_texts

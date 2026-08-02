@@ -186,16 +186,24 @@ class CorpusProbe(BaseModel):
     Measured failure mode, from adversarial verification of the 2026-08-02 re-run (see
     `docs/session-reports/2026-08-02-coverage-loop-30q-run.md`): with the probe added
     but D still limited to 240-character snippets, 2 of 8 spot-checked judgments were
-    wrong, and both were regressions — items the pre-probe run had correctly called
-    `generation_failure` became `missing_knowledge` because the sentence answering the
-    question sat inside a surfaced chunk, worded differently from A. Absent terms
-    therefore rank *below* the surfaced chunk text, never above it, which is what
-    `AgentAnswer.surfaced_texts` exists to make possible.
+    wrong, because the sentence answering the question sat inside a surfaced chunk,
+    worded differently from A. One of those two was a regression from a correct
+    `generation_failure`; the other had been `needs_quarantine`, so the probe also
+    turned a withheld judgment into a confident wrong one. Across the whole run both
+    `generation_failure` items the pre-probe run had found stopped being
+    `generation_failure` — the count went 2 to 0. Absent terms therefore rank *below*
+    the surfaced chunk text, never above it, which is what `AgentAnswer.surfaced_texts`
+    exists to make possible.
     """
 
     method: str = CORPUS_PROBE_METHOD
     corpus_chunk_count: int = 0
     surfaced_chunk_count: int = 0
+    # `candidate_term_count` counts the terms worth probing; `probed_terms` holds the
+    # ones actually looked up. When `truncated` is true the two differ and "absent from
+    # `absent_from_corpus`" stops meaning "present in the corpus".
+    candidate_term_count: int = 0
+    truncated: bool = False
     probed_terms: list[CorpusTermEvidence] = Field(default_factory=list)
     absent_from_corpus: list[str] = Field(default_factory=list)
     present_but_unsurfaced: list[str] = Field(default_factory=list)
@@ -307,6 +315,36 @@ class FactChecker(Protocol):
         """Judge whether A is valid and B missed the needed knowledge."""
 
 
+_KANA_ONLY = re.compile(r"^[ぁ-ゟ゠-ヿー]+$")
+
+
+def is_probeable_term(term: str) -> bool:
+    """Reject tokens whose absence from a corpus would mean nothing.
+
+    `_query_terms` is the retriever's tokenizer: it splits on particles and keeps
+    whatever falls out. For retrieval a junk token is harmless — it just fails to
+    match. Here the sign flips, because absence is handed to D as evidence, so junk
+    manufactures evidence. The 2026-08-02 run measured 725 of 1200 probed tokens as
+    absent, among them `つ完璧` (「かつ完璧」split at 「か」), `黒く光る現象`, and bare
+    inflections like `った` / `され` — none of which any corpus would contain verbatim.
+
+    Two rejections, both structural rather than domain-specific:
+
+    - kana-only tokens, which are inflections and particles, never domain terms. A
+      real Japanese term carries kanji, latin, or digits.
+    - single characters, which match almost everywhere and prove nothing either way.
+
+    Multi-morpheme phrases are deliberately NOT rejected here: some are real terms
+    (`反転術式`), and a length rule cannot tell those from split fragments. The D
+    prompt handles that by telling the judge that an absent long phrase is expected
+    and is not evidence.
+    """
+    stripped = term.strip()
+    if len(stripped) < 2:
+        return False
+    return not _KANA_ONLY.match(stripped)
+
+
 class CorpusProber(Protocol):
     def probe(
         self,
@@ -335,13 +373,22 @@ def build_corpus_probe(
     (`allow_llm_agents=false`), which is how this workbench is meant to be driven, and
     a probe that needed an API key would be absent exactly when it is most needed.
     """
-    question_terms = _query_terms(question)
-    answer_terms = _query_terms(str(external_answer.answer or ""))
+    question_terms = [term for term in _query_terms(question) if is_probeable_term(term)]
+    answer_terms = [
+        term
+        for term in _query_terms(str(external_answer.answer or ""))
+        if is_probeable_term(term)
+    ]
     question_term_set = set(question_terms)
     answer_term_set = set(answer_terms)
-    # A's terms first — they are the disputed content — then any the question raised on
-    # its own. See `CorpusTermEvidence.source` for why question terms are kept.
-    terms = answer_terms + [term for term in question_terms if term not in answer_term_set]
+    # Question-only terms go FIRST, not last. They used to be appended after A's terms
+    # and then cut by `max_terms`, which silently deleted every one of them in all 30
+    # questions of the 2026-08-02 run (measured `source` split: external_answer 1121,
+    # both 79, question 0) — exactly the decisive term `CorpusTermEvidence.source` was
+    # added to protect. Ordering them ahead of A's terms is what actually protects them.
+    question_only = [term for term in question_terms if term not in answer_term_set]
+    terms = question_only + answer_terms
+    probed_terms_limit = min(len(terms), max_terms)
 
     surfaced_ids = {
         str(chunk.chunk_id)
@@ -356,7 +403,7 @@ def build_corpus_probe(
     absent: list[str] = []
     unsurfaced: list[str] = []
     surfaced: list[str] = []
-    for term in terms[:max_terms]:
+    for term in terms[:probed_terms_limit]:
         corpus_hits = [chunk_id for chunk_id, text in normalized_corpus if term in text]
         surfaced_hits = [chunk_id for chunk_id in corpus_hits if chunk_id in surfaced_ids]
         in_question = term in question_term_set
@@ -387,6 +434,11 @@ def build_corpus_probe(
         absent_from_corpus=absent,
         present_but_unsurfaced=unsurfaced,
         present_in_surfaced=surfaced,
+        candidate_term_count=len(terms),
+        # Reported, not just applied: a truncated probe that does not say so invites the
+        # reader to treat "not in absent_from_corpus" as "present in the corpus", when
+        # the term may simply never have been looked up.
+        truncated=len(terms) > probed_terms_limit,
     )
 
 
@@ -579,14 +631,21 @@ class LLMFactChecker:
             ),
             "evidence_order_you_must_follow": (
                 "1. Read `knowledge_only_answer_B.surfaced_texts` — the FULL text of the "
-                "chunks B was handed. If any of them answers the question, in any wording, "
-                "the cause is generation_failure and you are done. Do not skip this step: "
-                "in a measured run, every judgment that got the cause wrong got it wrong "
-                "here, by treating a chunk as silent because A's exact words were not in "
-                "it. `sources[*].snippet` is truncated at 240 characters, so never treat a "
-                "snippet as the whole chunk. 2. Only if step 1 excludes generation_failure "
-                "may you use `corpus_probe` to choose between missing_knowledge and "
-                "retrieval_failure. 3. If neither step decides it, use needs_quarantine."
+                "chunks B was handed. If one of them answers the question, in any wording, "
+                "the cause is generation_failure and you are done. If several of them "
+                "together answer it but no single one does, the cause is chunking_failure. "
+                "If they answer only part of what was asked, do NOT stop here: say so, and "
+                "carry the unanswered part to step 2. Do not skip this step — in a measured "
+                "run, every judgment that got the cause wrong got it wrong here, by treating "
+                "a chunk as silent because A's exact words were not in it. "
+                "`sources[*].snippet` is truncated at 240 characters, so never treat a "
+                "snippet as the whole chunk. If `surfaced_texts` is empty, or entries carry "
+                "`unresolved: true`, then step 1 COULD NOT BE PERFORMED for those chunks: "
+                "you have not seen what B saw, so you may not conclude anything from their "
+                "silence — answer needs_quarantine unless the resolved chunks alone settle "
+                "it. 2. Only for the part step 1 left open may you use `corpus_probe`, and "
+                "only to choose between missing_knowledge and retrieval_failure. 3. If "
+                "neither step decides it, use needs_quarantine."
             ),
             "how_to_use_the_corpus_probe": (
                 "`knowledge_only_answer_B.corpus_probe`, when present, supplies the corpus-side "
@@ -595,17 +654,20 @@ class LLMFactChecker:
                 "never returned. It matches exact strings and CANNOT SEE PARAPHRASE, so a term "
                 "in `absent_from_corpus` means the corpus never uses that wording — not that "
                 "the corpus is silent on the idea. Use it only after step 1 above has ruled "
-                "out generation_failure. Terms in `absent_from_corpus` then support "
-                "missing_knowledge. Terms in `present_but_unsurfaced` exist in "
-                "the corpus but retrieval did not return their chunks, so retrieval_failure is "
-                "supportable. Terms in `present_in_surfaced` were handed to B, so "
-                "generation_failure is supportable; if they are scattered across several "
-                "surfaced chunks with none carrying them together, that is chunking_failure. "
-                "Respect the asymmetry: absence is strong evidence, presence is weak. A corpus "
-                "can name every entity in A's answer and still never draw the causal link, "
-                "condition, or exception the question asks for — that is still "
-                "missing_knowledge. When the probe is absent, or its terms do not bear on the "
-                "disputed fact, choose needs_quarantine rather than guessing."
+                "out generation_failure and chunking_failure. Terms in `absent_from_corpus` "
+                "then support missing_knowledge, and terms in `present_but_unsurfaced` "
+                "support retrieval_failure. Read absence critically rather than as proof: "
+                "the tokenizer splits on particles, so the list also holds sentence "
+                "fragments and multi-word phrases that no corpus would ever contain "
+                "verbatim. A long phrase being absent is expected and is NOT evidence — "
+                "only a short domain term counts, and only if it bears on the disputed "
+                "fact. If `truncated` is true, terms beyond `probed_terms` were never "
+                "looked up at all, so a term's absence from these lists says nothing. "
+                "Presence is weaker still: a corpus can name every entity in A's answer "
+                "and still never draw the causal link, condition, or exception the "
+                "question asks for — that is still missing_knowledge. When the probe is "
+                "absent, or its terms do not bear on the disputed fact, choose "
+                "needs_quarantine rather than guessing."
             ),
             "question": question,
             "external_answer_A": external_answer.model_dump(),
@@ -820,23 +882,25 @@ def run_coverage_loop(
             if knowledge is None:
                 knowledge = knowledge_answerer(question=question, answer_mode=answer_mode)
             if corpus_prober is not None:
-                # Attached before the judgment so D sees both, and left alone when a
-                # caller already supplied them with an injected B-answer.
-                update: dict[str, Any] = {}
-                if knowledge.corpus_probe is None:
-                    probe = corpus_prober.probe(
-                        question=question,
-                        external_answer=external,
-                        knowledge_answer=knowledge,
-                    )
-                    if probe is not None:
-                        update["corpus_probe"] = probe
-                if not knowledge.surfaced_texts:
-                    update["surfaced_texts"] = corpus_prober.surfaced_texts(
-                        knowledge_answer=knowledge
-                    )
-                if update:
-                    knowledge = knowledge.model_copy(update=update)
+                # Always overwritten, never merged with what a caller supplied. Both
+                # fields are derived from the corpus, and `surfaced_texts` is now the
+                # channel that ends the judgment at step 1 — the most authoritative one
+                # there is. Honouring a caller-supplied value would let an injected
+                # B-answer hand D fabricated chunk text, which is the exact prohibition
+                # in memory.md: never put evidence in front of D that was not produced.
+                probe = corpus_prober.probe(
+                    question=question,
+                    external_answer=external,
+                    knowledge_answer=knowledge,
+                )
+                knowledge = knowledge.model_copy(
+                    update={
+                        "corpus_probe": probe,
+                        "surfaced_texts": corpus_prober.surfaced_texts(
+                            knowledge_answer=knowledge
+                        ),
+                    }
+                )
             judgment = fact_checker.check(
                 question=question,
                 external_answer=external,

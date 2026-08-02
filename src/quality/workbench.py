@@ -153,14 +153,19 @@ class RevisionCorpusProber:
         texts: list[dict[str, Any]] = []
         for chunk in knowledge_answer.retrieved_chunks:
             text = by_id.get(str(chunk.chunk_id))
-            if text is None:
-                continue
             texts.append(
                 {
                     "rank": chunk.rank,
                     "chunk_id": chunk.chunk_id,
                     "citation": chunk.citation,
+                    # Unresolvable ids are reported, not dropped. Silently skipping them
+                    # made an empty list indistinguishable from "no chunk answered the
+                    # question", so D would complete step 1 on nothing and fall through
+                    # to the weak lexical evidence — the very failure the step order was
+                    # added to prevent. Structured-knowledge hits carry no chunk_id, and
+                    # a revision whose chunking drifted from its index resolves none.
                     "text": text,
+                    "unresolved": text is None,
                 }
             )
         return texts
@@ -692,7 +697,11 @@ class QualityWorkbench:
             # Judge-only channel: D needed the full chunk text to rule out
             # generation_failure, but neither the ledger nor the API response may carry
             # a second copy of the corpus. Dropped here, after judging, before both.
+            # Both answers are the same model, so both carry the field — stripping only
+            # the knowledge side left a caller free to push unbounded text into the
+            # ledger through `external_answers`, which measured 18KB in one item.
             item["knowledge_answer"].pop("surfaced_texts", None)
+            item["external_answer"].pop("surfaced_texts", None)
         if persist:
             saved = self.store.save_coverage_loop_items(str(revision["id"]), result_dict["items"])
             saved_by_question = {candidate["question"]: candidate for candidate in saved}
