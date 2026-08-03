@@ -492,6 +492,97 @@ def test_partial_answer_with_canonical_reservation_can_release():
     assert result["release_allowed"] is True
 
 
+# --- explore モードの合格経路（偽検証器で鍵を入れれば通ることを証明） -------------
+#
+# strict/standard は上の test_standard_mode_can_release_supported_answer_without_strict_claim_coverage
+# 等で比較済みだが、explore モード単体の合格・不合格経路はこれまでテストが無かった
+# （Phase 3 完了条件：3モードそれぞれの合格経路テストを緑にする）。
+
+
+def test_explore_mode_passes_with_low_axis_scores_and_fan_only_evidence():
+    """explore is the loosest gate: no faithfulness/relevance floor, and unlike
+    strict/standard it does not require authority_alignment — only citation
+    validity, no contradiction, at least one supported claim, and no_misinfo>=1."""
+
+    class LooseExploreVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 0,
+                "relevance": 0,
+                "no_misinfo": 1,
+                "claims": [
+                    {
+                        "claim_id": "c1",
+                        "claim": "ファンの考察ではこの解釈が支持されています。",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    }
+                ],
+            }
+
+    fan_evidence = [{**EVIDENCE[0], "authority": "fan"}]
+    explore = OnlineVerifier(LooseExploreVerifier(), timeout_seconds=1).evaluate(
+        question="ファンの見方は？",
+        candidate_answer="ファンの考察ではこの解釈が支持されています [1]。",
+        evidence=fan_evidence,
+        answer_mode="explore",
+    )
+    standard = OnlineVerifier(LooseExploreVerifier(), timeout_seconds=1).evaluate(
+        question="ファンの見方は？",
+        candidate_answer="ファンの考察ではこの解釈が支持されています [1]。",
+        evidence=fan_evidence,
+        answer_mode="standard",
+    )
+
+    assert explore["release_allowed"] is True
+    assert explore["answer_mode"] == "explore"
+    # standard requires faithfulness>=2 and no_misinfo>=2, so the same loose axes
+    # that pass explore must still block standard — proving explore is genuinely
+    # looser, not that the deterministic checks were accidentally skipped.
+    assert standard["release_allowed"] is False
+    assert standard["reason_code"] == "standard_gate_failed"
+
+
+def test_explore_mode_still_blocks_contradictions_and_low_no_misinfo():
+    class ContradictingVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "c1",
+                        "claim": "Supported answer.",
+                        "status": "contradicted",
+                        "evidence": [{"rank": 1, "reason": "contradicted"}],
+                        "reason": "contradicted",
+                    }
+                ],
+            }
+
+    contradicted = OnlineVerifier(ContradictingVerifier(), timeout_seconds=1).evaluate(
+        question="What?",
+        candidate_answer="Supported answer [1].",
+        evidence=EVIDENCE,
+        answer_mode="explore",
+    )
+
+    assert contradicted["release_allowed"] is False
+    assert contradicted["reason_code"] == "explore_gate_failed"
+
+    low_no_misinfo = OnlineVerifier(StaticVerifier(axes=0), timeout_seconds=1).evaluate(
+        question="What?",
+        candidate_answer="Supported answer [1].",
+        evidence=EVIDENCE,
+        answer_mode="explore",
+    )
+
+    assert low_no_misinfo["release_allowed"] is False
+    assert low_no_misinfo["reason_code"] == "explore_gate_failed"
+
+
 def test_reservation_exemption_does_not_cover_an_uncited_assertion():
     """The exemption is for sentences that assert nothing. A plain uncited claim in the
     same answer must still block, or the phrase becomes a way to skip citations."""
