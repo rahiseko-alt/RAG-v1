@@ -551,7 +551,9 @@ class QualityWorkbench:
             candidate_id, revision_id=str(revision["id"])
         )
 
-    def activate_coverage_candidate(self, candidate_id: str, *, reason: str) -> dict[str, Any]:
+    def activate_coverage_candidate(
+        self, candidate_id: str, *, reason: str, operator: str | None = None
+    ) -> dict[str, Any]:
         """Promote a `verified` coverage candidate to `active`.
 
         Thin wrapper that supplies `engine_fingerprint`/`structured_digest` the same way
@@ -567,6 +569,7 @@ class QualityWorkbench:
             reason=reason,
             engine_fingerprint=self.fingerprint(),
             structured_digest=self.structured_digest(str(revision_id)) if revision_id else None,
+            operator=operator,
         )
 
     def extract_revision_structured_records(

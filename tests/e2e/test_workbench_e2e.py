@@ -15,6 +15,14 @@ except ImportError:  # pragma: no cover - exercised only when dev deps are absen
 BASE_URL = os.environ.get("MEDGUIDE_E2E_URL", "http://127.0.0.1:8010/")
 QA_DIR = Path(__file__).resolve().parents[2] / "reports" / "qa"
 
+# Some environments pre-install the full Chromium binary outside Playwright's own
+# managed cache (e.g. at /opt/pw-browsers/chromium), separately from whatever
+# @playwright/test version this project pins. Only override the launch path when
+# that binary is actually present; otherwise let Playwright resolve its own
+# installed browser as usual.
+_PREINSTALLED_CHROMIUM = Path("/opt/pw-browsers/chromium")
+_CHROMIUM_EXECUTABLE_PATH = str(_PREINSTALLED_CHROMIUM) if _PREINSTALLED_CHROMIUM.exists() else None
+
 
 def _blocked_response() -> dict[str, object]:
     return {
@@ -136,7 +144,7 @@ def _sse_body(events: list[dict[str, object]]) -> str:
 
 def _assert_base_layout(page) -> None:
     page.goto(BASE_URL, wait_until="networkidle")
-    assert page.locator('[role="tab"]').count() == 4
+    assert page.locator('[role="tab"]').count() == 5
     question = page.locator('[aria-labelledby="question-title"]').bounding_box()
     answer = page.locator('[aria-labelledby="answer-title"]').bounding_box()
     assert question is not None
@@ -152,7 +160,7 @@ def _assert_base_layout(page) -> None:
 def test_workbench_main_layout_and_blocked_answer_do_not_leak_candidate() -> None:
     QA_DIR.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+        browser = playwright.chromium.launch(headless=True, executable_path=_CHROMIUM_EXECUTABLE_PATH)
         try:
             desktop = browser.new_page(viewport={"width": 1280, "height": 900})
             response = _blocked_response()
@@ -204,7 +212,7 @@ def test_workbench_main_layout_and_blocked_answer_do_not_leak_candidate() -> Non
             assert desktop.locator("#process-steps details[open]").count() == 2
             assert "SECRET_BLOCKED_CANDIDATE" not in desktop.locator("body").inner_text()
 
-            for tab_name in ["ナレッジ調整", "比較・承認", "台帳・監査"]:
+            for tab_name in ["ナレッジ調整", "比較・承認", "台帳・監査", "隔離一覧"]:
                 desktop.get_by_role("tab", name=tab_name).click()
                 assert desktop.get_by_role("tabpanel", name=tab_name).is_visible()
             desktop.get_by_role("tab", name="質問・検品").click()
@@ -224,5 +232,81 @@ def test_workbench_main_layout_and_blocked_answer_do_not_leak_candidate() -> Non
                 quality=85,
                 full_page=True,
             )
+        finally:
+            browser.close()
+
+
+def _quarantined_candidate(status: str = "auto_quarantined") -> dict[str, object]:
+    return {
+        "id": "e2e-candidate-1",
+        "revision_id": "rev",
+        "question": "E2E隔離候補の質問",
+        "intent": "",
+        "disposition": "quarantined" if status == "auto_quarantined" else "add_candidate",
+        "failure_cause": "needs_quarantine",
+        "candidate_reason": "",
+        "status": status,
+        "status_reason": "判定不能のため保留" if status == "auto_quarantined" else "ワークベンチから承認",
+        "implemented_revision_id": None,
+        "created_at": "2026-08-03T00:00:00.000+00:00",
+        "updated_at": "2026-08-03T00:00:00.000+00:00",
+        "external_answer": {"role": "external", "answer": "A の回答", "evidence": []},
+        "knowledge_answer": {"role": "knowledge", "answer": "記載がありません"},
+        "fact_check": {"external_status": "pass", "knowledge_status": "abstain", "reason": ""},
+    }
+
+
+@pytest.mark.e2e
+@pytest.mark.skipif(sync_playwright is None, reason="playwright dev dependency is not installed")
+def test_quarantine_tab_resolves_a_candidate_through_the_real_ledger_endpoint() -> None:
+    """The quarantine screen must actually drive the ledger, not just repaint locally.
+
+    `/workbench/revisions` is left unmocked (hits the real running server) so the
+    revision-select really reflects the active revision; only the coverage-candidate
+    endpoints are mocked, and the resolve mock asserts the exact request body the UI
+    sent — proving the approve button really calls the resolve endpoint with
+    `status: auto_approved`, not just changing a badge client-side.
+    """
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True, executable_path=_CHROMIUM_EXECUTABLE_PATH)
+        try:
+            page = browser.new_page(viewport={"width": 1280, "height": 900})
+            calls = {"list": 0, "resolve_body": None}
+
+            def fulfill_candidates(route):
+                calls["list"] += 1
+                status = "auto_approved" if calls["list"] > 1 else "auto_quarantined"
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps({"items": [_quarantined_candidate(status)]}, ensure_ascii=False),
+                )
+
+            def fulfill_resolve(route):
+                calls["resolve_body"] = json.loads(route.request.post_data or "{}")
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(_quarantined_candidate("auto_approved"), ensure_ascii=False),
+                )
+
+            page.route("**/coverage-candidates", fulfill_candidates)
+            page.route("**/coverage-candidates/*/resolve", fulfill_resolve)
+
+            page.goto(BASE_URL, wait_until="networkidle")
+            page.get_by_role("tab", name="隔離一覧").click()
+
+            candidate_list = page.locator("#quarantine-list")
+            candidate_list.get_by_text("E2E隔離候補の質問").wait_for()
+            assert candidate_list.get_by_text("隔離（要確認）").is_visible()
+
+            page.get_by_role("button", name="承認").click()
+            candidate_list.get_by_text("承認済み").wait_for()
+
+            assert calls["resolve_body"] == {
+                "status": "auto_approved",
+                "reason": "ワークベンチから承認",
+            }
+            assert calls["list"] >= 2
         finally:
             browser.close()

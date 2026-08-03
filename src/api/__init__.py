@@ -199,6 +199,15 @@ class CoverageCandidateResolutionRequest(BaseModel):
     operator: str | None = Field(default=None, max_length=120)
 
 
+class CoverageCandidateOperatorRequest(BaseModel):
+    operator: str | None = Field(default=None, max_length=120)
+
+
+class CoverageCandidateActivationRequest(BaseModel):
+    reason: str = Field(default="", max_length=500)
+    operator: str | None = Field(default=None, max_length=120)
+
+
 _RAG_CACHE: dict[str, Any] = {}
 _DEFAULT_WORKBENCH: QualityWorkbench | None = None
 
@@ -973,6 +982,67 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
                 reason=payload.reason.strip(),
                 operator=(payload.operator.strip() if payload.operator else None),
             )
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except (WorkbenchConflictError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
+
+    @app.get("/workbench/coverage-candidates/{candidate_id}")
+    def get_coverage_candidate(candidate_id: str) -> dict[str, Any]:
+        try:
+            return wb.store.get_coverage_candidate(candidate_id)
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/coverage-candidates/{candidate_id}/implement")
+    def implement_coverage_candidate(candidate_id: str) -> dict[str, Any]:
+        """`auto_approved` -> `implemented` (Phase 2): builds a knowledge-revision draft
+        from the candidate with no LLM call — see `QualityWorkbench.
+        implement_coverage_candidate`."""
+        try:
+            return wb.implement_coverage_candidate(candidate_id)
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except (WorkbenchConflictError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/coverage-candidates/{candidate_id}/verify")
+    def verify_coverage_candidate(
+        candidate_id: str,
+        payload: CoverageCandidateOperatorRequest | None = None,
+    ) -> dict[str, Any]:
+        """`implemented` -> `verified` (Phase 2): requires a passed validation job for
+        the implemented revision that also clears `is_promotion_eligible` (improvement
+        confirmed, no regression, and the failure_cause is on the auto-promotable
+        allowlist — `chunking_failure` is excluded, see `src/coverage_loop.py`)."""
+        request = payload or CoverageCandidateOperatorRequest()
+        try:
+            return wb.store.verify_coverage_candidate(
+                candidate_id,
+                operator=(request.operator.strip() if request.operator else None),
+            )
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except (WorkbenchConflictError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/coverage-candidates/{candidate_id}/activate")
+    def activate_coverage_candidate(
+        candidate_id: str,
+        payload: CoverageCandidateActivationRequest | None = None,
+    ) -> dict[str, Any]:
+        """`verified` -> `active` (Phase 2): activates the candidate's implemented
+        revision via the same strict path as `/workbench/revisions/{id}/approve`
+        (`QualityWorkbench.activate_coverage_candidate`)."""
+        request = payload or CoverageCandidateActivationRequest()
+        try:
+            result = wb.activate_coverage_candidate(
+                candidate_id,
+                reason=request.reason.strip(),
+                operator=(request.operator.strip() if request.operator else None),
+            )
+            wb.clear_rag_cache()
+            return result
         except WorkbenchNotFoundError as exc:
             raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
         except (WorkbenchConflictError, ValueError) as exc:
