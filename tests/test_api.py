@@ -15,6 +15,7 @@ if _ROOT not in sys.path:
 import src.api as api  # noqa: E402
 from src.coverage_loop import AgentAnswer, CoverageQuestion, FactCheckJudgment  # noqa: E402
 from src.quality import OnlineVerifier, QualityWorkbench, WorkbenchStore  # noqa: E402
+from src.quality.store import sha256_file  # noqa: E402
 from src.quality.workbench import retrieved_chunks_from_sources  # noqa: E402
 from src.rag import engine_fingerprint  # noqa: E402
 from src.structured_extraction import ExtractedKnowledgeBatch  # noqa: E402
@@ -834,6 +835,181 @@ def test_coverage_candidate_quarantine_can_be_resolved_by_hand(monkeypatch, tmp_
         json={"status": "auto_approved", "reason": "n/a"},
     )
     assert missing.status_code == 404
+
+
+def test_coverage_candidate_can_be_driven_to_active_through_the_api(monkeypatch, tmp_path):
+    """Phase 3: the API surface for Phase 2's implement/verify/activate endpoints.
+
+    Drives one candidate auto_classified -> auto_approved -> implemented -> verified
+    -> active entirely through HTTP, with a fake (not LLM-generated) validation job
+    standing in for a real one — the same shape the quarantine-list UI's action
+    buttons call."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "五条悟の代表的な技には、どんな名前が付いていますか。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {
+                question: {
+                    "answer": "術式順転「蒼」など",
+                    "status": "ok",
+                    "evidence": [{"url": "https://example.test/a", "source_type": "official"}],
+                },
+            },
+            "knowledge_answers": {
+                question: {"answer": "記載がありません", "status": "released"},
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "missing_knowledge",
+                    "missing_knowledge": "術式順転「蒼」等の技名を追記する。",
+                }
+            },
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+    assert res.status_code == 200
+    candidate_id = res.json()["items"][0]["candidate_id"]
+    assert res.json()["items"][0]["ledger_status"] == "auto_classified"
+
+    # GET single candidate.
+    got = client.get(f"/workbench/coverage-candidates/{candidate_id}")
+    assert got.status_code == 200
+    assert got.json()["status"] == "auto_classified"
+    assert client.get("/workbench/coverage-candidates/does-not-exist").status_code == 404
+
+    # auto_classified is now resolvable directly (Phase 2), not just auto_quarantined.
+    approved = client.post(
+        f"/workbench/coverage-candidates/{candidate_id}/resolve",
+        json={"status": "auto_approved", "reason": "sourced acceptably"},
+    )
+    assert approved.status_code == 200
+    assert approved.json()["status"] == "auto_approved"
+
+    # implement: too-early verify/activate are refused (409), not skippable.
+    assert client.post(f"/workbench/coverage-candidates/{candidate_id}/verify").status_code == 409
+    assert (
+        client.post(
+            f"/workbench/coverage-candidates/{candidate_id}/activate", json={"reason": "too soon"}
+        ).status_code
+        == 409
+    )
+
+    implemented = client.post(f"/workbench/coverage-candidates/{candidate_id}/implement")
+    assert implemented.status_code == 200
+    assert implemented.json()["status"] == "implemented"
+    new_revision_id = implemented.json()["implemented_revision_id"]
+    assert new_revision_id
+
+    # Re-implementing an already-implemented candidate is refused.
+    assert client.post(f"/workbench/coverage-candidates/{candidate_id}/implement").status_code == 409
+
+    # verify: no validation job yet -> refused.
+    assert client.post(f"/workbench/coverage-candidates/{candidate_id}/verify").status_code == 409
+
+    new_revision = workbench.store.get_revision(new_revision_id)
+    eval_path = Path(_ROOT) / new_revision["config"]["eval_set"]
+    job = workbench.store.create_job(
+        revision_id=new_revision_id, kind="validation", engine_fingerprint=engine_fingerprint()
+    )
+    workbench.store.mark_job_running(job["id"])
+    workbench.store.finish_job(
+        job["id"],
+        status="passed",
+        result={
+            "full_pass": True,
+            "no_regression": True,
+            "source_hashes": {"after": new_revision["source_sha256"]},
+            "structured_hashes": {"after": workbench.structured_digest(new_revision_id)},
+            "eval_set_sha256": sha256_file(eval_path),
+        },
+    )
+
+    verified = client.post(f"/workbench/coverage-candidates/{candidate_id}/verify")
+    assert verified.status_code == 200
+    assert verified.json()["status"] == "verified"
+
+    activated = client.post(
+        f"/workbench/coverage-candidates/{candidate_id}/activate",
+        json={"reason": "promoted via api"},
+    )
+    assert activated.status_code == 200
+    assert activated.json()["status"] == "active"
+    assert workbench.store.get_active_revision()["id"] == new_revision_id
+
+
+def test_verify_and_activate_reject_a_chunking_failure_candidate(monkeypatch, tmp_path):
+    """Phase 1 (2026-08-03) measured `chunking_failure` at 0/5 against a construction-
+    verified gold set — it must not verify even with a perfectly passing validation
+    job, matching `AUTO_PROMOTABLE_CAUSES` (src/coverage_loop.py)."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "術式Aと術式Bはどちらも誰のものですか。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {
+                question: {
+                    "answer": "両方とも同一人物のものです",
+                    "status": "ok",
+                    "evidence": [{"url": "https://example.test/a", "source_type": "official"}],
+                },
+            },
+            "knowledge_answers": {
+                question: {"answer": "記載がありません", "status": "released"},
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "chunking_failure",
+                    "missing_knowledge": "分断された事実を統合する。",
+                }
+            },
+            "rounds": 1,
+            "max_questions_per_round": 1,
+        },
+    )
+    candidate_id = res.json()["items"][0]["candidate_id"]
+    client.post(
+        f"/workbench/coverage-candidates/{candidate_id}/resolve",
+        json={"status": "auto_approved", "reason": "sourced acceptably"},
+    )
+    implemented = client.post(f"/workbench/coverage-candidates/{candidate_id}/implement")
+    new_revision_id = implemented.json()["implemented_revision_id"]
+    new_revision = workbench.store.get_revision(new_revision_id)
+    eval_path = Path(_ROOT) / new_revision["config"]["eval_set"]
+    job = workbench.store.create_job(
+        revision_id=new_revision_id, kind="validation", engine_fingerprint=engine_fingerprint()
+    )
+    workbench.store.mark_job_running(job["id"])
+    workbench.store.finish_job(
+        job["id"],
+        status="passed",
+        result={
+            "full_pass": True,
+            "no_regression": True,
+            "source_hashes": {"after": new_revision["source_sha256"]},
+            "structured_hashes": {"after": workbench.structured_digest(new_revision_id)},
+            "eval_set_sha256": sha256_file(eval_path),
+        },
+    )
+
+    assert client.post(f"/workbench/coverage-candidates/{candidate_id}/verify").status_code == 409
 
 
 def test_blocked_candidate_is_not_returned_but_is_saved(monkeypatch, tmp_path):
