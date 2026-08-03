@@ -79,8 +79,10 @@
   （`WorkbenchStore.mark_coverage_candidate_implemented`/`verify_coverage_candidate`/
   `activate_coverage_candidate`、`QualityWorkbench.implement_coverage_candidate`）。
   詳細は `docs/session-reports/2026-08-03-close-the-loop.md`。
-  **ただし隔離一覧UIは依然未着手**——APIは実装済みだが`src/api/static/app.js`に
-  coverage/quarantineを扱うUIコードが1行も無い（Phase 3の範囲）。**
+  **この時点（Phase 2完了時）では隔離一覧UIは未着手だった**——APIは実装済みだが
+  `src/api/static/app.js`にcoverage/quarantineを扱うUIコードが1行も無い状態
+  （Phase 3の範囲として持ち越した）。**2026-08-03のPhase 3で実装・完了済み——
+  下の[2026-08-03] Phase 3完了エントリを参照。**
 - **[importance:H][2026-08-03] Phase 3（画面とAPIの穴を埋め、ゲートを実証する）完了。
   隔離一覧UI（`GET .../coverage-candidates/{id}`・`.../implement`・`.../verify`・
   `.../activate`の4エンドポイント＋`index.html`/`app.js`の「隔離一覧」タブ、PR #26
