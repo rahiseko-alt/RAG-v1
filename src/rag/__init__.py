@@ -59,7 +59,11 @@ SYSTEM_PROMPT = (
     "2. 抜粋に根拠が無い、または質問が文書の対象外の場合は『提供された文書には記載がありません』と答える。\n"
     "3. 回答は日本語で、平易に述べる。1文には1つの事実主張だけを書き、各文の末尾には根拠にした抜粋番号を [1] のように付す。\n"
     "4. authority=fan の抜粋だけに基づく内容は、公式事実として断定せず、ファンの考察・解釈・意見であることを文中に明記する。"
-    "公式・reference と fan が矛盾する場合は公式・reference を優先する。"
+    "公式・reference と fan が矛盾する場合は公式・reference を優先する。\n"
+    "5. 抜粋で一部だけ答えられる場合は、答えられる部分を述べたうえで、答えられない部分を"
+    "『（何が）は、提供された抜粋からは特定できません。』という形の文で必ず締めくくる。"
+    "この言い回しは品質検査が『事実を主張していない文』として扱う唯一の形式であり、"
+    "言い換えると引用番号が無い文とみなされて回答全体が差し止められる。"
 )
 
 
@@ -666,7 +670,9 @@ def engine_fingerprint(*, model: str | None = None, top_k: int = TOP_K) -> str:
         "chunk_overlap": CHUNK_OVERLAP,
         "neighbor_window": NEIGHBOR_WINDOW,
         "markdown_section_split_version": 1,
-        "quality_verifier_version": 3,
+        # 4: the deterministic checks stopped requiring a citation on a canonical
+        # reservation sentence, so the same answer can now pass where it used to fail.
+        "quality_verifier_version": 4,
         "structured_retrieval_version": 1,
         "system_prompt": SYSTEM_PROMPT,
         "engine_version": 7,

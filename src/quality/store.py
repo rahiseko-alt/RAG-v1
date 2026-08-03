@@ -38,6 +38,14 @@ COVERAGE_DISPOSITION_TO_STATUS = {
 # doc: "隔離だけまとめてユーザー確認する"); resolution can only land on one of
 # these two terminal auto_* states, not an arbitrary status.
 COVERAGE_QUARANTINE_RESOLUTIONS = frozenset({"auto_approved", "auto_rejected"})
+# Statuses a human may still resolve from. `auto_rejected` is here because it is
+# reached by a judgment measured to be unreliable: on the 2026-08-02 run, A-answers
+# with identical sourcing were split 9-to-7 between `invalid_A` (-> rejected) and
+# `missing_knowledge` (-> candidate), and the same judge disagreed with itself across
+# runs on 6 of 30 questions. A coin-flip must not write to a state nobody can reopen.
+# `auto_approved` and `no_gap` stay closed: one is an accepted decision, the other
+# means A and B agreed and there is nothing to reopen.
+COVERAGE_RESOLVABLE_STATUSES = frozenset({"auto_quarantined", "auto_rejected"})
 
 
 class WorkbenchConflictError(RuntimeError):
@@ -1049,10 +1057,13 @@ class WorkbenchStore:
         reason: str,
         operator: str | None = None,
     ) -> dict[str, Any]:
-        """Manually resolve a quarantined coverage candidate (design-doc step 5).
+        """Manually resolve a quarantined or auto-rejected coverage candidate (step 5).
 
-        Only `auto_quarantined -> auto_approved / auto_rejected` is allowed — this
-        is the "隔離だけまとめてユーザー確認する" path, not a general status editor.
+        Resolution lands on `auto_approved` / `auto_rejected` only — this is the
+        "隔離だけまとめてユーザー確認する" path, not a general status editor. It starts
+        from `auto_quarantined` as designed, and also from `auto_rejected`, because that
+        state is reached by a judgment that measurement showed to be a coin flip; see
+        `COVERAGE_RESOLVABLE_STATUSES`.
         """
         if status not in COVERAGE_QUARANTINE_RESOLUTIONS:
             raise ValueError(
@@ -1064,7 +1075,7 @@ class WorkbenchStore:
             ).fetchone()
             if row is None:
                 raise WorkbenchNotFoundError(f"coverage candidate not found: {candidate_id}")
-            if row["status"] != "auto_quarantined":
+            if row["status"] not in COVERAGE_RESOLVABLE_STATUSES:
                 raise WorkbenchConflictError(
                     f"coverage candidate cannot be resolved from status {row['status']}"
                 )

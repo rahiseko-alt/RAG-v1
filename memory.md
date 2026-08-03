@@ -4,16 +4,47 @@
 
 ## 引継ぎレポート（次セッション必読）
 
-@docs/session-reports/2026-08-01-coverage-loop-design.md
+@docs/session-reports/2026-08-02-coverage-loop-30q-run.md
+@docs/session-reports/2026-08-02-eval-set-design-research.md
 
-> 次セッションは上記レポートを **必ず先に Read** してから着手すること。
+> 次セッションは上記2本を **必ず先に Read** してから着手すること
+> （前者は末尾の「計り直し（3回目）」節が最終結果。冒頭の結論は覆っている）。
 
 ## P1: 現在地・引継ぎミッション（絶対に消さない）
 
-> 直近 plan: RAG弱点仮説生成・検証ワークフロー（A/B/C/D coverage loop）を構造化ナレッジ改善ワークベンチへ接続中。設計レポートの項目1〜5・7は実装済み、**残るは項目6（30問実行・APIキー必須）とその先の自動昇格**。次は `docs/session-reports/2026-08-01-coverage-loop-design.md` を読むこと。
+> 直近 plan: 項目6（30問A/B/D実行）は完了し弱点分類表が成立したが、**判定器（D役）自体が
+> 人手検証されていない**のが最大の未解決課題。加えてループが閉じていない
+> （`auto_classified` が行き止まり）。5フェーズの納品計画を策定済みだが、計画ファイルは
+> コンテナ固有パス（`/root/.claude/plans/`）のため次回セッションでは失われている可能性が高い。
+> 要点は `docs/handoff.md` ③に転記済み。次は `docs/handoff.md` を読むこと。
 
-- **[importance:H][2026-08-01] 現在の主題は呪術廻戦ナレッジそのものではなく、任意ドメインRAGの弱点仮説生成・検証ワークフロー。A/B/C/Dループは「ナレッジ不足確定」ではなく「BがAより弱く見えた差分」を出すだけ。`missing_knowledge / retrieval_failure / generation_failure / chunking_failure / invalid_A / ambiguous_question / out_of_scope / needs_quarantine` への原因分類は実装済み（PR #18）。evidence metadata・coverage台帳のSQLite永続化・auto_classified/auto_rejected/auto_quarantined 状態遷移・隔離解決APIも実装済み（PR #19）。**※ここから先は 2026-08-01 時点の記録で、現在地としては下の 2026-08-02 の項目が正。** 当時の残件は項目6（30問A/B/D全実行→弱点分類表）・項目7（B側retrieved chunks保存の配線）・その先の `auto_classified -> auto_approved` 自動昇格で、**このうち項目7は 2026-08-02 に完了した（PR #22）**。詳細は `docs/handoff.md` 参照。**
-- **[importance:H][2026-08-02] 項目7（B回答の取得証跡の配線）は実装済み（PR #22）。残るは項目6（30問をA/B/Dへ流して弱点分類表を作る）＝**APIキー設定が前提**、その先の `auto_classified -> auto_approved` 自動昇格（項目6の before/after 結果が前提）。設問セットは `data/eval/coverage-loop-30-questions.json` に版管理済み。**
+- **[importance:H][2026-08-02] 項目6（30問をA/B/Dへ流して弱点分類表を作る）は完了した（3周目で成立）。
+  1周目は24/30問が判定不能、2周目でコーパス不在プローブを入れたら判定不能は0件になったが
+  8件中2件が誤判定（正しい判定を壊していた）、3周目で証跡を見る順序を固定して判定者間一致30/30・
+  分類表が成立。詳細は `docs/session-reports/2026-08-02-coverage-loop-30q-run.md`。**
+- **[importance:H][2026-08-02] 30問の評価セットは「難問100%・対照群0%・答えの無い問い0%」という
+  設計不備があった（ユーザー指摘で発覚）。実在ベンチマークとの比較調査（`docs/session-reports/
+  2026-08-02-eval-set-design-research.md`）を経て、`data/eval/stratified-eval-set-v1.json`
+  （100問・6層：易問/中間/難問/言い換え/答えの無い問い/誤前提）を新設。正解チャンクを持つ50問で
+  LLM無しの機械的な検索評価が可能になった（`scripts/eval_set_retrieval_check.py`）。
+  難問だけで固めた評価セットは弁別力を失う（フロア効果）— 評価セットを作るときは必ず対照群を含めること。**
+- **[importance:H][2026-08-02] 判定器（D役の失敗原因分類）は一度も人手検証されていない。
+  先行研究（RAGEC）の実測では同種の段階分類の人間一致率は57.8%、エラー型の正確度は40.3%。
+  「判定者間一致30/30」は同一モデル・同一プロンプトを2回走らせた結果であり、正しさの証拠ではない
+  （PoLLの言う合議＝異なるモデルファミリーの複数judge、にはなっていない）。**弱点分類表の数値を
+  意思決定（自動昇格・ナレッジ改訂）に使う前に、構成的ゴールドセットでの検証が必須。**
+  詳細は `docs/session-reports/2026-08-02-eval-set-design-research.md`。**
+- **[importance:H][2026-08-02] ループが閉じていない。`auto_classified`（追加候補）は
+  `COVERAGE_RESOLVABLE_STATUSES`（`src/quality/store.py:48`）に含まれず遷移先が無い行き止まり。
+  `auto_approved` を読むコードもリポジトリ全体に存在せず、承認してもナレッジ改訂は生成されない。
+  DBのCHECK制約にある `implemented`/`verified`/`active` は書き込むコードが皆無。
+  隔離一覧APIは実装済みだが `src/api/static/app.js` に対応するUIコードが1行も無い。**
+- **[importance:H][2026-08-02] 品質ゲートの決定論チェックが、部分回答＋定型留保文
+  （「〜は、提供された抜粋からは特定できません」で終わる文）に引用を要求し、最も誠実な回答を
+  25/30問で出荷停止していた。留保文のみ引用義務を免除するよう `src/quality/verifier.py` を修正済み
+  （`is_reservation_sentence`）。ただし留保文を含んでも他に無引用の主張があれば従来どおり差し止まる
+  （抜け道ではない）ことをテストで固定してある。**
+- **[importance:H][2026-08-01] 項目7（B回答の取得証跡の配線）は実装済み（PR #22）。**
 - **[importance:H][2026-08-02] 取得証跡（`RetrievedChunk`）が積極的に証明できるのは一方向だけ：surfaced chunk が事実を含むのに B が失敗 → `generation_failure`。「surfaced chunk に事実が無い」ことは `missing_knowledge` / `retrieval_failure` / `chunking_failure` のいずれとも等しく整合し、D はコーパスを渡されないため区別できない。証跡だけから `missing_knowledge` を選ばせない（`needs_quarantine` に落とす）。この飛躍を一度自分で持ち込んで指摘された（`docs/failures.md` 2026-08-02）。**
 - **[importance:H][2026-08-02] 実験の入力（設問セット・固定パラメータ）は必ず版管理下のファイルに置く。before/after 比較は固定評価セットが前提で、毎回生成し直すと両側が比較不能になる。前回30問セットをレポート要約だけで済ませて失った（`docs/failures.md` 2026-08-02）。**
 - **[importance:H][2026-08-02] 型ゲート（`uv run mypy src`）は `ci-green` に接続済み・エラー 0。0 を維持すること。`type: ignore` は `src/rag/__init__.py` の 2 箇所のみで、langchain の pydantic 別名との食い違い（実行時は正しい）。`ignore[call-arg]` は呼び出し全体に掛かるため、その穴は `tests/test_rag.py::test_langchain_constructor_kwargs_still_exist` が埋めている。**このテストを消さないこと。** 詳細は `AGENTS.md`「型ゲート（mypy）」節。**
