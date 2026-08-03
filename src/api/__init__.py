@@ -180,7 +180,7 @@ class CoverageLoopRequest(BaseModel):
     focus: str | None = Field(default=None, min_length=1, max_length=1000)
     questions: list[Annotated[str, Field(min_length=1, max_length=4000)]] = Field(
         default_factory=list,
-        max_length=30,
+        max_length=200,
     )
     external_answers: dict[str, Any] = Field(default_factory=dict)
     knowledge_answers: dict[str, Any] = Field(default_factory=dict)
@@ -834,6 +834,13 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail="comparison requires one question")
         if request.question_limit is not None:
             raise HTTPException(status_code=400, detail="question_limit is not allowed for comparison")
+        if not is_generation_configured():
+            provider = get_llm_provider()
+            key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
+            raise HTTPException(
+                status_code=503,
+                detail=f"{key_name} is not configured for LLM_PROVIDER={provider}. Set it in .env before calling comparison-jobs.",
+            )
         return _create_job(
             revision_id=revision_id,
             kind="comparison",
@@ -852,6 +859,13 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             raise HTTPException(
                 status_code=400,
                 detail="full validation does not accept question or question_limit",
+            )
+        if not is_generation_configured():
+            provider = get_llm_provider()
+            key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
+            raise HTTPException(
+                status_code=503,
+                detail=f"{key_name} is not configured for LLM_PROVIDER={provider}. Set it in .env before calling validation-jobs.",
             )
         return _create_job(
             revision_id=revision_id,
@@ -909,6 +923,15 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
         payload: StructuredExtractionRequest | None = None,
     ) -> dict[str, Any]:
         request = payload or StructuredExtractionRequest()
+        # Only the real LLMStructuredExtractor (lazily built on first use) needs a
+        # key; an injected extractor (production alternative or test fake) does not.
+        if wb.structured_extractor is None and not is_generation_configured():
+            provider = get_llm_provider()
+            key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
+            raise HTTPException(
+                status_code=503,
+                detail=f"{key_name} is not configured for LLM_PROVIDER={provider}. Set it in .env before calling structured-extract.",
+            )
         try:
             return wb.extract_revision_structured_records(
                 revision_id,
@@ -929,7 +952,13 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
         payload: CoverageLoopRequest | None = None,
     ) -> dict[str, Any]:
         request = payload or CoverageLoopRequest()
-        requires_local_llm = request.allow_llm_agents or request.run_knowledge_answerer
+        # `run_coverage_loop` always calls the LLM question generator for round >= 2
+        # (only round 0 gets the caller's seed_questions; later rounds generate from
+        # previous findings), so a multi-round request needs a key even when
+        # allow_llm_agents/run_knowledge_answerer are both false.
+        requires_local_llm = (
+            request.allow_llm_agents or request.run_knowledge_answerer or request.rounds > 1
+        )
         if requires_local_llm and not is_generation_configured():
             provider = get_llm_provider()
             key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"

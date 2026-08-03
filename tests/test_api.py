@@ -12,6 +12,8 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+from pydantic import ValidationError  # noqa: E402
+
 import src.api as api  # noqa: E402
 from src.coverage_loop import AgentAnswer, CoverageQuestion, FactCheckJudgment  # noqa: E402
 from src.quality import OnlineVerifier, QualityWorkbench, WorkbenchStore  # noqa: E402
@@ -478,6 +480,46 @@ def test_structured_extraction_can_target_query_retrieved_chunks(tmp_path):
     assert body["facts"][0]["evidence"][0]["chunk_id"] == 42
 
 
+def test_structured_extract_returns_503_without_a_key_when_no_extractor_is_injected(monkeypatch, tmp_path):
+    """Previously this fell through to a generic 500 (the real LLMStructuredExtractor
+    failing at construction) instead of the same 503-with-message /ask and /runs give
+    when no LLM key is configured."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+    created = client.post(
+        "/workbench/revisions",
+        json={"source_path": "data/sample/jujutsu-kaisen-wikipedia.md", "label": "candidate"},
+    )
+    revision_id = created.json()["id"]
+
+    res = client.post(f"/workbench/revisions/{revision_id}/structured-extract", json={})
+
+    assert res.status_code == 503
+    assert "API_KEY" in res.json()["detail"]
+
+
+def test_structured_extract_still_works_with_an_injected_extractor_and_no_key(monkeypatch, tmp_path):
+    """A workbench wired with a non-LLM extractor (this test's fake, or a future
+    non-LLM production alternative) never needed a key; the new guard must only
+    fire when the real LLM extractor would actually be built."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path, structured_extractor=FakeStructuredExtractor())
+    client = TestClient(api.create_app(workbench))
+    created = client.post(
+        "/workbench/revisions",
+        json={"source_path": "data/sample/jujutsu-kaisen-wikipedia.md", "label": "candidate"},
+    )
+    revision_id = created.json()["id"]
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/structured-extract",
+        json={"chunk_limit": 1, "persist": True},
+    )
+
+    assert res.status_code == 200
+
+
 def test_coverage_loop_marks_external_pass_b_abstention_as_add_candidate(monkeypatch, tmp_path):
     monkeypatch.setattr(api, "is_generation_configured", lambda: False)
     workbench = _make_workbench(tmp_path)
@@ -773,6 +815,59 @@ def test_coverage_loop_accepts_injected_retrieval_evidence(monkeypatch, tmp_path
     assert res.json()["items"][0]["knowledge_answer"]["retrieved_chunks"] == [
         {"chunk_id": "12", "score": 0.41, "citation": "sample.md p.5", "rank": 1}
     ]
+
+
+def test_coverage_loop_request_accepts_a_100_question_stratified_set_but_not_201():
+    """The cap used to be 30 (a leftover from an early 30-question test run), which
+    blocked feeding the 100-question stratified eval set through /coverage-loop.
+    This pins the new boundary directly on the request model (Pydantic validation
+    runs before any business logic, so this doesn't need matching external_answers
+    /knowledge_answers/fact_checks for every question)."""
+    api.CoverageLoopRequest(questions=["q"] * 100)
+    api.CoverageLoopRequest(questions=["q"] * 200)
+    try:
+        api.CoverageLoopRequest(questions=["q"] * 201)
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("201 questions should exceed the CoverageLoopRequest cap")
+
+
+def test_coverage_loop_requires_a_key_for_multi_round_requests(monkeypatch, tmp_path):
+    """`run_coverage_loop` always calls the LLM question generator from round 2
+    onward (only round 0 gets the caller's seed questions), so a `rounds>1`
+    request needs a key even when allow_llm_agents/run_knowledge_answerer are
+    both false. Without this guard the request would 500 (a raw provider
+    error) instead of the same 503-with-message /ask and /runs give."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "虎杖が簡易領域を習得できた理由を答えろ。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {question: {"answer": "入れ替え修行で日下部から学んだ。", "status": "ok"}},
+            "knowledge_answers": {
+                question: {"answer": "提供された文書には記載がありません。", "status": "released"}
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "missing_knowledge",
+                }
+            },
+            "rounds": 2,
+            "max_questions_per_round": 1,
+        },
+    )
+
+    assert res.status_code == 503
+    assert "API_KEY" in res.json()["detail"]
 
 
 def test_coverage_candidate_quarantine_can_be_resolved_by_hand(monkeypatch, tmp_path):
@@ -1180,6 +1275,35 @@ def test_validation_cannot_be_reduced_to_a_question_or_limit(tmp_path):
     assert limited.status_code == 400
     assert targeted.status_code == 400
     assert missing_comparison_question.status_code == 400
+
+
+def test_comparison_and_validation_jobs_return_503_without_a_key(monkeypatch, tmp_path):
+    """Previously job creation always returned 202 and a missing key only surfaced
+    asynchronously inside the job — and for a comparison job it didn't even surface
+    as `status="error"`, because `_evaluate_revision` swallows per-item exceptions
+    and `run_job` marks any comparison job `"passed"` unconditionally. Guard
+    upfront instead, matching /ask and /runs."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    client = TestClient(api.create_app(workbench))
+    revision = client.post(
+        "/workbench/revisions",
+        json={"content": "# Candidate\n\nKnowledge.", "label": "candidate"},
+    ).json()
+
+    comparison = client.post(
+        f"/workbench/revisions/{revision['id']}/comparison-jobs",
+        json={"question": "one question"},
+    )
+    validation = client.post(
+        f"/workbench/revisions/{revision['id']}/validation-jobs",
+        json={},
+    )
+
+    assert comparison.status_code == 503
+    assert "API_KEY" in comparison.json()["detail"]
+    assert validation.status_code == 503
+    assert "API_KEY" in validation.json()["detail"]
 
 
 def test_rejecting_active_revision_is_conflict(tmp_path):
