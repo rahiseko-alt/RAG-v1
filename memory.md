@@ -7,19 +7,19 @@
 @docs/session-reports/2026-08-02-coverage-loop-30q-run.md
 @docs/session-reports/2026-08-02-eval-set-design-research.md
 @docs/session-reports/2026-08-03-classifier-accuracy.md
+@docs/session-reports/2026-08-03-close-the-loop.md
 
-> 次セッションは上記3本を **必ず先に Read** してから着手すること
+> 次セッションは上記4本を **必ず先に Read** してから着手すること
 > （coverage-loop-30q-runは末尾の「計り直し（3回目）」節が最終結果。冒頭の結論は覆っている。
-> classifier-accuracyが判定器の精度検証の最終結果で、5フェーズ計画Phase 1の成果）。
+> classifier-accuracyが判定器の精度検証の最終結果で5フェーズ計画Phase 1の成果、
+> close-the-loopがPhase 2の成果）。
 
 ## P1: 現在地・引継ぎミッション（絶対に消さない）
 
-> 直近 plan: 5フェーズ納品計画のPhase 1（D役分類器の人手検証）が完了した。構成的ゴールド
-> セットで測定した結果、全体正解率81.5%（RAGEC基準57.8%を上回る）だが、`chunking_failure`
-> ラベルは0/5でゴールド構成方法自体の概念的誤りにより未検証と判明。次はPhase 2（ループを
-> 閉じる）。5フェーズの計画ファイルはコンテナ固有パス（`/root/.claude/plans/`）のため
-> 次回セッションでは失われている可能性が高い。要点は `docs/handoff.md` ③に転記済み。
-> 次は `docs/handoff.md` を読むこと。
+> 直近 plan: 5フェーズ納品計画のPhase 1（D役分類器の人手検証）・Phase 2（ループを閉じる）が
+> 完了した。次はPhase 3（画面とAPIの穴を埋める）。5フェーズの計画ファイルはコンテナ固有パス
+> （`/root/.claude/plans/`）のため次回セッションでは失われている可能性が高い。要点は
+> `docs/handoff.md` ③に転記済み。次は `docs/handoff.md` を読むこと。
 
 - **[importance:H][2026-08-03] Phase 1（D役分類器の人手検証）完了。構成的ゴールドセット
   （`data/eval/classifier-gold-set-v1.json`・27件・`src/quality/classifier_gold.py`で生成）を
@@ -37,6 +37,21 @@
   （notesから構築メタ情報を除去）。**証拠・入力データに何を書いても、それがプロンプトへ
   流れる経路がある限りDの判定に影響する——「監査用のメモのつもり」で書いた文字列でも
   漏洩経路を確認すること。**
+- **[importance:H][2026-08-03] Phase 2（ループを閉じる）完了。`auto_classified → auto_approved
+  → implemented → verified → active`を実装。改訂ドラフト生成はLLM不使用（D役の
+  `fact_check.missing_knowledge`と出典を機械的に追記するのみ）。自動昇格ゲート
+  `is_promotion_eligible`（`src/coverage_loop.py`）で`chunking_failure`を明示的に除外
+  （Phase 1で0/5と測定されたため）。**独立エージェントの敵対検証で実バグ2件を発見・修正**：
+  (1) `mark_coverage_candidate_implemented`が任意の`revision_id`を無検証で信用しており、
+  無関係な検証済みリビジョンを紐付けてverify/activateを素通りさせられた
+  （`config.coverage_candidate_id`の刻印・照合で修正）。
+  (2) `activate_coverage_candidate`が`approve_revision`に`engine_fingerprint`/
+  `structured_digest`を渡しておらず、標準の`/approve`エンドポイントと違ってエンジン陳腐化
+  チェックが無条件でスキップされていた（両パラメータを渡す`QualityWorkbench.
+  activate_coverage_candidate`ラッパーで修正）。**「既存の厳格な経路に委譲する」という設計
+  判断だけでは不十分で、委譲先に渡す引数の完全性まで検証する必要がある。**
+  失敗分類の欠落（FP3/FP7/Self-Knowledge）は意図的に見送った（分類器の一部が未検証な状況では
+  taxonomy拡張は時期尚早）。詳細は `docs/session-reports/2026-08-03-close-the-loop.md`。**
 - **[importance:H][2026-08-02] 項目6（30問をA/B/Dへ流して弱点分類表を作る）は完了した（3周目で成立）。
   1周目は24/30問が判定不能、2周目でコーパス不在プローブを入れたら判定不能は0件になったが
   8件中2件が誤判定（正しい判定を壊していた）、3周目で証跡を見る順序を固定して判定者間一致30/30・
@@ -55,11 +70,15 @@
   良好）だが `chunking_failure` ラベルのみ未検証と判明した——詳細は上の2026-08-03エントリと
   `docs/session-reports/2026-08-03-classifier-accuracy.md`。「弱点分類表の数値を意思決定に使う
   前に検証必須」という制約は `chunking_failure` については依然として有効。**
-- **[importance:H][2026-08-02] ループが閉じていない。`auto_classified`（追加候補）は
-  `COVERAGE_RESOLVABLE_STATUSES`（`src/quality/store.py:48`）に含まれず遷移先が無い行き止まり。
-  `auto_approved` を読むコードもリポジトリ全体に存在せず、承認してもナレッジ改訂は生成されない。
-  DBのCHECK制約にある `implemented`/`verified`/`active` は書き込むコードが皆無。
-  隔離一覧APIは実装済みだが `src/api/static/app.js` に対応するUIコードが1行も無い。**
+- **[importance:H][2026-08-02・2026-08-03に解消] ループが閉じていなかった。`auto_classified`
+  （追加候補）は`COVERAGE_RESOLVABLE_STATUSES`（`src/quality/store.py`）に含まれず遷移先が無い
+  行き止まりで、`auto_approved`を読むコードも存在しなかった。**2026-08-03のPhase 2で
+  `auto_classified → auto_approved → implemented → verified → active`を実装し解消した**
+  （`WorkbenchStore.mark_coverage_candidate_implemented`/`verify_coverage_candidate`/
+  `activate_coverage_candidate`、`QualityWorkbench.implement_coverage_candidate`）。
+  詳細は `docs/session-reports/2026-08-03-close-the-loop.md`。
+  **ただし隔離一覧UIは依然未着手**——APIは実装済みだが`src/api/static/app.js`に
+  coverage/quarantineを扱うUIコードが1行も無い（Phase 3の範囲）。**
 - **[importance:H][2026-08-02] 品質ゲートの決定論チェックが、部分回答＋定型留保文
   （「〜は、提供された抜粋からは特定できません」で終わる文）に引用を要求し、最も誠実な回答を
   25/30問で出荷停止していた。留保文のみ引用義務を免除するよう `src/quality/verifier.py` を修正済み
