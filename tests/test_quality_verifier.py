@@ -499,10 +499,57 @@ def test_partial_answer_with_canonical_reservation_can_release():
 # （Phase 3 完了条件：3モードそれぞれの合格経路テストを緑にする）。
 
 
-def test_explore_mode_passes_with_low_axis_scores_and_fan_only_evidence():
-    """explore is the loosest gate: no faithfulness/relevance floor, and unlike
-    strict/standard it does not require authority_alignment — only citation
-    validity, no contradiction, at least one supported claim, and no_misinfo>=1."""
+def test_explore_mode_passes_without_authority_alignment():
+    """Unlike strict/standard, explore's safety requirement drops
+    authority_alignment. The claim text deliberately does NOT match
+    FAN_QUALIFIER_PATTERN (same non-qualifying wording as
+    test_word_explanation_does_not_count_as_fan_theory_label), so
+    authority_alignment genuinely computes False here — proving explore
+    ignores it, not just that this fixture never exercises it."""
+
+    class UnqualifiedFanVerifier:
+        def verify(self, **_kwargs):
+            return {
+                "faithfulness": 2,
+                "relevance": 2,
+                "no_misinfo": 2,
+                "claims": [
+                    {
+                        "claim_id": "c1",
+                        "claim": "これは公式設定の説明です。",
+                        "status": "supported",
+                        "evidence": [{"rank": 1, "reason": "supported"}],
+                        "reason": "supported",
+                    }
+                ],
+            }
+
+    fan_evidence = [{**EVIDENCE[0], "authority": "fan"}]
+    explore = OnlineVerifier(UnqualifiedFanVerifier(), timeout_seconds=1).evaluate(
+        question="公式設定ですか？",
+        candidate_answer="これは公式設定の説明です [1]。",
+        evidence=fan_evidence,
+        answer_mode="explore",
+    )
+    standard = OnlineVerifier(UnqualifiedFanVerifier(), timeout_seconds=1).evaluate(
+        question="公式設定ですか？",
+        candidate_answer="これは公式設定の説明です [1]。",
+        evidence=fan_evidence,
+        answer_mode="standard",
+    )
+
+    assert explore["authority_alignment"] is False
+    assert explore["release_allowed"] is True
+    # standard requires authority_alignment as part of safety_checks, so the
+    # same unaligned-authority answer that passes explore must block standard.
+    assert standard["authority_alignment"] is False
+    assert standard["release_allowed"] is False
+
+
+def test_explore_mode_passes_with_low_axis_scores():
+    """explore is the loosest gate on the numeric axes: no faithfulness/
+    relevance floor, only no_misinfo>=1 — proven against standard, which
+    requires faithfulness>=2 and no_misinfo>=2."""
 
     class LooseExploreVerifier:
         def verify(self, **_kwargs):
@@ -513,7 +560,7 @@ def test_explore_mode_passes_with_low_axis_scores_and_fan_only_evidence():
                 "claims": [
                     {
                         "claim_id": "c1",
-                        "claim": "ファンの考察ではこの解釈が支持されています。",
+                        "claim": "Supported answer.",
                         "status": "supported",
                         "evidence": [{"rank": 1, "reason": "supported"}],
                         "reason": "supported",
@@ -521,17 +568,16 @@ def test_explore_mode_passes_with_low_axis_scores_and_fan_only_evidence():
                 ],
             }
 
-    fan_evidence = [{**EVIDENCE[0], "authority": "fan"}]
     explore = OnlineVerifier(LooseExploreVerifier(), timeout_seconds=1).evaluate(
-        question="ファンの見方は？",
-        candidate_answer="ファンの考察ではこの解釈が支持されています [1]。",
-        evidence=fan_evidence,
+        question="What?",
+        candidate_answer="Supported answer [1].",
+        evidence=EVIDENCE,
         answer_mode="explore",
     )
     standard = OnlineVerifier(LooseExploreVerifier(), timeout_seconds=1).evaluate(
-        question="ファンの見方は？",
-        candidate_answer="ファンの考察ではこの解釈が支持されています [1]。",
-        evidence=fan_evidence,
+        question="What?",
+        candidate_answer="Supported answer [1].",
+        evidence=EVIDENCE,
         answer_mode="standard",
     )
 

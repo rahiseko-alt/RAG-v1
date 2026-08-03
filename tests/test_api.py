@@ -833,6 +833,43 @@ def test_coverage_loop_request_accepts_a_100_question_stratified_set_but_not_201
         raise AssertionError("201 questions should exceed the CoverageLoopRequest cap")
 
 
+def test_coverage_loop_requires_a_key_for_multi_round_requests(monkeypatch, tmp_path):
+    """`run_coverage_loop` always calls the LLM question generator from round 2
+    onward (only round 0 gets the caller's seed questions), so a `rounds>1`
+    request needs a key even when allow_llm_agents/run_knowledge_answerer are
+    both false. Without this guard the request would 500 (a raw provider
+    error) instead of the same 503-with-message /ask and /runs give."""
+    monkeypatch.setattr(api, "is_generation_configured", lambda: False)
+    workbench = _make_workbench(tmp_path)
+    revision_id = workbench.store.get_active_revision()["id"]
+    client = TestClient(api.create_app(workbench))
+    question = "虎杖が簡易領域を習得できた理由を答えろ。"
+
+    res = client.post(
+        f"/workbench/revisions/{revision_id}/coverage-loop",
+        json={
+            "questions": [question],
+            "external_answers": {question: {"answer": "入れ替え修行で日下部から学んだ。", "status": "ok"}},
+            "knowledge_answers": {
+                question: {"answer": "提供された文書には記載がありません。", "status": "released"}
+            },
+            "fact_checks": {
+                question: {
+                    "external_status": "pass",
+                    "knowledge_status": "abstain",
+                    "same_answer": False,
+                    "failure_cause": "missing_knowledge",
+                }
+            },
+            "rounds": 2,
+            "max_questions_per_round": 1,
+        },
+    )
+
+    assert res.status_code == 503
+    assert "API_KEY" in res.json()["detail"]
+
+
 def test_coverage_candidate_quarantine_can_be_resolved_by_hand(monkeypatch, tmp_path):
     """A `needs_quarantine` D verdict lands in the ledger as auto_quarantined,
     which is the one status a human is expected to resolve by hand (design-doc

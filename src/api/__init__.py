@@ -952,7 +952,13 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
         payload: CoverageLoopRequest | None = None,
     ) -> dict[str, Any]:
         request = payload or CoverageLoopRequest()
-        requires_local_llm = request.allow_llm_agents or request.run_knowledge_answerer
+        # `run_coverage_loop` always calls the LLM question generator for round >= 2
+        # (only round 0 gets the caller's seed_questions; later rounds generate from
+        # previous findings), so a multi-round request needs a key even when
+        # allow_llm_agents/run_knowledge_answerer are both false.
+        requires_local_llm = (
+            request.allow_llm_agents or request.run_knowledge_answerer or request.rounds > 1
+        )
         if requires_local_llm and not is_generation_configured():
             provider = get_llm_provider()
             key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
