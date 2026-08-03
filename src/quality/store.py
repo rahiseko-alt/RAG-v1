@@ -1121,9 +1121,15 @@ class WorkbenchStore:
         `implement_coverage_candidate` when it creates the revision, so an unrelated
         already-validated revision cannot be linked in and ridden through verification —
         and no other candidate may already claim the same revision, so one validated
-        revision cannot be reused to activate several different candidates.
+        revision cannot be reused to activate several different candidates. Wrapped in
+        `BEGIN IMMEDIATE`, matching `approve_revision`/`bootstrap_active_revision`'s
+        equivalent check-then-act sequences: without it, two concurrent calls targeting
+        the same `revision_id` for two different candidates could each pass the
+        "already claimed" check before either writes, defeating the very check above
+        (2026-08-03 CodeRabbit review on PR #25).
         """
         with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
                 "SELECT * FROM coverage_candidates WHERE id = ?", (candidate_id,)
             ).fetchone()
@@ -1249,8 +1255,16 @@ class WorkbenchStore:
         review: omitting them here — unlike the `/workbench/revisions/{id}/approve`
         endpoint, which always supplies both — silently skipped the engine-drift and
         structured-hash checks for every coverage-candidate activation).
+
+        The initial status check and the final status='active' write are each guarded
+        by `BEGIN IMMEDIATE` (2026-08-03 CodeRabbit review, PR #25), though full
+        atomicity across the whole method is inherently limited by delegating to
+        `approve_revision`, which transacts on its own connection in between — a
+        concurrent duplicate call converges on the same terminal state and can at
+        worst duplicate the `coverage_candidate_activated` event, not corrupt state.
         """
         with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
                 "SELECT * FROM coverage_candidates WHERE id = ?", (candidate_id,)
             ).fetchone()
@@ -1268,6 +1282,7 @@ class WorkbenchStore:
             operator=operator,
         )
         with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             connection.execute(
                 """
                 UPDATE coverage_candidates SET status = 'active', status_reason = ?, updated_at = ?
