@@ -22,6 +22,7 @@ from src.coverage_loop import (  # noqa: E402
     FactCheckJudgment,
     RetrievedChunk,
     build_corpus_probe,
+    build_fact_check_prompt,
     classify_coverage_item,
 )
 
@@ -454,3 +455,42 @@ def test_acceptable_source_types_still_produce_candidates():
             judgment=judgment,
         )
         assert disposition == "add_candidate", source_type
+
+
+def test_build_fact_check_prompt_matches_the_shape_llm_fact_checker_used_to_build_inline():
+    """Regression guard for pulling the D prompt out of `LLMFactChecker.check`.
+
+    `scripts/prepare_classifier_gold_prompts.py` calls this function directly so a
+    subagent standing in for D (no API key available) sees the same prompt shape
+    production would send. If the extraction ever silently drops a key or changes
+    the question/A/B echo, this test — not a measurement run — should catch it.
+    """
+    external = _external()
+    knowledge = _knowledge()
+    prompt = build_fact_check_prompt(
+        question="質問文", external_answer=external, knowledge_answer=knowledge
+    )
+    assert set(prompt) == {
+        "task",
+        "how_to_use_B_retrieval_evidence",
+        "evidence_order_you_must_follow",
+        "how_to_use_the_corpus_probe",
+        "question",
+        "external_answer_A",
+        "knowledge_only_answer_B",
+        "failure_cause_options",
+        "output_schema",
+    }
+    assert prompt["question"] == "質問文"
+    assert prompt["external_answer_A"] == external.model_dump()
+    assert prompt["knowledge_only_answer_B"] == knowledge.model_dump()
+    assert set(prompt["failure_cause_options"]) == {
+        "missing_knowledge",
+        "retrieval_failure",
+        "generation_failure",
+        "chunking_failure",
+        "ambiguous_question",
+        "invalid_A",
+        "out_of_scope",
+        "needs_quarantine",
+    }
