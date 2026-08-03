@@ -627,26 +627,23 @@ class LLMExternalAnswerer:
         )
 
 
-class LLMFactChecker:
-    """D-agent checker that decides whether the gap should become a knowledge target."""
+def build_fact_check_prompt(
+    *,
+    question: str,
+    external_answer: AgentAnswer,
+    knowledge_answer: AgentAnswer,
+) -> dict[str, Any]:
+    """Build the exact prompt dict `LLMFactChecker.check` sends to the model.
 
-    def __init__(self, model: Any | None = None) -> None:
-        self.model = model
-
-    def _model(self) -> Any:
-        if self.model is None:
-            self.model = build_chat_model()
-        return self.model
-
-    def check(
-        self,
-        *,
-        question: str,
-        external_answer: AgentAnswer,
-        knowledge_answer: AgentAnswer,
-    ) -> FactCheckJudgment:
-        prompt = {
-            "task": (
+    Pulled out as a standalone function so anything that needs to reproduce D's
+    input byte-for-byte (e.g. `scripts/prepare_classifier_gold_prompts.py`, which
+    hands the same prompt to a subagent standing in for D when no API key is
+    available) imports it instead of re-copying a prompt that would then drift
+    from production, the same risk `scripts/coverage_loop_retrieve.py` documents
+    for its own copy of the retrieve node.
+    """
+    return {
+        "task": (
                 "You are fact-checker D. Decide whether A is a usable external answer and, if B "
                 "looks weaker than A, classify WHY — do not default to 'the knowledge base is "
                 "missing this'. B losing to A can mean the knowledge exists but retrieval missed "
@@ -732,6 +729,31 @@ class LLMFactChecker:
                 "reason": "short reason",
             },
         }
+
+
+class LLMFactChecker:
+    """D-agent checker that decides whether the gap should become a knowledge target."""
+
+    def __init__(self, model: Any | None = None) -> None:
+        self.model = model
+
+    def _model(self) -> Any:
+        if self.model is None:
+            self.model = build_chat_model()
+        return self.model
+
+    def check(
+        self,
+        *,
+        question: str,
+        external_answer: AgentAnswer,
+        knowledge_answer: AgentAnswer,
+    ) -> FactCheckJudgment:
+        prompt = build_fact_check_prompt(
+            question=question,
+            external_answer=external_answer,
+            knowledge_answer=knowledge_answer,
+        )
         response = self._model().invoke(
             "Return only JSON.\n" + json.dumps(prompt, ensure_ascii=False)
         )
