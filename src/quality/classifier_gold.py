@@ -14,10 +14,28 @@ checkable fact, not a human's opinion. Every item's `construction_evidence` reco
 exactly what was measured or asserted, so an adversarial reviewer can audit the label
 without re-running anything.
 
-Kept free of `src.rag`/Chroma/HF imports on purpose: callers (the `scripts/
+Does no retrieval, embedding, or index work itself: callers (the `scripts/
 build_classifier_gold_set.py` CLI) do the real retrieval and pass the results in as
 plain `RetrievedChunk`/corpus-text data, which is what keeps this module's own tests
-fast and hermetic (see `tests/test_classifier_gold.py`).
+fast (see `tests/test_classifier_gold.py`) even though it imports the same term
+tokenizer `src.coverage_loop`'s corpus probe uses (see `_leaks_into` below).
+
+Adversarial review of the first generated gold set (2026-08-03, see the Phase 1
+session report) found two real construction bugs, both fixed here:
+
+1. "The answer_span is absent from the kept/other chunk" was checked by literal
+   substring match only, which missed paraphrases and redundant restatements — e.g.
+   a chunk elsewhere in the corpus stated the same fact in different words, or one
+   half of a `chunking_failure` pair's designated chunk turned out to already restate
+   the other half. `_leaks_into` below replaces the substring check with a term-
+   overlap check for exactly this reason.
+2. Every gold item's `external_answer.notes` used to describe its own construction
+   ("gold-set construction: hand-authored A answer, not live web search"). Since
+   `build_fact_check_prompt` dumps the full `AgentAnswer` including `notes` into what
+   D reads, this handed D a confession that undermined A's credibility on purpose —
+   an unintended nudge toward `invalid_A` on every `missing_knowledge` item. Notes
+   are now either empty or, for `invalid_A`, a plausible first-person hedge a real A
+   might write about its own sourcing — never a description of the gold set itself.
 """
 from __future__ import annotations
 
@@ -31,7 +49,9 @@ from src.coverage_loop import (
     EvidenceSource,
     FactCheckJudgment,
     RetrievedChunk,
+    _query_terms,
     classify_coverage_item,
+    is_probeable_term,
 )
 
 
@@ -78,6 +98,45 @@ def _official_evidence(*, chunk_id: str, span: str) -> EvidenceSource:
     )
 
 
+def _probeable_terms(text: str) -> set[str]:
+    """Tokenize with the same tokenizer `build_corpus_probe` uses, minus junk tokens."""
+    return {term for term in _query_terms(text) if is_probeable_term(term)}
+
+
+_STRONG_TERM_MIN_LENGTH = 5
+
+
+def _leaks_into(text: str, chunk_text: str, *, min_overlap: int = 2, ratio: float = 0.5) -> bool:
+    """True when `chunk_text` already restates most of `text`'s substance.
+
+    A literal substring check (`text in chunk_text`) only catches an exact quote; it
+    missed a paraphrase in the first adversarial review pass (2026-08-03): the same
+    fact stated in different words in a chunk meant to be excluded, and — the harder
+    case — a genuinely compound fact (e.g. "パンダは突然変異呪骸") diluted by short,
+    generic tokenizer artifacts (a glossary-style span like "呪骸: 呪力を宿した人形や
+    存在。パンダは突然変異呪骸。" also yields "存在" and a stray "呪骸:") so the
+    ratio-based check alone missed it.
+
+    Two independent signals, either one is enough:
+    - `min_overlap` of `text`'s probeable terms, at least `ratio` of them, also
+      appear in `chunk_text` — the general case.
+    - a single "strong" term (>= `_STRONG_TERM_MIN_LENGTH` characters) appears in
+      `chunk_text` on its own. Short entity names (2-4 characters, like most
+      character names) are deliberately excluded from this path — two chunks about
+      the same person legitimately share the person's name without one chunk
+      already containing the other's fact — but a term this long is almost always a
+      specific compound noun phrase (a technique name, a categorical description),
+      and finding it verbatim elsewhere is a strong signal the fact is duplicated.
+    """
+    terms = _probeable_terms(text)
+    if not terms:
+        return False
+    hits = sum(1 for term in terms if term in chunk_text)
+    if hits >= min_overlap and (hits / len(terms)) >= ratio:
+        return True
+    return any(len(term) >= _STRONG_TERM_MIN_LENGTH and term in chunk_text for term in terms)
+
+
 def build_retrieval_failure_items(
     items: list[dict[str, Any]],
     retrieved: dict[str, list[RetrievedChunk]],
@@ -93,6 +152,13 @@ def build_retrieval_failure_items(
     triggers the D prompt's "you have not seen what B saw" quarantine instruction
     regardless of the corpus probe — testing that edge case would conflate a genuine
     retrieval_failure signature with a degenerate no-evidence one.
+
+    Multi-item list answers (e.g. "technique A, technique B, technique C") are also
+    skipped: adversarial review found that for an enumeration-style answer, a kept
+    chunk can legitimately name a DIFFERENT valid item answering the same question
+    (e.g. one of Gojo's other named techniques) without paraphrasing the gold span at
+    all, which `_leaks_into` — built to catch paraphrase of the SAME fact — cannot
+    detect. A single-fact `answer_span` does not have this failure mode.
     """
     gold_items: list[GoldItem] = []
     for item in items:
@@ -101,6 +167,8 @@ def build_retrieval_failure_items(
         source_id = str(item["id"])
         gold_chunk_id = str(item["answer_chunk_id"])
         answer_span = str(item["answer_span"])
+        if answer_span.count("、") >= 2:
+            continue
         ranked = sorted(
             (chunk for chunk in retrieved.get(source_id, []) if chunk.rank is not None),
             key=lambda chunk: chunk.rank,  # type: ignore[return-value, arg-type]
@@ -113,8 +181,13 @@ def build_retrieval_failure_items(
         kept = [chunk for chunk in ranked if chunk.rank is not None and chunk.rank < gold_rank]
         if not kept:
             continue
-        if any(answer_span in corpus.get(chunk.chunk_id, "") for chunk in kept):
-            # The span leaked into a chunk we meant to keep — do not force the label.
+        if any(
+            answer_span in corpus.get(chunk.chunk_id, "")
+            or _leaks_into(answer_span, corpus.get(chunk.chunk_id, ""))
+            for chunk in kept
+        ):
+            # The span, or a paraphrase of it, is already in a chunk we meant to keep
+            # — do not force the label onto a case a real judge could read either way.
             continue
         gold_items.append(
             GoldItem(
@@ -127,7 +200,6 @@ def build_retrieval_failure_items(
                     answer=answer_span,
                     status="ok",
                     evidence=[_official_evidence(chunk_id=gold_chunk_id, span=answer_span)],
-                    notes="gold-set construction: A's answer is the eval-set's verified answer_span.",
                 ),
                 knowledge_answer=AgentAnswer(
                     role="knowledge",
@@ -147,7 +219,7 @@ def build_retrieval_failure_items(
                     "gold_chunk_id": gold_chunk_id,
                     "measured_rank": gold_rank,
                     "kept_chunk_ids": [chunk.chunk_id for chunk in kept],
-                    "verified_span_absent_from_kept": True,
+                    "verified_span_and_paraphrase_absent_from_kept": True,
                 },
             )
         )
@@ -191,12 +263,11 @@ def build_missing_knowledge_items(
                     status="ok",
                     evidence=[
                         EvidenceSource(
-                            url=f"synthetic:{source_id}",
+                            url=f"https://external-reference.example.test/{source_id}",
                             source_type="reliable_secondary",
                             span=a_answer,
                         )
                     ],
-                    notes="gold-set construction: hand-authored A answer, not live web search.",
                 ),
                 knowledge_answer=AgentAnswer(
                     role="knowledge",
@@ -260,7 +331,6 @@ def build_generation_failure_items(
                     answer=answer_span,
                     status="ok",
                     evidence=[_official_evidence(chunk_id=gold_chunk_id, span=answer_span)],
-                    notes="gold-set construction: A's answer is the eval-set's verified answer_span.",
                 ),
                 knowledge_answer=AgentAnswer(
                     role="knowledge",
@@ -292,10 +362,16 @@ def build_chunking_failure_items(
     """`medium_multi_chunk` items where both gold chunks are surfaced but B quotes only one.
 
     Eligibility requires both `answer_chunk_ids` to appear in the real retrieved list
-    (a mechanical filter — items that fail it are skipped, not forced). B's answer is
-    a literal substring of `answer_spans[0]`, the real corpus text, not composed
-    prose, so the "partial" answer is truthful as far as it goes and simply omits the
-    fact that only lives in the second chunk.
+    (a mechanical filter — items that fail it are skipped, not forced). It also
+    requires that NEITHER designated chunk's real full text already restates the
+    other's span (checked with `_leaks_into`, not just the two stored `answer_spans`):
+    adversarial review found a case where the stored spans looked cleanly split but
+    the chunk holding the "dropped" span turned out to also restate the "kept"
+    chunk's fact in its own full text — meaning that chunk alone already answered
+    the question, making the true cause `generation_failure`, not `chunking_failure`.
+    B's answer is a literal substring of `answer_spans[0]`, the real corpus text, not
+    composed prose, so the "partial" answer is truthful as far as it goes and simply
+    omits the fact that only lives in the second chunk.
     """
     gold_items: list[GoldItem] = []
     for item in items:
@@ -313,6 +389,22 @@ def build_chunking_failure_items(
         kept_span = answer_spans[0]
         if kept_span not in corpus.get(gold_chunk_ids[0], ""):
             continue
+        chunk0_text = corpus.get(gold_chunk_ids[0], "")
+        chunk1_text = corpus.get(gold_chunk_ids[1], "")
+        if _leaks_into(answer_spans[1], chunk0_text) or _leaks_into(answer_spans[0], chunk1_text):
+            # One designated chunk's full text already restates the other span —
+            # a single surfaced chunk would already answer the whole question.
+            continue
+        combined_answer = f"{answer_spans[0]} {answer_spans[1]}"
+        other_surfaced = [chunk for chunk in chunks if chunk.chunk_id not in gold_chunk_ids]
+        if any(
+            _leaks_into(combined_answer, corpus.get(chunk.chunk_id, ""), ratio=0.6)
+            for chunk in other_surfaced
+        ):
+            # A THIRD already-surfaced chunk (neither of the two designated ones)
+            # independently covers most of the combined fact by itself, so B
+            # failing to combine two chunks is not the true story.
+            continue
         gold_items.append(
             GoldItem(
                 id=f"G-CHUNKING-{len(gold_items) + 1:02d}",
@@ -327,7 +419,6 @@ def build_chunking_failure_items(
                         _official_evidence(chunk_id=gold_chunk_ids[0], span=answer_spans[0]),
                         _official_evidence(chunk_id=gold_chunk_ids[1], span=answer_spans[1]),
                     ],
-                    notes="gold-set construction: A's answer combines both eval-set verified spans.",
                 ),
                 knowledge_answer=AgentAnswer(
                     role="knowledge",
@@ -347,6 +438,7 @@ def build_chunking_failure_items(
                     "kept_span_chunk_id": gold_chunk_ids[0],
                     "dropped_span_chunk_id": gold_chunk_ids[1],
                     "verified_neither_chunk_alone_contains_full_span_pair": True,
+                    "verified_no_single_surfaced_chunk_covers_the_combined_answer": True,
                 },
             )
         )

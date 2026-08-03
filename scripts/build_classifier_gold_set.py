@@ -93,8 +93,14 @@ def main() -> None:
         by_stratum.setdefault(str(question["stratum"]), []).append(question)
 
     easy = by_stratum.get("easy_factual", [])
-    half = len(easy) // 2
-    retrieval_failure_candidates, generation_failure_candidates = easy[:half], easy[half:]
+    # retrieval_failure eligibility is the strict one (rank >= 2, no literal-or-
+    # paraphrase leak into any kept chunk — see `build_retrieval_failure_items`), so
+    # it gets the larger share of the easy_factual pool. generation_failure's bar is
+    # much looser (gold chunk surfaced + its span present verbatim) and reliably
+    # clears its target from a small pool, confirmed by the 2026-08-03 run.
+    generation_split = max(0, len(easy) - 6)
+    retrieval_failure_candidates = easy[:generation_split]
+    generation_failure_candidates = easy[generation_split:]
     medium = by_stratum.get("medium_multi_chunk", [])
     unanswerable = by_stratum.get("unanswerable_out_of_db", [])
     false_premise = by_stratum.get("false_premise", [])

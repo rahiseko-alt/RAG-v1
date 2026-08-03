@@ -58,7 +58,7 @@ def test_retrieval_failure_drops_the_gold_chunk_from_bs_context():
     kept_ids = [chunk.chunk_id for chunk in gold.knowledge_answer.retrieved_chunks]
     assert kept_ids == ["1", "2"]
     assert "5" not in kept_ids
-    assert gold.construction_evidence["verified_span_absent_from_kept"] is True
+    assert gold.construction_evidence["verified_span_and_paraphrase_absent_from_kept"] is True
     assert gold.construction_evidence["measured_rank"] == 3
 
 
@@ -91,6 +91,73 @@ def test_retrieval_failure_skips_when_span_leaks_into_a_kept_chunk():
     assert build_retrieval_failure_items([item], retrieved, corpus, n=6) == []
 
 
+def test_retrieval_failure_skips_when_a_kept_chunk_paraphrases_the_answer():
+    """Regression test for the 2026-08-03 adversarial-review finding on E-07.
+
+    A kept chunk restated the same fact's key terms in different sentence structure
+    (no literal substring match of the full span), which the original
+    literal-substring-only check missed.
+    """
+    item = {
+        "id": "E-07",
+        "question": "出版社はどこですか",
+        "answer_chunk_id": "10",
+        "answer_span": "出版社は集英社です",
+    }
+    retrieved = {
+        "E-07": [
+            RetrievedChunk(chunk_id="25", rank=1),
+            RetrievedChunk(chunk_id="10", rank=2),
+        ]
+    }
+    corpus = {
+        "25": "この漫画は集英社から出版社として刊行されている。",
+        "10": "出版社は集英社です。",
+    }
+    assert build_retrieval_failure_items([item], retrieved, corpus, n=6) == []
+
+
+def test_retrieval_failure_notes_do_not_reveal_gold_set_construction():
+    item = {
+        "id": "E-06",
+        "question": "誰が作者ですか",
+        "answer_chunk_id": "5",
+        "answer_span": "作者は芥見下々です",
+    }
+    retrieved = {
+        "E-06": [RetrievedChunk(chunk_id="1", rank=1), RetrievedChunk(chunk_id="5", rank=2)]
+    }
+    corpus = {"1": "無関係な文章", "5": "作者は芥見下々です。"}
+    items = build_retrieval_failure_items([item], retrieved, corpus, n=6)
+    assert len(items) == 1
+    assert "gold-set" not in items[0].external_answer.notes
+    assert "construction" not in items[0].external_answer.notes
+
+
+def test_retrieval_failure_skips_multi_item_list_answers():
+    """Regression test for the 2026-08-03 adversarial-review finding on E-09.
+
+    A kept chunk named a DIFFERENT valid technique for the same person, answering the
+    same enumeration-style question without paraphrasing the gold span at all —
+    something `_leaks_into` cannot detect since it checks for restatement of the same
+    fact, not the existence of an unrelated valid alternative.
+    """
+    item = {
+        "id": "E-09",
+        "question": "代表的な技には、どんな名前が付いていますか",
+        "answer_chunk_id": "12",
+        "answer_span": "技術順転「蒼」、技術反転「赫」、虚式「茈」",
+    }
+    retrieved = {
+        "E-09": [
+            RetrievedChunk(chunk_id="1", rank=1),
+            RetrievedChunk(chunk_id="12", rank=2),
+        ]
+    }
+    corpus = {"1": "無関係な文章", "12": "技術順転「蒼」、技術反転「赫」、虚式「茈」"}
+    assert build_retrieval_failure_items([item], retrieved, corpus, n=6) == []
+
+
 def test_missing_knowledge_carries_absence_check_through_unchanged():
     item = {
         "id": "U-01",
@@ -109,6 +176,8 @@ def test_missing_knowledge_carries_absence_check_through_unchanged():
     assert gold.construction_evidence["synthetic_a_answer"] is True
     assert gold.external_answer.answer == "12月7日です"
     assert gold.knowledge_answer.answer == "記載がありません"
+    assert "gold-set" not in gold.external_answer.notes
+    assert "synthetic" not in gold.external_answer.evidence[0].url
 
 
 def test_missing_knowledge_skips_items_without_a_synthetic_answer():
@@ -176,6 +245,77 @@ def test_chunking_failure_skips_when_only_one_gold_chunk_is_surfaced():
     retrieved = {"M-02": [RetrievedChunk(chunk_id="21", rank=1)]}
     corpus = {"21": "span a", "14": "span b"}
     assert build_chunking_failure_items([item], retrieved, corpus, n=6) == []
+
+
+def test_chunking_failure_skips_when_the_dropped_chunk_already_restates_the_kept_span():
+    """Regression test for the 2026-08-03 adversarial-review finding on M-01.
+
+    The stored `answer_spans` looked cleanly split, but the second chunk's real full
+    text also restated the first span's fact — so a single surfaced chunk already
+    answered the whole question, meaning the true cause is generation_failure.
+    """
+    item = {
+        "id": "M-01",
+        "question": "術式は誰のもので、どんな学校の何年生ですか",
+        "answer_chunk_ids": ["21", "14"],
+        "answer_spans": [
+            "不義遊戯は東堂葵の術式。対象の位置を入れ替える。",
+            "東堂葵は京都校三年。術式「不義遊戯」で対象の位置を入れ替える。",
+        ],
+    }
+    retrieved = {
+        "M-01": [RetrievedChunk(chunk_id="21", rank=1), RetrievedChunk(chunk_id="14", rank=2)]
+    }
+    corpus = {
+        "21": "不義遊戯は東堂葵の術式。対象の位置を入れ替える。単純に見えて応用が多い。",
+        "14": "東堂葵は京都校三年。術式「不義遊戯」で対象の位置を入れ替える。",
+    }
+    assert build_chunking_failure_items([item], retrieved, corpus, n=6) == []
+
+
+def test_chunking_failure_skips_when_a_third_surfaced_chunk_covers_the_combined_answer():
+    """Regression test for the 2026-08-03 adversarial-review finding on M-04/M-05.
+
+    Neither designated chunk alone restates the other's span, but a THIRD chunk the
+    real retriever also surfaced (not one of the two "official" gold chunk ids)
+    independently covers most of the combined fact — so B failing to combine the two
+    designated chunks is not the true story.
+    """
+    item = {
+        "id": "M-04",
+        "question": "反転術式の仕組みと使い手の位は",
+        "answer_chunk_ids": ["30", "31"],
+        "answer_spans": ["反転術式は呪力操作の技術。", "使い手は特級術師のみ。"],
+    }
+    retrieved = {
+        "M-04": [
+            RetrievedChunk(chunk_id="32", rank=1),
+            RetrievedChunk(chunk_id="30", rank=2),
+            RetrievedChunk(chunk_id="31", rank=3),
+        ]
+    }
+    corpus = {
+        "30": "反転術式は呪力操作の技術。",
+        "31": "使い手は特級術師のみ。",
+        "32": "反転術式は呪力操作の技術で、使い手は特級術師のみに許される。",
+    }
+    assert build_chunking_failure_items([item], retrieved, corpus, n=6) == []
+
+
+def test_chunking_failure_notes_do_not_reveal_gold_set_construction():
+    item = {
+        "id": "M-03",
+        "question": "所属と術式は",
+        "answer_chunk_ids": ["21", "14"],
+        "answer_spans": ["不義遊戯は東堂葵の術式", "東堂葵は京都校三年"],
+    }
+    retrieved = {
+        "M-03": [RetrievedChunk(chunk_id="21", rank=1), RetrievedChunk(chunk_id="14", rank=2)]
+    }
+    corpus = {"21": "不義遊戯は東堂葵の術式。効果は入れ替え。", "14": "東堂葵は京都校三年。"}
+    items = build_chunking_failure_items([item], retrieved, corpus, n=6)
+    assert len(items) == 1
+    assert "gold-set" not in items[0].external_answer.notes
 
 
 def test_invalid_a_asserts_the_false_premise_sourced_only_fan():
