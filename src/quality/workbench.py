@@ -52,6 +52,37 @@ from .store import WorkbenchConflictError, WorkbenchStore, sha256_file
 from .verifier import CANONICAL_ABSTENTION, AnswerMode, OnlineVerifier, public_verification
 
 
+def _coverage_candidate_section(candidate: dict[str, Any]) -> str:
+    """Mechanically render an approved coverage candidate as a Markdown section.
+
+    No LLM: the addition is D's `fact_check.missing_knowledge` (what to add, in D's own
+    words) if present, else A's answer text verbatim — plus A's cited evidence, listed
+    as-is. This is a structured append, not a rewrite of the surrounding document.
+    """
+    fact_check = candidate.get("fact_check") or {}
+    external_answer = candidate.get("external_answer") or {}
+    body = str(fact_check.get("missing_knowledge") or external_answer.get("answer") or "").strip()
+    evidence = external_answer.get("evidence") or []
+    evidence_lines = [
+        "- " + " ".join(
+            part
+            for part in (
+                str(item.get("url") or "").strip(),
+                f"（{item.get('source_type')}）" if item.get("source_type") else "",
+            )
+            if part
+        )
+        for item in evidence
+        if isinstance(item, dict)
+    ] or ["- (出典情報なし)"]
+    return (
+        f"## 追加候補（coverage-loop候補 {candidate['id']}）\n\n"
+        f"**質問**: {candidate['question']}\n\n"
+        f"{body}\n\n"
+        "**出典**:\n" + "\n".join(evidence_lines) + "\n"
+    )
+
+
 def _is_real_number(value: Any) -> TypeGuard[int | float]:
     """True for an int/float score. `bool` is an int subclass, so exclude it explicitly."""
     return isinstance(value, (int, float)) and not isinstance(value, bool)
@@ -486,6 +517,56 @@ class QualityWorkbench:
             label=label,
             engine_fingerprint=self.fingerprint(),
             config=config,
+        )
+
+    def implement_coverage_candidate(self, candidate_id: str) -> dict[str, Any]:
+        """Turn an `auto_approved` coverage candidate into a knowledge-revision draft.
+
+        Phase 2, step "auto_approved -> implemented" (design doc: "auto_approved の候補
+        の fact_check.missing_knowledge を元に... 改訂ドラフトを生成する。LLMで文章生成
+        しない"). The new revision's content is the active revision's current source
+        text with a mechanically-structured section appended — D's suggested addition
+        plus A's cited evidence, verbatim. No model call, so this works with no API key
+        configured, same as the rest of the coverage loop.
+        """
+        candidate = self.store.get_coverage_candidate(candidate_id)
+        if candidate["status"] != "auto_approved":
+            raise WorkbenchConflictError(
+                f"coverage candidate must be auto_approved to implement, was {candidate['status']}"
+            )
+        active = self.store.get_active_revision()
+        source_text = Path(str(active["source_path"])).read_text(encoding="utf-8")
+        content = source_text.rstrip("\n") + "\n\n" + _coverage_candidate_section(candidate)
+        # Stamped into the revision's own config so `mark_coverage_candidate_implemented`
+        # can verify the link itself, rather than trusting a caller-supplied revision_id
+        # (2026-08-03 adversarial review found an unrelated already-validated revision
+        # could otherwise be substituted in and ridden through verification/activation).
+        revision = self.create_revision(
+            source_path=None,
+            content=content,
+            label=f"coverage-candidate:{candidate_id[:8]}",
+            config={"coverage_candidate_id": candidate_id},
+        )
+        return self.store.mark_coverage_candidate_implemented(
+            candidate_id, revision_id=str(revision["id"])
+        )
+
+    def activate_coverage_candidate(self, candidate_id: str, *, reason: str) -> dict[str, Any]:
+        """Promote a `verified` coverage candidate to `active`.
+
+        Thin wrapper that supplies `engine_fingerprint`/`structured_digest` the same way
+        the plain `/workbench/revisions/{id}/approve` endpoint does, so any future API
+        route for this is built on the strict path by construction rather than relying
+        on every caller to remember both arguments (see `WorkbenchStore.
+        activate_coverage_candidate`'s docstring for what was missed before this existed).
+        """
+        candidate = self.store.get_coverage_candidate(candidate_id)
+        revision_id = candidate.get("implemented_revision_id")
+        return self.store.activate_coverage_candidate(
+            candidate_id,
+            reason=reason,
+            engine_fingerprint=self.fingerprint(),
+            structured_digest=self.structured_digest(str(revision_id)) if revision_id else None,
         )
 
     def extract_revision_structured_records(
