@@ -8,16 +8,18 @@
 @docs/session-reports/2026-08-02-eval-set-design-research.md
 @docs/session-reports/2026-08-03-classifier-accuracy.md
 @docs/session-reports/2026-08-03-close-the-loop.md
+@docs/session-reports/2026-08-03-phase3-ui-and-gates.md
 
-> 次セッションは上記4本を **必ず先に Read** してから着手すること
+> 次セッションは上記5本を **必ず先に Read** してから着手すること
 > （coverage-loop-30q-runは末尾の「計り直し（3回目）」節が最終結果。冒頭の結論は覆っている。
 > classifier-accuracyが判定器の精度検証の最終結果で5フェーズ計画Phase 1の成果、
-> close-the-loopがPhase 2の成果）。
+> close-the-loopがPhase 2の成果、phase3-ui-and-gatesがPhase 3の成果）。
 
 ## P1: 現在地・引継ぎミッション（絶対に消さない）
 
-> 直近 plan: 5フェーズ納品計画のPhase 1（D役分類器の人手検証）・Phase 2（ループを閉じる）が
-> 完了した。次はPhase 3（画面とAPIの穴を埋める）。5フェーズの計画ファイルはコンテナ固有パス
+> 直近 plan: 5フェーズ納品計画のPhase 1（D役分類器の人手検証）・Phase 2（ループを閉じる）・
+> Phase 3（画面とAPIの穴を埋め、ゲートを実証する）が完了した。次はPhase 4
+> （ドメイン移植性と統治）。5フェーズの計画ファイルはコンテナ固有パス
 > （`/root/.claude/plans/`）のため次回セッションでは失われている可能性が高い。要点は
 > `docs/handoff.md` ③に転記済み。次は `docs/handoff.md` を読むこと。
 
@@ -79,6 +81,21 @@
   詳細は `docs/session-reports/2026-08-03-close-the-loop.md`。
   **ただし隔離一覧UIは依然未着手**——APIは実装済みだが`src/api/static/app.js`に
   coverage/quarantineを扱うUIコードが1行も無い（Phase 3の範囲）。**
+- **[importance:H][2026-08-03] Phase 3（画面とAPIの穴を埋め、ゲートを実証する）完了。
+  隔離一覧UI（`GET .../coverage-candidates/{id}`・`.../implement`・`.../verify`・
+  `.../activate`の4エンドポイント＋`index.html`/`app.js`の「隔離一覧」タブ、PR #26
+  `16421cb`）。`CoverageLoopRequest.questions`の上限を30→200に引き上げ100問の層別セットが
+  投入可能に、`structured-extract`/`comparison-jobs`/`validation-jobs`のキーガードを
+  `/ask` `/runs`と同じ503+明示メッセージへ統一、explore modeの合格経路テスト追加、
+  `src/eval/aggregate()`を層別セット対応（PR #27 `35b16ff`）。**独立エージェントの敵対検証で
+  実バグ2件を発見・修正**：(1) explore modeテストの1つが「authority_alignment不要」を
+  謳いながら、使ったクレーム文言がfan-qualifierパターンに一致し、その経路を一度も検証して
+  いなかった（回帰注入で無検知を実証）。(2) `/coverage-loop`のキーガードが`rounds>1`を
+  見落としていた——ラウンド2以降は`allow_llm_agents`/`run_knowledge_answerer`に関わらず
+  LLM質問生成器を呼ぶため500になっていた。**「新しいガード・新しいテストを書いたら、
+  同じ入口が他に無いか横断的に洗い出す」「テストが緑になることと、テストが主張どおりの
+  経路を通っていることは別——狙った条件を本当に発生させているか自分で確認する」の2点が
+  今回の教訓。** 詳細は `docs/session-reports/2026-08-03-phase3-ui-and-gates.md`。
 - **[importance:H][2026-08-02] 品質ゲートの決定論チェックが、部分回答＋定型留保文
   （「〜は、提供された抜粋からは特定できません」で終わる文）に引用を要求し、最も誠実な回答を
   25/30問で出荷停止していた。留保文のみ引用義務を免除するよう `src/quality/verifier.py` を修正済み
