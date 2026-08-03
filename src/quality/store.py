@@ -1114,6 +1114,14 @@ class WorkbenchStore:
         active revision's source) is orchestration, not persistence, so it lives in
         `QualityWorkbench.implement_coverage_candidate` — this method only records the
         result: which revision it produced, and the status transition.
+
+        Two checks exist because a caller-supplied `revision_id` is otherwise unverified
+        (2026-08-03 adversarial review, PoC confirmed): the revision must carry this
+        candidate's id in its own `config.coverage_candidate_id` — stamped there by
+        `implement_coverage_candidate` when it creates the revision, so an unrelated
+        already-validated revision cannot be linked in and ridden through verification —
+        and no other candidate may already claim the same revision, so one validated
+        revision cannot be reused to activate several different candidates.
         """
         with self._connect() as connection:
             row = connection.execute(
@@ -1124,6 +1132,25 @@ class WorkbenchStore:
             if row["status"] != "auto_approved":
                 raise WorkbenchConflictError(
                     f"coverage candidate must be auto_approved to implement, was {row['status']}"
+                )
+            revision = connection.execute(
+                "SELECT config_json FROM revisions WHERE id = ?", (revision_id,)
+            ).fetchone()
+            if revision is None:
+                raise WorkbenchNotFoundError(f"revision not found: {revision_id}")
+            config = self._decode(revision["config_json"], {})
+            if config.get("coverage_candidate_id") != candidate_id:
+                raise WorkbenchConflictError(
+                    "revision was not created from this coverage candidate "
+                    "(config.coverage_candidate_id does not match)"
+                )
+            claimed = connection.execute(
+                "SELECT id FROM coverage_candidates WHERE implemented_revision_id = ? AND id != ?",
+                (revision_id, candidate_id),
+            ).fetchone()
+            if claimed is not None:
+                raise WorkbenchConflictError(
+                    f"revision {revision_id} is already implemented_revision_id for candidate {claimed['id']}"
                 )
             connection.execute(
                 """
@@ -1208,6 +1235,8 @@ class WorkbenchStore:
         candidate_id: str,
         *,
         reason: str,
+        engine_fingerprint: str | None = None,
+        structured_digest: str | None = None,
         operator: str | None = None,
     ) -> dict[str, Any]:
         """Promote `verified` -> `active` by activating the candidate's implemented revision.
@@ -1215,7 +1244,11 @@ class WorkbenchStore:
         Delegates to `approve_revision` rather than flipping `workbench_state` directly,
         so activating a candidate is held to exactly the same bar as approving any other
         revision (latest validation still passing, source/structured/eval-set hashes
-        still matching) — no separate, weaker path into production.
+        still matching) — no separate, weaker path into production. `engine_fingerprint`/
+        `structured_digest` must be threaded through explicitly (2026-08-03 adversarial
+        review: omitting them here — unlike the `/workbench/revisions/{id}/approve`
+        endpoint, which always supplies both — silently skipped the engine-drift and
+        structured-hash checks for every coverage-candidate activation).
         """
         with self._connect() as connection:
             row = connection.execute(
@@ -1228,7 +1261,11 @@ class WorkbenchStore:
                 f"coverage candidate must be verified to activate, was {row['status']}"
             )
         self.approve_revision(
-            str(row["implemented_revision_id"]), reason=reason, operator=operator
+            str(row["implemented_revision_id"]),
+            reason=reason,
+            engine_fingerprint=engine_fingerprint,
+            structured_digest=structured_digest,
+            operator=operator,
         )
         with self._connect() as connection:
             connection.execute(

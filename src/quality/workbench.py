@@ -537,14 +537,36 @@ class QualityWorkbench:
         active = self.store.get_active_revision()
         source_text = Path(str(active["source_path"])).read_text(encoding="utf-8")
         content = source_text.rstrip("\n") + "\n\n" + _coverage_candidate_section(candidate)
+        # Stamped into the revision's own config so `mark_coverage_candidate_implemented`
+        # can verify the link itself, rather than trusting a caller-supplied revision_id
+        # (2026-08-03 adversarial review found an unrelated already-validated revision
+        # could otherwise be substituted in and ridden through verification/activation).
         revision = self.create_revision(
             source_path=None,
             content=content,
             label=f"coverage-candidate:{candidate_id[:8]}",
-            config=None,
+            config={"coverage_candidate_id": candidate_id},
         )
         return self.store.mark_coverage_candidate_implemented(
             candidate_id, revision_id=str(revision["id"])
+        )
+
+    def activate_coverage_candidate(self, candidate_id: str, *, reason: str) -> dict[str, Any]:
+        """Promote a `verified` coverage candidate to `active`.
+
+        Thin wrapper that supplies `engine_fingerprint`/`structured_digest` the same way
+        the plain `/workbench/revisions/{id}/approve` endpoint does, so any future API
+        route for this is built on the strict path by construction rather than relying
+        on every caller to remember both arguments (see `WorkbenchStore.
+        activate_coverage_candidate`'s docstring for what was missed before this existed).
+        """
+        candidate = self.store.get_coverage_candidate(candidate_id)
+        revision_id = candidate.get("implemented_revision_id")
+        return self.store.activate_coverage_candidate(
+            candidate_id,
+            reason=reason,
+            engine_fingerprint=self.fingerprint(),
+            structured_digest=self.structured_digest(str(revision_id)) if revision_id else None,
         )
 
     def extract_revision_structured_records(

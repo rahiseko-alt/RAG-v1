@@ -33,6 +33,17 @@ def _passing_validation_result(store, revision):
     }
 
 
+def _passing_validation_result_for_workbench_activation(store, workbench, revision):
+    """Like `_passing_validation_result`, plus `structured_hashes` — required because
+    `QualityWorkbench.activate_coverage_candidate` (unlike calling `approve_revision`
+    directly with no `structured_digest`) always supplies the real structured digest,
+    so a fake job result must include a matching one or every activation would fail on
+    a mismatch that has nothing to do with what the test is actually checking."""
+    result = _passing_validation_result(store, revision)
+    result["structured_hashes"] = {"after": workbench.structured_digest(revision["id"])}
+    return result
+
+
 def test_bootstrap_snapshots_active_source_and_appends_events(tmp_path):
     store = _store(tmp_path)
 
@@ -396,13 +407,15 @@ def test_coverage_candidate_passes_through_the_full_promotion_pipeline(tmp_path)
     )
     store.mark_job_running(job["id"])
     store.finish_job(
-        job["id"], status="passed", result=_passing_validation_result(store, new_revision)
+        job["id"],
+        status="passed",
+        result=_passing_validation_result_for_workbench_activation(store, workbench, new_revision),
     )
 
     verified = store.verify_coverage_candidate(candidate_id)
     assert verified["status"] == "verified"
 
-    activated = store.activate_coverage_candidate(candidate_id, reason="promoted")
+    activated = workbench.activate_coverage_candidate(candidate_id, reason="promoted")
     assert activated["status"] == "active"
     assert store.get_active_revision()["id"] == new_revision["id"]
 
@@ -514,3 +527,90 @@ def test_activate_coverage_candidate_requires_verified_status(tmp_path):
 
     with pytest.raises(WorkbenchConflictError):
         store.activate_coverage_candidate(implemented["id"], reason="too soon")
+
+
+def test_mark_coverage_candidate_implemented_rejects_an_unrelated_revision(tmp_path):
+    """2026-08-03 adversarial review, confirmed with a PoC: a caller-supplied
+    `revision_id` with no relation to the candidate's own content could otherwise be
+    linked in, validated for its own (unrelated) content, and ridden through
+    verify/activate — making the candidate `active` while its actual proposed content
+    never appeared in any revision at all."""
+    store = _store(tmp_path)
+    revision = store.get_active_revision()
+
+    rogue = store.create_revision(
+        source_path="data/sample/jujutsu-kaisen-wikipedia.md",
+        label="unrelated revision",
+        engine_fingerprint=engine_fingerprint(),
+    )
+
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge")],
+    )
+    store.resolve_coverage_candidate(saved[0]["id"], status="auto_approved", reason="ok")
+
+    with pytest.raises(WorkbenchConflictError, match="not created from this coverage candidate"):
+        store.mark_coverage_candidate_implemented(saved[0]["id"], revision_id=rogue["id"])
+
+
+def test_mark_coverage_candidate_implemented_rejects_a_revision_claimed_by_another_candidate(
+    tmp_path,
+):
+    """A revision whose config really was stamped for a different candidate is
+    rejected by the config-match check before the separate uniqueness check even runs
+    — confirming the two candidates in this scenario cannot end up sharing one
+    `implemented_revision_id` no matter which check catches it first."""
+    store = _store(tmp_path)
+    workbench = QualityWorkbench(store)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [
+            _coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge"),
+            _coverage_item("q2", disposition="add_candidate", failure_cause="missing_knowledge"),
+        ],
+    )
+    store.resolve_coverage_candidate(saved[0]["id"], status="auto_approved", reason="ok")
+    store.resolve_coverage_candidate(saved[1]["id"], status="auto_approved", reason="ok")
+    first = workbench.implement_coverage_candidate(saved[0]["id"])
+
+    with pytest.raises(WorkbenchConflictError):
+        store.mark_coverage_candidate_implemented(
+            saved[1]["id"], revision_id=first["implemented_revision_id"]
+        )
+
+
+def test_activate_coverage_candidate_via_workbench_rejects_stale_engine_fingerprint(tmp_path):
+    """2026-08-03 adversarial review, confirmed with a PoC: `WorkbenchStore.
+    activate_coverage_candidate` omitted `engine_fingerprint=`/`structured_digest=`
+    when delegating to `approve_revision`, silently skipping the engine-drift check the
+    plain `/workbench/revisions/{id}/approve` endpoint always applies.
+    `QualityWorkbench.activate_coverage_candidate` is the fix: it supplies both, the
+    same way that endpoint does."""
+    store = _store(tmp_path)
+    workbench = QualityWorkbench(store)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge")],
+    )
+    store.resolve_coverage_candidate(saved[0]["id"], status="auto_approved", reason="ok")
+    implemented = workbench.implement_coverage_candidate(saved[0]["id"])
+    new_revision = store.get_revision(implemented["implemented_revision_id"])
+
+    job = store.create_job(
+        revision_id=new_revision["id"], kind="validation", engine_fingerprint="stale-engine-v1"
+    )
+    store.mark_job_running(job["id"])
+    result = _passing_validation_result_for_workbench_activation(store, workbench, new_revision)
+    store.finish_job(job["id"], status="passed", result=result)
+    store.verify_coverage_candidate(implemented["id"])
+
+    # Isolate the engine-fingerprint condition: everything else about this job/result
+    # (source hash, structured hash, eval-set hash) matches, so if this still raises,
+    # it is because of the stale `engine_fingerprint="stale-engine-v1"` above — the
+    # exact check `WorkbenchStore.activate_coverage_candidate` used to skip.
+    assert workbench.fingerprint() != "stale-engine-v1"
+    with pytest.raises(WorkbenchConflictError):
+        workbench.activate_coverage_candidate(implemented["id"], reason="promoted")
