@@ -283,6 +283,24 @@ class FactCheckJudgment(BaseModel):
     Once a caller supplies it, D is treated as authoritative for *why* B lost to A,
     not just *whether* it did — this is what prevents "B looked weaker than A"
     from being auto-translated into "add to knowledge base" for every gap.
+
+    Measured accuracy against a construction-verified gold set (2026-08-03, see
+    `docs/session-reports/2026-08-03-classifier-accuracy.md` and
+    `data/eval/classifier-gold-set-v1.json`), 22/27 (81.5%) overall — above RAGEC's
+    reported human-agreement baselines for comparable stage classification (57.8%)
+    and error-type accuracy (40.3%). That aggregate hides a real per-label split:
+    `missing_knowledge`/`retrieval_failure`/`generation_failure`/`invalid_A` were each
+    100% (22/22 combined) on this gold set, but every `chunking_failure` gold item
+    (0/5) was instead judged `generation_failure` — consistently and, per the
+    judgments' own reasoning, correctly by the taxonomy's own definition: each
+    gold item turned out to have BOTH halves of its compound question answerable
+    from a single already-complete chunk, which is a generation/synthesis miss, not
+    ingest fragmenting one fact. That gold-set construction method (built from
+    multi-hop "combine 2 chunks" eval items) does not actually test `chunking_failure`
+    as defined — this taxonomy's `chunking_failure` label therefore remains UNVALIDATED
+    and should not drive auto-promotion (see Phase 2) until a gold set that genuinely
+    fragments a fact mid-chunk exists. `needs_quarantine`/`ambiguous_question`/
+    `out_of_scope` are also unmeasured (no gold-set coverage yet).
     """
 
     external_status: FactStatus
