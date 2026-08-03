@@ -10,6 +10,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from src.quality import WorkbenchConflictError, WorkbenchNotFoundError, WorkbenchStore  # noqa: E402
+from src.quality.workbench import QualityWorkbench  # noqa: E402
 from src.rag import engine_fingerprint  # noqa: E402
 from src.quality.store import sha256_file  # noqa: E402
 
@@ -338,3 +339,178 @@ def test_resolve_coverage_candidate_rejects_invalid_target_status(tmp_path):
     )
     with pytest.raises(ValueError):
         store.resolve_coverage_candidate(saved[0]["id"], status="implemented", reason="n/a")
+
+
+def test_auto_classified_candidates_can_be_resolved_directly_to_auto_approved(tmp_path):
+    """Phase 2: `auto_classified` used to be a dead end with no path to `auto_approved`."""
+    store = _store(tmp_path)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge")],
+    )
+    assert saved[0]["status"] == "auto_classified"
+
+    approved = store.resolve_coverage_candidate(
+        saved[0]["id"], status="auto_approved", reason="sourcing confirmed"
+    )
+    assert approved["status"] == "auto_approved"
+
+
+def test_coverage_candidate_passes_through_the_full_promotion_pipeline(tmp_path):
+    """Phase 2 completion condition: one candidate walks
+    auto_classified -> auto_approved -> implemented -> verified -> active end to end,
+    with a fake (not LLM-generated) validation job standing in for a real one.
+    """
+    store = _store(tmp_path)
+    workbench = QualityWorkbench(store)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [
+            _coverage_item(
+                "呪力とは何ですか。追加で説明してください。",
+                disposition="add_candidate",
+                failure_cause="missing_knowledge",
+            )
+        ],
+    )
+    candidate_id = saved[0]["id"]
+
+    approved = store.resolve_coverage_candidate(
+        candidate_id, status="auto_approved", reason="sourcing confirmed"
+    )
+    assert approved["status"] == "auto_approved"
+
+    implemented = workbench.implement_coverage_candidate(candidate_id)
+    assert implemented["status"] == "implemented"
+    assert implemented["implemented_revision_id"]
+
+    new_revision = store.get_revision(implemented["implemented_revision_id"])
+    new_text = Path(new_revision["source_path"]).read_text(encoding="utf-8")
+    assert "追加候補" in new_text
+    assert "呪力とは何ですか。追加で説明してください。" in new_text
+
+    job = store.create_job(
+        revision_id=new_revision["id"], kind="validation", engine_fingerprint=engine_fingerprint()
+    )
+    store.mark_job_running(job["id"])
+    store.finish_job(
+        job["id"], status="passed", result=_passing_validation_result(store, new_revision)
+    )
+
+    verified = store.verify_coverage_candidate(candidate_id)
+    assert verified["status"] == "verified"
+
+    activated = store.activate_coverage_candidate(candidate_id, reason="promoted")
+    assert activated["status"] == "active"
+    assert store.get_active_revision()["id"] == new_revision["id"]
+
+
+def test_verify_coverage_candidate_requires_implemented_status(tmp_path):
+    store = _store(tmp_path)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge")],
+    )
+    with pytest.raises(WorkbenchConflictError):
+        store.verify_coverage_candidate(saved[0]["id"])
+
+
+def test_verify_coverage_candidate_blocks_without_a_passing_validation_job(tmp_path):
+    """The completion condition's other half: a candidate whose improvement was never
+    confirmed must not be able to reach `verified`."""
+    store = _store(tmp_path)
+    workbench = QualityWorkbench(store)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge")],
+    )
+    store.resolve_coverage_candidate(saved[0]["id"], status="auto_approved", reason="ok")
+    implemented = workbench.implement_coverage_candidate(saved[0]["id"])
+
+    with pytest.raises(WorkbenchConflictError):
+        store.verify_coverage_candidate(implemented["id"])
+
+
+def test_verify_coverage_candidate_blocks_when_validation_result_shows_a_regression(tmp_path):
+    """Even a job marked `passed` must not verify a candidate if its own result data
+    does not actually show full_pass/no_regression — defense in depth against a
+    malformed or tampered job row, not just against a missing one."""
+    store = _store(tmp_path)
+    workbench = QualityWorkbench(store)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge")],
+    )
+    store.resolve_coverage_candidate(saved[0]["id"], status="auto_approved", reason="ok")
+    implemented = workbench.implement_coverage_candidate(saved[0]["id"])
+    new_revision = store.get_revision(implemented["implemented_revision_id"])
+
+    job = store.create_job(
+        revision_id=new_revision["id"], kind="validation", engine_fingerprint=engine_fingerprint()
+    )
+    store.mark_job_running(job["id"])
+    bad_result = _passing_validation_result(store, new_revision)
+    bad_result["no_regression"] = False
+    store.finish_job(job["id"], status="passed", result=bad_result)
+
+    with pytest.raises(WorkbenchConflictError):
+        store.verify_coverage_candidate(implemented["id"])
+
+
+def test_chunking_failure_candidates_are_never_verification_eligible(tmp_path):
+    """Phase 1 (2026-08-03) measured `chunking_failure` at 0/5 against a construction-
+    verified gold set — it must not auto-promote even with a perfectly passing
+    validation job."""
+    store = _store(tmp_path)
+    workbench = QualityWorkbench(store)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="add_candidate", failure_cause="chunking_failure")],
+    )
+    store.resolve_coverage_candidate(saved[0]["id"], status="auto_approved", reason="ok")
+    implemented = workbench.implement_coverage_candidate(saved[0]["id"])
+    new_revision = store.get_revision(implemented["implemented_revision_id"])
+
+    job = store.create_job(
+        revision_id=new_revision["id"], kind="validation", engine_fingerprint=engine_fingerprint()
+    )
+    store.mark_job_running(job["id"])
+    store.finish_job(
+        job["id"], status="passed", result=_passing_validation_result(store, new_revision)
+    )
+
+    with pytest.raises(WorkbenchConflictError, match="not eligible"):
+        store.verify_coverage_candidate(implemented["id"])
+
+
+def test_implement_coverage_candidate_requires_auto_approved_status(tmp_path):
+    store = _store(tmp_path)
+    workbench = QualityWorkbench(store)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge")],
+    )
+    with pytest.raises(WorkbenchConflictError):
+        workbench.implement_coverage_candidate(saved[0]["id"])
+
+
+def test_activate_coverage_candidate_requires_verified_status(tmp_path):
+    store = _store(tmp_path)
+    workbench = QualityWorkbench(store)
+    revision = store.get_active_revision()
+    saved = store.save_coverage_loop_items(
+        revision["id"],
+        [_coverage_item("q1", disposition="add_candidate", failure_cause="missing_knowledge")],
+    )
+    store.resolve_coverage_candidate(saved[0]["id"], status="auto_approved", reason="ok")
+    implemented = workbench.implement_coverage_candidate(saved[0]["id"])
+
+    with pytest.raises(WorkbenchConflictError):
+        store.activate_coverage_candidate(implemented["id"], reason="too soon")

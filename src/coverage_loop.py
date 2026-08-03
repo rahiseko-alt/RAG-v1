@@ -932,6 +932,41 @@ def classify_coverage_item(
     return "quarantined", reason
 
 
+# Causes that may drive the ledger's implemented -> verified -> active pipeline
+# (`WorkbenchStore.verify_coverage_candidate`) fully automatically, without a per-item
+# human click. `chunking_failure` is deliberately excluded: the 2026-08-03 gold-set
+# measurement (`docs/session-reports/2026-08-03-classifier-accuracy.md`) found it 0/5 —
+# every gold `chunking_failure` item was instead judged `generation_failure`, because
+# the gold-set construction method tested multi-hop synthesis rather than true
+# mid-chunk fact fragmentation. That is a gold-set defect, not proof the classifier is
+# wrong about real chunking_failure cases, but it means this cause has never been
+# checked against a known-correct answer and must not silently auto-promote.
+AUTO_PROMOTABLE_CAUSES: frozenset[str] = ADDABLE_CAUSES - {"chunking_failure"}
+
+
+def is_promotion_eligible(
+    *, failure_cause: str | None, validation_result: dict[str, Any]
+) -> tuple[bool, str]:
+    """Design-doc auto-adoption gate, applied to an *implemented* candidate.
+
+    `classify_coverage_item` already enforces the sourcing bar (`has_acceptable_
+    external_evidence`) at classification time. This is the second half — "改善確認・
+    既存PASS非悪化" (improvement confirmed, no existing PASS regressed) — read from a
+    validation-job result for the revision built from the candidate, plus the
+    `AUTO_PROMOTABLE_CAUSES` gate above. Kept outside `classify_coverage_item` on
+    purpose: that function decides disposition at classification time, before any
+    revision or validation job exists; this decides promotion afterward, against
+    evidence that did not exist yet when D first judged the item.
+    """
+    if failure_cause not in AUTO_PROMOTABLE_CAUSES:
+        return False, f"failure_cause {failure_cause!r} is not eligible for auto-promotion"
+    if validation_result.get("full_pass") is not True:
+        return False, "validation job did not reach full_pass"
+    if validation_result.get("no_regression") is not True:
+        return False, "validation job reported a regression against the active revision"
+    return True, "validation job confirmed improvement with no regression"
+
+
 def run_coverage_loop(
     *,
     revision_id: str,

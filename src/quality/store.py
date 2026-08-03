@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterator, Literal, overload
 
+from src.coverage_loop import is_promotion_eligible
 from src.knowledge_config import PRODUCT_ROOT, get_active_knowledge
 
 
@@ -43,9 +44,12 @@ COVERAGE_QUARANTINE_RESOLUTIONS = frozenset({"auto_approved", "auto_rejected"})
 # with identical sourcing were split 9-to-7 between `invalid_A` (-> rejected) and
 # `missing_knowledge` (-> candidate), and the same judge disagreed with itself across
 # runs on 6 of 30 questions. A coin-flip must not write to a state nobody can reopen.
-# `auto_approved` and `no_gap` stay closed: one is an accepted decision, the other
-# means A and B agreed and there is nothing to reopen.
-COVERAGE_RESOLVABLE_STATUSES = frozenset({"auto_quarantined", "auto_rejected"})
+# `auto_classified` is here too (Phase 2, 2026-08-03): it used to be a dead end with no
+# way to reach `auto_approved` at all. `auto_approved` and `no_gap` stay closed: one is
+# an accepted decision, the other means A and B agreed and there is nothing to reopen.
+COVERAGE_RESOLVABLE_STATUSES = frozenset(
+    {"auto_quarantined", "auto_rejected", "auto_classified"}
+)
 
 
 class WorkbenchConflictError(RuntimeError):
@@ -218,6 +222,9 @@ class WorkbenchStore:
                         'auto_quarantined', 'implemented', 'verified', 'active'
                     )),
                     status_reason TEXT NOT NULL DEFAULT '',
+                    -- Set when status reaches 'implemented': the revision drafted from
+                    -- this candidate's content (Phase 2, 2026-08-03). NULL before that.
+                    implemented_revision_id TEXT REFERENCES revisions(id),
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
@@ -1091,6 +1098,155 @@ class WorkbenchStore:
                 "coverage_candidate_resolved",
                 revision_id=str(row["revision_id"]),
                 payload={"candidate_id": candidate_id, "status": status, "reason": reason, "operator": operator},
+            )
+        return self.get_coverage_candidate(candidate_id)
+
+    def mark_coverage_candidate_implemented(
+        self,
+        candidate_id: str,
+        *,
+        revision_id: str,
+        operator: str | None = None,
+    ) -> dict[str, Any]:
+        """Record that a knowledge-revision draft was created from this candidate (Phase 2, step 2).
+
+        Content generation itself (merging the candidate's suggested knowledge into the
+        active revision's source) is orchestration, not persistence, so it lives in
+        `QualityWorkbench.implement_coverage_candidate` — this method only records the
+        result: which revision it produced, and the status transition.
+        """
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM coverage_candidates WHERE id = ?", (candidate_id,)
+            ).fetchone()
+            if row is None:
+                raise WorkbenchNotFoundError(f"coverage candidate not found: {candidate_id}")
+            if row["status"] != "auto_approved":
+                raise WorkbenchConflictError(
+                    f"coverage candidate must be auto_approved to implement, was {row['status']}"
+                )
+            connection.execute(
+                """
+                UPDATE coverage_candidates
+                SET status = 'implemented', implemented_revision_id = ?, status_reason = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (revision_id, f"implemented as revision {revision_id}", utc_now(), candidate_id),
+            )
+            self._append_event(
+                connection,
+                "coverage_candidate_implemented",
+                revision_id=str(row["revision_id"]),
+                payload={"candidate_id": candidate_id, "implemented_revision_id": revision_id, "operator": operator},
+            )
+        return self.get_coverage_candidate(candidate_id)
+
+    def verify_coverage_candidate(
+        self,
+        candidate_id: str,
+        *,
+        operator: str | None = None,
+    ) -> dict[str, Any]:
+        """Promote `implemented` -> `verified` once its revision has a passing validation job.
+
+        Reuses the same "latest validation job for this revision" lookup
+        `approve_revision` does, so the two never disagree about which job is current.
+        `is_promotion_eligible` (src/coverage_loop.py) applies the design-doc's
+        auto-adoption gate — improvement confirmed, no regression, and the taxonomy-
+        cause allowlist that excludes `chunking_failure` — on top of the raw job result.
+        """
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM coverage_candidates WHERE id = ?", (candidate_id,)
+            ).fetchone()
+            if row is None:
+                raise WorkbenchNotFoundError(f"coverage candidate not found: {candidate_id}")
+            if row["status"] != "implemented" or not row["implemented_revision_id"]:
+                raise WorkbenchConflictError(
+                    f"coverage candidate must be implemented to verify, was {row['status']}"
+                )
+            validation = connection.execute(
+                """
+                SELECT * FROM jobs
+                WHERE revision_id = ? AND kind = 'validation'
+                ORDER BY created_at DESC, id DESC LIMIT 1
+                """,
+                (row["implemented_revision_id"],),
+            ).fetchone()
+            result = self._decode(validation["result_json"], {}) if validation is not None else {}
+            if validation is None or validation["status"] != "passed":
+                raise WorkbenchConflictError(
+                    "verification requires a passed validation job for the implemented revision"
+                )
+            eligible, reason = is_promotion_eligible(
+                failure_cause=row["failure_cause"], validation_result=result
+            )
+            if not eligible:
+                raise WorkbenchConflictError(f"candidate is not eligible for verification: {reason}")
+            connection.execute(
+                """
+                UPDATE coverage_candidates SET status = 'verified', status_reason = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (reason, utc_now(), candidate_id),
+            )
+            self._append_event(
+                connection,
+                "coverage_candidate_verified",
+                revision_id=str(row["revision_id"]),
+                payload={
+                    "candidate_id": candidate_id,
+                    "implemented_revision_id": row["implemented_revision_id"],
+                    "validation_job_id": str(validation["id"]),
+                    "operator": operator,
+                },
+            )
+        return self.get_coverage_candidate(candidate_id)
+
+    def activate_coverage_candidate(
+        self,
+        candidate_id: str,
+        *,
+        reason: str,
+        operator: str | None = None,
+    ) -> dict[str, Any]:
+        """Promote `verified` -> `active` by activating the candidate's implemented revision.
+
+        Delegates to `approve_revision` rather than flipping `workbench_state` directly,
+        so activating a candidate is held to exactly the same bar as approving any other
+        revision (latest validation still passing, source/structured/eval-set hashes
+        still matching) — no separate, weaker path into production.
+        """
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM coverage_candidates WHERE id = ?", (candidate_id,)
+            ).fetchone()
+        if row is None:
+            raise WorkbenchNotFoundError(f"coverage candidate not found: {candidate_id}")
+        if row["status"] != "verified" or not row["implemented_revision_id"]:
+            raise WorkbenchConflictError(
+                f"coverage candidate must be verified to activate, was {row['status']}"
+            )
+        self.approve_revision(
+            str(row["implemented_revision_id"]), reason=reason, operator=operator
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                UPDATE coverage_candidates SET status = 'active', status_reason = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (reason, utc_now(), candidate_id),
+            )
+            self._append_event(
+                connection,
+                "coverage_candidate_activated",
+                revision_id=str(row["revision_id"]),
+                payload={
+                    "candidate_id": candidate_id,
+                    "implemented_revision_id": row["implemented_revision_id"],
+                    "operator": operator,
+                },
             )
         return self.get_coverage_candidate(candidate_id)
 
