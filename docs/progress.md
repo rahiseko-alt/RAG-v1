@@ -79,7 +79,7 @@
 - [x] NG、判断不能、検証障害をfail-closedで出荷停止
 - [x] ナレッジ下書き、却下、全件検査、承認、有効化
 - [x] before/afterと既存PASS質問の回帰検査
-- [x] 4タブUI、質問直下の回答欄、8工程アコーディオン
+- [x] 5タブUI（隔離一覧を含む）、質問直下の回答欄、8工程アコーディオン
 - [x] 調整台帳とLangfuse着弾poll
 - [x] 非エンジニア向け [workbench-guide.md](workbench-guide.md)
 

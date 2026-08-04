@@ -1,6 +1,6 @@
 {
   "project": "medguide-rag",
-  "updated_at": "2026-08-01T00:00:00+09:00",
+  "updated_at": "2026-08-04T00:00:00+09:00",
   "branch": "main",
   "status": "internal_beta",
   "active_milestone": "Milestone 4",
@@ -18,16 +18,23 @@
     "9": "pending"
   },
   "known_verified": {
-    "pytest": "84 passed, 1 warning, about 145 seconds (e2e and slow are excluded by pytest.ini)",
+    "pytest": "170 passed, 3 deselected, about 100 seconds (e2e and slow are excluded by pytest.ini)",
     "ruff": "ruff check src tests passes; ruff check . reports 10 findings, all in notebooks/*.ipynb",
-    "mypy": "34 errors in 6 files; not yet wired into ci-green",
-    "secrets_scan": "narrow tracked-file scan found 0 matches excluding .env.example"
+    "mypy": "0 errors in 18 files; wired into ci-green as the Types step of the quality job",
+    "secrets_scan": "no API keys or private keys found in the working tree or in full history; .env has never been committed",
+    "commit_hygiene": "ci.yml rejects any pull-request commit whose author or committer email is not a noreply address",
+    "branch_protection": "main is protected; ci-green is a required status check (verified by an actual merge being blocked while it was red)"
   },
   "current_blockers": [
     "structured knowledge can alter active revision behavior without approval",
-    "coverage loop lacks durable taxonomy, ledger, automatic disposition, and quarantine UI",
-    "dependencies, CI, packaging, backup, restore, and public repo hygiene are incomplete"
+    "domain terms are hardcoded in src/rag (_query_terms / _intent_terms), so the engine is not yet corpus-portable",
+    "packaging, backup, restore, and dependency-vulnerability scanning are incomplete"
   ],
-  "next_required_action": "Extend the coverage-loop D verdict schema with a failure taxonomy (missing_knowledge / retrieval_failure / generation_failure / chunking_failure / ambiguous_question / invalid_A / out_of_scope / needs_quarantine).",
-  "notes": "This file is easy to leave stale. When it disagrees with docs/session-reports/, the newest session report wins. See AGENTS.md."
+  "next_required_action": "Phase 4 of the delivery plan: move the hardcoded domain terms out of src/rag into config, add width/case/unit normalization to the query pipeline, and wire a dependency-vulnerability gate (pip-audit) into ci-green.",
+  "recently_resolved": {
+    "coverage_loop": "The loop now closes end to end: failure taxonomy, durable ledger, automatic disposition, quarantine UI, and the auto_classified -> auto_approved -> implemented -> verified -> active transition. Adoption still goes through the standard revision check (activate delegates to approve_revision), so a candidate cannot reach active by a weaker path.",
+    "classifier_validation": "The failure-cause classifier was validated against a constructed gold set: 22/27 (81.5%). chunking_failure measured 0/5 and is therefore excluded from automatic promotion.",
+    "public_repo_hygiene": "Commit-email leakage stopped, secret scanning and push protection enabled, branch protection applied, all Dependabot pull requests merged, and README/memory.md rewritten for a third-party reader."
+  },
+  "notes": "This file is easy to leave stale. When it disagrees with docs/session-reports/, the newest session report wins. The values under known_verified were measured on 2026-08-04 after the Dependabot updates were merged. See AGENTS.md."
 }

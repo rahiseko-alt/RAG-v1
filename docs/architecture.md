@@ -28,7 +28,7 @@ flowchart TD
 | `src/quality/store.py` | SQLite schema、revision、run、job、event、adjustment |
 | `src/quality/workbench.py` | revision別RAG、質問処理、比較・回帰job |
 | `src/observability.py` | Langfuse trace ID、callback、verify/gate observation、着弾確認 |
-| `src/api` | localhost向けAPIと4タブ業務UI |
+| `src/api` | localhost向けAPIと5タブ業務UI |
 
 ## 永続化
 

@@ -4,15 +4,16 @@
 
 ## 現在地
 
-現状は「機能豊富な内部β」です。回答のfail-closed、revision、before/after、回帰検査、SQLite台帳、Langfuse、4タブUIは存在します。ただし、公開・納品可能版としては未完成です。
+現状は「機能豊富な内部β」です。回答のfail-closed、revision、before/after、回帰検査、SQLite台帳、Langfuse、5タブUIは存在します。ただし、公開・納品可能版としては未完成です。
 
-実測ベースの確認事項:
+実測ベースの確認事項（2026-08-04 実測。Dependabot の依存更新をマージした後の値）:
 
 | 項目 | 現状 |
 |---|---|
-| pytest | 84 passed / 約145秒 / warning 1件 |
-| ruff | 3件FAIL |
-| UI | 4タブと工程アコーディオンあり |
+| pytest | 170 passed / 3 deselected / 約100秒 / warning 1件 |
+| ruff | `ruff check src tests` は pass（`ruff check .` の10件は全て教材ノート `notebooks/*.ipynb`） |
+| mypy | 0 errors / 18 files（`ci-green` に接続済み） |
+| UI | 5タブ（質問・検品／ナレッジ調整／比較・承認／台帳・監査／隔離一覧）と工程アコーディオンあり |
 | 回答ゲート | NG候補をAPI/UI/CLIへ出さないfail-closedあり |
 | 版管理 | source revisionとvalidation/approvalあり |
 | Langfuse | trace記録経路あり |
@@ -23,11 +24,11 @@
 |---|---|
 | 構造化ナレッジ | 承認なしでactive revisionへ差し替え可能 |
 | 工程表示 | 実イベントではなく、同期処理後の表示置換が中心 |
-| Coverage Loop | 原因分類、永続台帳、自動採否、隔離UIが未完成 |
+| ~~Coverage Loop~~ | ~~原因分類、永続台帳、自動採否、隔離UIが未完成~~ → **2026-08-04 解消**（4点とも実装済み。詳細は `docs/session-reports/2026-08-03-phase3-ui-and-gates.md`） |
 | 評価 | Recall/Precision/no-answer/Judge校正が未測定 |
 | 再現可能性 | pyproject/lock/CI/自己完結E2Eが未整備 |
 | 納品運用 | バックアップ、復旧、Windows配布物、初期設定UIが未完成 |
-| 公開準備 | SECURITY/NOTICE/SBOM/secret scan/依存監査が未整備 |
+| 公開準備 | secret scan と push protection は有効化済み。**SECURITY/NOTICE/SBOM/依存監査は未整備** |
 
 ## 完成形
 
