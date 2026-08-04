@@ -10,21 +10,24 @@
 @docs/session-reports/2026-08-03-close-the-loop.md
 @docs/session-reports/2026-08-03-phase3-ui-and-gates.md
 @docs/session-reports/2026-08-04-public-portfolio-and-governance.md
+@docs/session-reports/2026-08-04-phase4-domain-portability.md
 
-> 次セッションは上記6本を **必ず先に Read** してから着手すること
+> 次セッションは上記7本を **必ず先に Read** してから着手すること
 > （coverage-loop-30q-runは末尾の「計り直し（3回目）」節が最終結果。冒頭の結論は覆っている。
 > classifier-accuracyが判定器の精度検証の最終結果で5フェーズ計画Phase 1の成果、
 > close-the-loopがPhase 2の成果、phase3-ui-and-gatesがPhase 3の成果、
-> public-portfolio-and-governanceが公開ポートフォリオ化と手順0完了の記録）。
+> public-portfolio-and-governanceが公開ポートフォリオ化と手順0完了の記録、
+> phase4-domain-portabilityがPhase 4着手と、他セッションの作業を消した事故の記録）。
 
 ## P1: 現在地・引継ぎミッション（絶対に消さない）
 
-> 直近 plan: 5フェーズ納品計画のPhase 1（D役分類器の人手検証）・Phase 2（ループを閉じる）・
-> Phase 3（画面とAPIの穴を埋め、ゲートを実証する）が完了。さらに Phase 4 のうち**統治側は
-> 2026-08-04 に完了**した（手順0・Dependabot・branch protection）。次は Phase 4 の残り＝
-> **ドメイン移植性**（用語のハードコード外出し・表記ゆれ正規化・pip-audit）。5フェーズの計画
-> ファイルはコンテナ固有パス（`/root/.claude/plans/`）のため次回セッションでは失われている
-> 可能性が高い。要点は `docs/handoff.md` ③に転記済み。次は `docs/handoff.md` を読むこと。
+> 直近 plan: 5フェーズ納品計画の Phase 1〜3 が完了。**Phase 4 は統治側（手順0・Dependabot・
+> branch protection）とドメイン移植性（4-1 語彙の設定外出し・4-2 表記ゆれ正規化）まで完了**した。
+> **次は Phase 4 の残り＝ pip-audit と CodeQL を `ci-green` に接続すること。** その後 Phase 5
+> （納品検証）。5フェーズの計画ファイルはコンテナ固有パス（`/root/.claude/plans/`）のため
+> 次回セッションでは失われている可能性が高い。要点は `docs/handoff.md` ③に転記済み。
+> 次は `docs/handoff.md` を読むこと。**着手前に他セッションの未マージ作業の確認を忘れないこと**
+> （handoff ③「作業開始時の必須確認」）。
 
 - **[importance:H][2026-08-03] Phase 1（D役分類器の人手検証）完了。構成的ゴールドセット
   （`data/eval/classifier-gold-set-v1.json`・27件・`src/quality/classifier_gold.py`で生成）を
@@ -128,6 +131,30 @@
 - **[importance:H][2026-08-04] `data/sample/who-hearts-*.pdf` は CC BY-NC-SA 3.0 IGO（非営利条件）。**
   現在の非営利ポートフォリオ用途は適合するが、**商用（有償配布・受託の納品物への流用等）に
   転じる場合は条件違反になる。**
+- **[importance:H][2026-08-04] 同じ作業ブランチを複数セッションが使うことがある。**
+  実際に他セッションの実装2コミットを force-push で消した（reflog から復旧）。
+  **`git checkout -B <branch> origin/main` でブランチを作り直す前に、必ず次を確認すること。**
+
+  ```bash
+  git fetch origin
+  git log --oneline origin/main..origin/claude/checkin-8obqof   # 出力があれば他者の未マージ作業
+  ```
+
+  **`--force-with-lease` は参照を作り直すと効かない**（リースの基準を自分で捨てる操作になる）。
+  出力があればブランチを作り直してはならない。詳細は `docs/failures.md` 2026-08-04。
+- **[importance:H][2026-08-04] 新しいテストは、検証したい経路を壊して落ちることを確認してから
+  通すこと。** 「テストが緑」と「テストが主張どおりの経路を通っている」は別で、この型の失敗を
+  2026-08-03 と 2026-08-04 で計4回繰り返した。特に **テスト側で前処理をしてから比較すると、
+  その前処理を担うはずの本体コードが検証対象から外れる**（正規化テストで実際に起きた）。
+  **入力は生のまま渡し、本体に処理させる。** 書いた直後に対象コードへ回帰を注入し、
+  期待どおり失敗することを見てから復元する。
+- **[importance:H][2026-08-04] Phase 4 の統治側は完了（手順0・Dependabot・branch protection）。
+  ドメイン移植性も 4-1（語彙の設定外出し・`grep 呪術廻戦 src/` = 0件）と 4-2（表記ゆれ正規化：
+  全角半角・大小文字・`5mg`/`5 mg`）まで完了した。** 検索の語彙は
+  `config/knowledge.toml` の `[lexical]` 節が持ち、表記の正規化は `src/text_normalize.py` が
+  `src/rag` と `src/structured_knowledge` の双方へ提供する（後者に langchain/torch を
+  持ち込まないため軽量モジュールに置いてある）。**残りは pip-audit と CodeQL を `ci-green` に
+  接続すること。** ⚠ 上流ジョブを増やすときは `needs:` とゲート内の比較式を必ず同時に直す。
 - **[importance:H][2026-08-02] 品質ゲートの決定論チェックが、部分回答＋定型留保文
   （「〜は、提供された抜粋からは特定できません」で終わる文）に引用を要求し、最も誠実な回答を
   25/30問で出荷停止していた。留保文のみ引用義務を免除するよう `src/quality/verifier.py` を修正済み
