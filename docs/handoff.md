@@ -6,79 +6,87 @@
 
 ## ①今回実施
 
-5フェーズ納品計画の**Phase 3（画面とAPIの穴を埋め、ゲートを実証する）を完了**。
-Phase 2で閉じたループを、実際に画面とAPIから使える形にした。
+**Phase 3（画面とAPIの穴を埋め、ゲートを実証する）を完了**し、続けて
+**リポジトリを公開ポートフォリオとして成立する状態に整え、`AGENTS.md` の手順0（機械強制）を完了**した。
 
-- **項目1・隔離一覧UI（PR #26 `16421cb`）**：`GET /workbench/coverage-candidates/{id}`、
-  `.../implement`、`.../verify`、`.../activate`の4エンドポイントを追加し、
-  `index.html`/`app.js`に「隔離一覧」タブ（状態別バッジ・状態別アクションボタン）を実装。
-  APIパイプラインテストとPlaywright e2e（承認ボタンが実際に`/resolve`を叩くことをモック越しに
-  証明）で検証済み。
-- **項目2〜5（PR #27 `35b16ff`）**：
-  - `CoverageLoopRequest.questions`の上限を30→200に引き上げ、100問の層別セット
-    （`data/eval/stratified-eval-set-v1.json`）が投入できるようにした。
-  - `structured-extract`（従来500）・`comparison-jobs`/`validation-jobs`（従来202受理後に
-    ジョブ内部で非同期に失敗——`comparison`ジョブは全項目エラーでも`status="passed"`になる
-    設計上の穴があった）に、`/ask` `/runs`と同じ503+明示メッセージのガードを追加。
-  - explore modeの合格・不合格経路テストを追加（strict/standardは既存）。
-  - `src/eval/aggregate()`が層別セット項目（`in_doc`キー無し）で`KeyError`していたのを修正し、
-    `pass_rate_by_stratum`集計を追加。
-- **敵対検証で実バグ2件を発見・修正（`327b381`）**：
-  1. explore modeテストの1つが「authority_alignment不要」を謳いながら、使ったクレーム文言が
-     たまたまfan-qualifierパターンに一致し、その経路を一度も検証していなかった
-     （検証エージェントが`_release_policy`に実際に回帰を注入し、テストが検知しないことを実証）。
-     非該当文言を使う専用テストケースに分離して修正。
-  2. `/coverage-loop`のキーガードが`rounds>1`のケースを見落としていた——ラウンド2以降は
-     `allow_llm_agents`/`run_knowledge_answerer`の値に関わらずLLM質問生成器を呼ぶため、
-     両方false・キー未設定・`rounds>=2`だと生のプロバイダエラーで500になっていた
-     （このPRが確立した503基準から外れる既存の穴）。ガードに`rounds>1`条件を追加して修正。
+### Phase 3
 
-詳細は `docs/session-reports/2026-08-03-phase3-ui-and-gates.md`。
+- **隔離一覧UI**（PR #26 `16421cb`）：`GET .../coverage-candidates/{id}`・`.../implement`・
+  `.../verify`・`.../activate` の4エンドポイントと、`index.html`/`app.js` の「隔離一覧」タブ。
+- **項目2〜5**（PR #27 `35b16ff`）：`CoverageLoopRequest.questions` の上限 30→200（100問の層別
+  セットが投入可能に）、`structured-extract`/`comparison-jobs`/`validation-jobs` のキーガードを
+  `/ask` `/runs` と同じ 503+明示メッセージへ統一、explore mode の合格経路テスト追加、
+  `src/eval/aggregate()` の層別セット対応。
+- **敵対検証で実バグ2件を発見・修正**（`327b381`）：(1) explore mode テストの1つが
+  「authority_alignment 不要」を謳いながら、使ったクレーム文言が fan-qualifier パターンに一致し
+  その経路を一度も検証していなかった（回帰注入で無検知を実証）。(2) `/coverage-loop` のキーガードが
+  `rounds>1` を見落としていた。
 
-**CI evidence**：PR #26（`16421cb9`）・PR #27（`35b16ff5`）ともに`ci-green`緑でマージ済み。
-品質チェック（ruff/mypy/pytest 172件、実uvicornサーバー起動下でe2e含む）は全て緑。
+### 公開ポートフォリオ化と統治（詳細は `docs/session-reports/2026-08-04-public-portfolio-and-governance.md`）
+
+- **メール流出の停止**：原因は想定と違い、個人メール28件は**全て GitHub 生成のマージコミット**で、
+  ローカルの `git config` では防げないものだった。アカウント設定
+  （Keep my email addresses private）で塞ぎ、あわせて **CI にコミット衛生ガードを追加**。
+  設定前後のマージコミットのメール変化を実測して効果を確認済み。
+- **手順0の完了**：Secret Protection / Push protection を有効化。`main` に branch protection を
+  適用し `ci-green` を必須化。**赤い PR のマージが実際にブロックされた**ことで、飾りでないことも
+  実証された。
+- **公開向けの整備**：README の自己矛盾解消と実測値の掲載（未検証項目も明示列挙）、
+  memory.md の文体、ローカルパス除去、`AGENTS.md` に「公開リポジトリとしての規律」を新設。
+- **Dependabot 8件を全マージ**（期限付きの CodeQL v3→v4 を最優先）。
+- **陳腐化した記述を7箇所一掃**（`roadmap-state.json` の mypy「34 errors・未接続」等）。数値は
+  依存更新後に測り直した実測値。
+
+**CI evidence**：PR #26 `16421cb` / #27 `35b16ff` / #28 `567e963` / #29 `caa2545` /
+#30 `ef97e48` / #31 `f5542a0`、Dependabot 8件。全て `ci-green` 緑でマージコミット方式。
+最終確認：ruff pass / mypy 0 errors・18 files / pytest 170 passed・3 deselected。
 
 ## ②今回トラブル
 
-**敵対検証で見つかった2件は、どちらも「新しいテスト・新しいガードを書いた直後の
-一つ抜け」という同じ形をしていた**——実装そのものではなく、検証・網羅の側に穴があった。
+**自分で新しいガードを入れるたびに、そのガード自身に穴を作った。** 今回2件とも、実装ではなく
+**検証・網羅の側**の抜けだった。
 
-1. explore modeテストで、狙った条件（authority_alignment=False）を本当に発生させているか
-   自分で確認せずにテストを書いた。テストが緑になることと、テストが主張どおりの経路を
-   通っていることは別——既存の類似テスト（`test_word_explanation_does_not_count_as_fan_theory_label`）
-   と同じ文言を使い回すべきだった。
-2. `/coverage-loop`の既存ガード（`allow_llm_agents or run_knowledge_answerer`）を見て
-   「これで全部か」を確認せず、新しいエンドポイント2つ（comparison/validation-jobs）だけに
-   注意が向いていた。ガードを追加する作業では、**同じキー依存の入口が他に無いか
-   横断的に洗い出す**（今回は`run_coverage_loop`内部の`rounds`ループを実際に読んで発覚）。
+1. **explore mode テストが自分の主張を証明していなかった**（Phase 3）。狙った条件
+   （authority_alignment=False）を本当に発生させているか確認せずにテストを書き、フィクスチャの
+   文言がたまたま別のパターンに一致して条件が成立していなかった。
+2. **コミット衛生ガードが Dependabot PR を全て赤にした**（今回）。許可パターンのローカル部を
+   `[A-Za-z0-9._-]` としたが、bot のアドレスは `49699333+dependabot[bot]@users.noreply.github.com`
+   で角括弧を含む。Dependabot に触る直前に実データを確認して発覚し、PR #30 で修正。
 
-いずれも `docs/failures.md` に根因・教訓を追記済み。
+いずれも `docs/failures.md` に事象・根因・教訓を追記済み。
 
 ## ③次回やる事
 
-**Phase 4（ドメイン移植性と統治）に進む。** 5フェーズ計画は
-`/root/.claude/plans/3-5-100-melodic-plum.md`に保存済み（Phase 1〜3の結果を反映し完了マークを
-追加済み。コンテナ固有パスのため次回セッションでは失われている可能性が高く、必要ならこの
-handoffと計画の要点から作り直すこと）。
+**Phase 4（ドメイン移植性）に進む。** 統治側（手順0・Dependabot・branch protection）は今回で
+完了したため、Phase 4 の残りは移植性と依存監査である。
 
-1. **【Phase 4】ドメイン移植性**：`src/rag/__init__.py`の`_query_terms`/`_intent_terms`に
-   `"呪術廻戦"`等がハードコード（`config/knowledge.toml`へ外出しが必要）。表記ゆれ正規化が
-   `々`の展開のみ（`5mg`/`5 mg`、`COVID-19`/全角COVID-19等を別物扱い）。既定ナレッジが
-   医療系（README/製品名）と呪術廻戦（実データ）で食い違っている。
-2. **【Phase 4】統治**：`main`は`protected: false`のまま（手順0未実施・人の管理者権限が必要）。
-   CodeQLが`ci-green`の`needs`に入っていない。pip-audit等の依存脆弱性ゲートが無い。
-   `auto-merge.yml`は`--squash --delete-branch`のまま無効化されているだけ
-   （マージコミット方式に直すか削除するか未決）。Dependabot滞留
-   （#4は2026年12月のv3サポート終了で期限付き・最優先）。
-3. **`build_report`/`_render_html`（`src/eval/__init__.py`）の`it["in_doc"]`/`it["context"]`
-   直接参照は今回対象外にした**：現状呼び出し元が無いため実害は無いが、将来層別セットを
-   `build_report`に接続する際は同じ修正が必要になる（Phase 3セッションレポートに記録済み）。
-4. **答えの無い層12問・誤前提層8問（`data/eval/stratified-eval-set-v1.json`）はまだ未測定**
-   （生成が必要なため）。上限撤廃で100問セットは投入可能になったので、次はこの実測を検討できる。
-5. **`chunking_failure`の真のゴールドセットは未構成**：`medium_multi_chunk`層は多段推論の測定には
-   有効だが、真のchunking_failure（1事実がチャンク境界で分断され、どちらのチャンクにも完全な
-   事実が無い状態）を構成できていない。
-6. **失敗分類の欠落（FP3/FP7/Self-Knowledge）**：Phase 2・3で意図的に見送った。
-   taxonomy拡張の要否を改めて検討すること。
-7. **Phase 5（納品検証）**：roadmap.md/original-plan.mdの二重定義解消、陳腐化した記述の一掃、
-   README是正、SECURITY.md等の商用ハイジーン成果物、クリーンclone検証。Phase 1〜4完了後。
+1. **【最優先・Phase 4】ドメイン用語のハードコードを外に出す**：`src/rag/__init__.py` の
+   `_query_terms` の `stop_terms` に `"呪術廻戦"`、`_intent_terms` に `術式/領域/声優/作者` が
+   直書きされている。`config/knowledge.toml` へ外出しする。コーパスプローブ
+   （`src/coverage_loop.py`）がこれを継承している問題も同時に解消する。
+2. **表記ゆれ正規化**：現在は `々` の展開のみ。`5mg`/`5 mg`、`COVID-19`/全角、大小文字が別物に
+   なる。医療ドメインでは致命的なので、全角半角・単位前空白・大小文字の正規化を追加する。
+3. **既定ナレッジの整合**：製品名は medguide（医療）だが既定コーパスは呪術廻戦。README には
+   「ドメイン非依存の検品の仕組みが主題だから」という理由を明記済みだが、1 が終われば
+   医療系（同梱済みの WHO HEARTS PDF）を既定にし、呪術廻戦をデモ用プリセットへ降格できる。
+4. **依存脆弱性ゲート（pip-audit）を `ci-green` に追加**：`AGENTS.md` が「既知の欠落」と
+   明記している唯一の項目。**⚠ 上流ジョブを増やす場合は `needs:` とゲート内の比較式の両方を
+   必ず同時に直すこと**（片方だけだと startup failure になり `ci-green` の check run が生成されず、
+   branch protection が永久に待ち状態になる）。今回のコミット衛生は、この危険を避けるため
+   新規ジョブではなく `quality` ジョブのステップとして追加してある。
+5. **CodeQL を `ci-green` の `needs` に追加**（現在は赤でも通る）。
+6. **`build_report`/`_render_html`（`src/eval/__init__.py`）の `it["in_doc"]`/`it["context"]`
+   直接参照**：現状呼び出し元が無いため実害は無いが、層別セットを接続する際は同じ修正が要る。
+7. **答えの無い層12問・誤前提層8問は未測定**（生成が必要）。上限撤廃で100問投入が可能になった。
+8. **`chunking_failure` の真のゴールドセットは未構成**（Phase 1 で概念的誤りと判明）。
+9. **失敗分類の欠落（FP3/FP7/Self-Knowledge）**：Phase 2・3 で意図的に見送り。要否を再検討する。
+10. **Phase 5（納品検証）**：roadmap.md と original-plan.md の二重定義解消、SECURITY.md /
+    CONTRIBUTING.md / CHANGELOG.md / NOTICE の新設、SBOM、クリーンclone検証。
+
+### 公開に関する既知の残り（対応済み・要判断ではない）
+
+- **Git 履歴には過去分（個人メール28件・旧記述）が残る。** 消すには履歴書き換えが必要だが、
+  ハンドルとメールの文字列が同じで隠す実益が薄く、PR のレビュー履歴を痛めるため**現状維持**と
+  判断済み。実施する場合は新規リポジトリではなく `git filter-repo` で同一リポジトリを書き換える。
+- **WHO の PDF は CC BY-NC-SA 3.0 IGO（非営利条件）**。現在の非営利ポートフォリオ用途は適合だが、
+  商用に転じる場合は条件違反になる。

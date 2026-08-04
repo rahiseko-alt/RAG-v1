@@ -9,19 +9,22 @@
 @docs/session-reports/2026-08-03-classifier-accuracy.md
 @docs/session-reports/2026-08-03-close-the-loop.md
 @docs/session-reports/2026-08-03-phase3-ui-and-gates.md
+@docs/session-reports/2026-08-04-public-portfolio-and-governance.md
 
-> 次セッションは上記5本を **必ず先に Read** してから着手すること
+> 次セッションは上記6本を **必ず先に Read** してから着手すること
 > （coverage-loop-30q-runは末尾の「計り直し（3回目）」節が最終結果。冒頭の結論は覆っている。
 > classifier-accuracyが判定器の精度検証の最終結果で5フェーズ計画Phase 1の成果、
-> close-the-loopがPhase 2の成果、phase3-ui-and-gatesがPhase 3の成果）。
+> close-the-loopがPhase 2の成果、phase3-ui-and-gatesがPhase 3の成果、
+> public-portfolio-and-governanceが公開ポートフォリオ化と手順0完了の記録）。
 
 ## P1: 現在地・引継ぎミッション（絶対に消さない）
 
 > 直近 plan: 5フェーズ納品計画のPhase 1（D役分類器の人手検証）・Phase 2（ループを閉じる）・
-> Phase 3（画面とAPIの穴を埋め、ゲートを実証する）が完了した。次はPhase 4
-> （ドメイン移植性と統治）。5フェーズの計画ファイルはコンテナ固有パス
-> （`/root/.claude/plans/`）のため次回セッションでは失われている可能性が高い。要点は
-> `docs/handoff.md` ③に転記済み。次は `docs/handoff.md` を読むこと。
+> Phase 3（画面とAPIの穴を埋め、ゲートを実証する）が完了。さらに Phase 4 のうち**統治側は
+> 2026-08-04 に完了**した（手順0・Dependabot・branch protection）。次は Phase 4 の残り＝
+> **ドメイン移植性**（用語のハードコード外出し・表記ゆれ正規化・pip-audit）。5フェーズの計画
+> ファイルはコンテナ固有パス（`/root/.claude/plans/`）のため次回セッションでは失われている
+> 可能性が高い。要点は `docs/handoff.md` ③に転記済み。次は `docs/handoff.md` を読むこと。
 
 - **[importance:H][2026-08-03] Phase 1（D役分類器の人手検証）完了。構成的ゴールドセット
   （`data/eval/classifier-gold-set-v1.json`・27件・`src/quality/classifier_gold.py`で生成）を
@@ -98,6 +101,33 @@
   同じ入口が他に無いか横断的に洗い出す」「テストが緑になることと、テストが主張どおりの
   経路を通っていることは別——狙った条件を本当に発生させているか自分で確認する」の2点が
   今回の教訓。** 詳細は `docs/session-reports/2026-08-03-phase3-ui-and-gates.md`。
+- **[importance:H][2026-08-04] 手順0（機械強制）が完了した。** `AGENTS.md` に長く「未実施」と
+  書かれていた統治設定を全て適用：`main` の branch protection（`ci-green` 必須・`protected: true`
+  をAPIで確認）、Secret Protection / Push protection、Dependabot 8件の解消。
+  **飾りでないことが実証済み**——PR #14 のマージが `Required status check "ci-green" is failing`
+  で実際にブロックされた。**この設定を無効化しないこと。**
+- **[importance:H][2026-08-04] 個人メールの流出経路は「GitHub 生成のマージコミット」だった。**
+  履歴の個人メール28件は全て `Merge pull request #NN from ...` で、**どのPCの `git config` を
+  変えても防げない**。塞げるのはアカウント設定（Settings → Emails → Keep my email addresses
+  private）のみで、**人の操作が必要・AIには実行できない**。現在は ON 済みで、設定前後の
+  マージコミットのメール変化（`caa2545`=個人 → `ef97e48`=noreply）で効果を実測確認済み。
+  あわせて `ci.yml` の「コミット衛生」ステップが PR 差分コミットを機械判定する。
+  **既存履歴は検査対象外**（全履歴を対象にすると恒久的に赤になるため）。
+- **[importance:H][2026-08-04] 許可リスト（allowlist）を書くときは、通したい対象の実データを
+  取得して突き合わせること。** コミット衛生ガードの許可パターンを `[A-Za-z0-9._-]` で組んだ結果、
+  bot のアドレス `49699333+dependabot[bot]@users.noreply.github.com` の角括弧が外れ、
+  **Dependabot PR を全て赤にしていた**。想定した文字種だけでクラスを組むと、bot アカウントの
+  ような「人間とは違う形」を落とす。修正前に実在ブランチの `%ae` を読んで確認した。
+- **[importance:H][2026-08-04] このリポジトリは公開ポートフォリオとして成立する状態にした。**
+  秘密情報は作業ツリー・全履歴ともに0件（`.env` は未コミット）。README の自己矛盾を解消し、
+  実測値と**未検証項目の明示列挙**を掲載。`AGENTS.md` に「公開リポジトリとしての規律」を新設。
+  **ただし Git 履歴には過去分（個人メール・旧記述・削除した私的メモ）が残る**——消すには履歴
+  書き換えが必要だが、ハンドルとメールの文字列が同じで隠す実益が薄く、PR のレビュー履歴
+  （敵対検証の記録＝差別化要素）を痛めるため**現状維持と判断済み**。実施する場合は新規リポジトリ
+  ではなく `git filter-repo` で同一リポジトリを書き換えること（新規だと PR 履歴が置き去りになる）。
+- **[importance:H][2026-08-04] `data/sample/who-hearts-*.pdf` は CC BY-NC-SA 3.0 IGO（非営利条件）。**
+  現在の非営利ポートフォリオ用途は適合するが、**商用（有償配布・受託の納品物への流用等）に
+  転じる場合は条件違反になる。**
 - **[importance:H][2026-08-02] 品質ゲートの決定論チェックが、部分回答＋定型留保文
   （「〜は、提供された抜粋からは特定できません」で終わる文）に引用を要求し、最も誠実な回答を
   25/30問で出荷停止していた。留保文のみ引用義務を免除するよう `src/quality/verifier.py` を修正済み
