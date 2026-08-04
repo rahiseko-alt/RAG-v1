@@ -19,6 +19,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from src.quality import QualityWorkbench, WorkbenchStore  # noqa: E402
+from src.quality.verifier import AnswerMode  # noqa: E402
 from src.rag import engine_fingerprint, get_generation_model, get_llm_provider, is_generation_configured  # noqa: E402
 from src.observability import get_langfuse_config_error, is_langfuse_configured  # noqa: E402
 from src.runtime_errors import safe_error_message  # noqa: E402
@@ -36,7 +37,12 @@ def _print_sources(sources: list[dict]) -> None:
     print("  ─────────────────────────────────────────────")
 
 
-def _answer_one(workbench: QualityWorkbench, question: str, *, answer_mode: str = "strict") -> None:
+ANSWER_MODES: tuple[AnswerMode, ...] = ("strict", "standard", "explore")
+
+
+def _answer_one(
+    workbench: QualityWorkbench, question: str, *, answer_mode: AnswerMode = "strict"
+) -> None:
     try:
         outcome = workbench.answer_question(question=question, answer_mode=answer_mode)
     except Exception as exc:
@@ -56,18 +62,22 @@ def _answer_one(workbench: QualityWorkbench, question: str, *, answer_mode: str 
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    answer_mode = "strict"
+    answer_mode: AnswerMode = "strict"
     if "--mode" in argv:
         index = argv.index("--mode")
         try:
-            answer_mode = argv[index + 1]
+            requested = argv[index + 1]
         except IndexError:
             print("エラー: --mode には strict / standard / explore を指定してください。", file=sys.stderr)
             return 2
         del argv[index : index + 2]
-    if answer_mode not in {"strict", "standard", "explore"}:
-        print("エラー: --mode は strict / standard / explore のいずれかです。", file=sys.stderr)
-        return 2
+        # Matching against the allowed values (rather than a `not in {...}` guard) is
+        # what narrows the argv string to AnswerMode without an unchecked cast.
+        matched = next((mode for mode in ANSWER_MODES if mode == requested), None)
+        if matched is None:
+            print("エラー: --mode は strict / standard / explore のいずれかです。", file=sys.stderr)
+            return 2
+        answer_mode = matched
 
     if not is_generation_configured():
         provider = get_llm_provider()

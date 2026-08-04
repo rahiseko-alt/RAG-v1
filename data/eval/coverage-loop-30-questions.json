@@ -1,0 +1,50 @@
+{
+  "name": "coverage-loop-30",
+  "description": "Fixed 30-question probe set for the coverage loop (design-doc step 6). Three C-roles x 10 questions, so the run can be aggregated into a weakness table per question type rather than a single pass/fail count.",
+  "why_fixed": "before/after comparison requires a fixed evaluation set (design-doc: 'before/after比較は固定コーパス版、固定設定、固定評価セットで行う'). Regenerating questions per run would make the two sides incomparable, so this set is version-controlled and must not be edited in place once a baseline run exists — add a new file instead.",
+  "target_revision_label": "呪術廻戦 拡張リサーチナレッジ",
+  "target_source": "data/sample/jujutsu-kaisen-wikipedia.md",
+  "roles": {
+    "C-1": "因果 x マニアック — 単一の仕組みについて、なぜそうなるかの橋を要求する",
+    "C-2": "因果 x 複数人/組織 — 人物間・組織間にまたがる因果の連鎖を要求する",
+    "C-3": "条件/例外 x 時系列/比較 — 適用条件、例外、他との差分を要求する"
+  },
+  "notes": [
+    "`prior_10q_gap` が true の設問は、前回の10問ループで既に add_candidate になった不足領域と重なる。新規発見の件数を数えるときは分けて集計すること（重複を新規として二重計上しないため）。",
+    "この設問群は C 役の出力であり、正解を含まない。A（外部基準回答）・B（ナレッジ限定回答）・D（判定）は coverage-loop API へ注入するか、allow_llm_agents / run_knowledge_answerer で実行する。"
+  ],
+  "questions": [
+    {"id": "C1-01", "role": "C-1", "question": "術式反転と反転術式の違いはなぜ生じるのか、呪力の性質から説明してください。", "intent": "同名に見える2概念の因果的な差分を要求する", "prior_10q_gap": false},
+    {"id": "C1-02", "role": "C-1", "question": "黒閃を経験した術師が呪力操作の精度を上げるとされるのはなぜですか。", "intent": "現象から能力向上への因果の橋", "prior_10q_gap": false},
+    {"id": "C1-03", "role": "C-1", "question": "縛りを設けると力が高まるのはどのような仕組みによるものですか。", "intent": "制約と出力の因果、根拠の所在", "prior_10q_gap": false},
+    {"id": "C1-04", "role": "C-1", "question": "五条悟が無下限呪術を常時展開できるようになった経緯と、その前提として何が必要だったかを説明してください。", "intent": "覚醒の因果と前提条件", "prior_10q_gap": true},
+    {"id": "C1-05", "role": "C-1", "question": "六眼は無下限呪術の運用コストをなぜ下げられるのですか。", "intent": "能力間の因果的な依存関係", "prior_10q_gap": true},
+    {"id": "C1-06", "role": "C-1", "question": "簡易領域が必中効果を中和できるのはなぜですか。また領域展延とは何が違いますか。", "intent": "対抗手段の原理と類似手段との差分", "prior_10q_gap": false},
+    {"id": "C1-07", "role": "C-1", "question": "伏魔御厨子が結界を閉じない領域として成立するのはなぜで、その代償は何ですか。", "intent": "例外的な成立条件とトレードオフ", "prior_10q_gap": true},
+    {"id": "C1-08", "role": "C-1", "question": "天与呪縛が能力の向上をもたらす因果を、伏黒甚爾の事例で説明してください。", "intent": "一般原理を具体事例へ落とす因果", "prior_10q_gap": true},
+    {"id": "C1-09", "role": "C-1", "question": "呪骸であるパンダが自我を持つに至った経緯は何ですか。", "intent": "例外個体が生じた因果", "prior_10q_gap": false},
+    {"id": "C1-10", "role": "C-1", "question": "受肉が成立するために必要な条件は何で、宿儺の指の場合それはどう満たされますか。", "intent": "一般条件と具体事例の対応付け", "prior_10q_gap": false},
+
+    {"id": "C2-01", "role": "C-2", "question": "五条悟と夏油傑が決定的に袂を分かつまでの因果を、天内理子の事件から順に説明してください。", "intent": "二者間の思想的分岐に至る時系列の因果", "prior_10q_gap": false},
+    {"id": "C2-02", "role": "C-2", "question": "羂索が夏油傑の肉体を使うことで、呪術界の意思決定にどのような影響が及びましたか。", "intent": "個人の乗っ取りから組織的帰結への橋", "prior_10q_gap": false},
+    {"id": "C2-03", "role": "C-2", "question": "禪院家の術式重視と男尊女卑は、禪院真希の立場と選択にどう影響しましたか。", "intent": "組織文化から個人の選択への因果", "prior_10q_gap": false},
+    {"id": "C2-04", "role": "C-2", "question": "加茂憲紀と脹相は同じ赤血操術を持ちますが、呪術界での立場が異なるのはなぜですか。", "intent": "同一術式・異なる出自の比較と因果", "prior_10q_gap": false},
+    {"id": "C2-05", "role": "C-2", "question": "獄門疆による五条悟の封印は、呪術高専と呪術界の勢力均衡をどう変えましたか。", "intent": "単一イベントから組織バランスへの波及", "prior_10q_gap": false},
+    {"id": "C2-06", "role": "C-2", "question": "死滅回游の開催に至るまでに羂索が整えた準備は、それぞれどう繋がっていますか。", "intent": "複数の準備行為を一本の因果に束ねる", "prior_10q_gap": true},
+    {"id": "C2-07", "role": "C-2", "question": "虎杖悠仁の出自が、脹相と羂索の双方にとって重要であるのはなぜですか。", "intent": "一つの前提が複数人物に効く構造", "prior_10q_gap": false},
+    {"id": "C2-08", "role": "C-2", "question": "真人と虎杖・七海・順平・釘崎の因縁は、どの順序でどう連鎖しましたか。", "intent": "複数人物にまたがる時系列の連鎖", "prior_10q_gap": false},
+    {"id": "C2-09", "role": "C-2", "question": "与幸吉（究極メカ丸）が高専側と敵対勢力の双方に関わったのはなぜですか。", "intent": "二重所属の動機と因果", "prior_10q_gap": false},
+    {"id": "C2-10", "role": "C-2", "question": "伏黒恵が宿儺から強い関心を向けられる理由を、禪院家と十種影法術の関係から説明してください。", "intent": "家系・術式・敵対者の関心を繋ぐ因果", "prior_10q_gap": false},
+
+    {"id": "C3-01", "role": "C-3", "question": "領域展開の必中効果が働かない例外的な状況にはどのようなものがありますか。", "intent": "原則に対する例外の列挙", "prior_10q_gap": false},
+    {"id": "C3-02", "role": "C-3", "question": "秤金次の大当たり中の状態は、通常の反転術式使用者と何がどう違いますか。", "intent": "特殊状態と通常状態の比較", "prior_10q_gap": true},
+    {"id": "C3-03", "role": "C-3", "question": "日車寛見の誅伏賜死は、対象の罪の有無によって結果がどう変わりますか。", "intent": "入力条件による結果の分岐", "prior_10q_gap": false},
+    {"id": "C3-04", "role": "C-3", "question": "宿儺の「解」と「捌」は対象によってどう使い分けられ、効果はどう異なりますか。", "intent": "対象別の適用条件と効果差", "prior_10q_gap": true},
+    {"id": "C3-05", "role": "C-3", "question": "呪言の反動はどのような条件で強まり、狗巻棘はそれをどう抑えていますか。", "intent": "コストが増える条件と回避策", "prior_10q_gap": false},
+    {"id": "C3-06", "role": "C-3", "question": "呪霊操術で取り込める呪霊に等級や条件の制約はありますか。あるとすれば何ですか。", "intent": "能力の適用限界（無いなら無いと言えるか）", "prior_10q_gap": true},
+    {"id": "C3-07", "role": "C-3", "question": "伏黒恵の嵌合暗翳庭が未完成寄りとされるのは、他の領域展開と比べて何が欠けているためですか。", "intent": "他事例との比較による欠落の特定", "prior_10q_gap": false},
+    {"id": "C3-08", "role": "C-3", "question": "帳は誰でも出入りできますか。条件付きで制限される場合、その条件は何ですか。", "intent": "既定動作と条件付き例外", "prior_10q_gap": false},
+    {"id": "C3-09", "role": "C-3", "question": "反転術式を他者に使える者と自己にしか使えない者の違いは何に由来しますか。", "intent": "同一技術内の適用範囲の差", "prior_10q_gap": false},
+    {"id": "C3-10", "role": "C-3", "question": "死滅回游のルールは追加・変更されえますが、どの条件下で誰が変更できますか。", "intent": "ルール変更の権限と条件", "prior_10q_gap": false}
+  ]
+}

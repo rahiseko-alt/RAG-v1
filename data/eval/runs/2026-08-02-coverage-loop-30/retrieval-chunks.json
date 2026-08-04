@@ -1,0 +1,4498 @@
+{
+  "meta": {
+    "revision_id": "321541cb29e14403873c3c350e99bbb7",
+    "revision_label": "呪術廻戦 拡張リサーチナレッジ",
+    "source_sha256": "48682c7b526ad08eafa5ae38b5b1254767b2e53017d4660d235cb74ab6dcebb2",
+    "engine_fingerprint": "6bd3c247354d306cbf157a01a81975e41fd14e73b4fc7e2b020939ef701b88cd",
+    "chunks_indexed": 41,
+    "top_k": 8,
+    "neighbor_window": 1,
+    "question_set": "data/eval/coverage-loop-30-questions.json",
+    "structured_hits": "none — structured extraction needs an LLM key and was not run, so this run exercises the text-chunk lane only"
+  },
+  "note": "locators only. The 240-char snippets D saw are reconstructible from data/sample/jujutsu-kaisen-wikipedia.md at the pinned source_sha256 by rerunning scripts/coverage_loop_retrieve.py; storing them here would duplicate the corpus.",
+  "items": [
+    {
+      "id": "C1-01",
+      "role": "C-1",
+      "question": "術式反転と反転術式の違いはなぜ生じるのか、呪力の性質から説明してください。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "13",
+          "score": 0.901,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.892,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.901,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.901,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.884,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.899,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.857,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.9,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.901,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.857,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.9,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.9,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.9,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.9,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.901,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.899,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.9,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.9,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.9,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C1-02",
+      "role": "C-1",
+      "question": "黒閃を経験した術師が呪力操作の精度を上げるとされるのはなぜですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "29",
+          "score": 0.878,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.868,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.878,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.878,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.878,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.878,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.849,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.846,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C1-03",
+      "role": "C-1",
+      "question": "縛りを設けると力が高まるのはどのような仕組みによるものですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "35",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.846,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.835,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.815,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.825,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.811,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "5",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "40",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.845,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.845,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C1-04",
+      "role": "C-1",
+      "question": "五条悟が無下限呪術を常時展開できるようになった経緯と、その前提として何が必要だったかを説明してください。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "9",
+          "score": 0.887,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.887,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.887,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.887,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.887,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.886,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.886,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.886,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.886,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.886,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.885,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.885,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.885,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.885,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C1-05",
+      "role": "C-1",
+      "question": "六眼は無下限呪術の運用コストをなぜ下げられるのですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "11",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.849,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.839,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.844,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.841,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "5",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C1-06",
+      "role": "C-1",
+      "question": "簡易領域が必中効果を中和できるのはなぜですか。また領域展延とは何が違いますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "18",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.866,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "5",
+          "score": 0.866,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "40",
+          "score": 0.866,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.849,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.829,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.843,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.836,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "4",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C1-07",
+      "role": "C-1",
+      "question": "伏魔御厨子が結界を閉じない領域として成立するのはなぜで、その代償は何ですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "22",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.866,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.845,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C1-08",
+      "role": "C-1",
+      "question": "天与呪縛が能力の向上をもたらす因果を、伏黒甚爾の事例で説明してください。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "19",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.844,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.846,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.849,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.844,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C1-09",
+      "role": "C-1",
+      "question": "呪骸であるパンダが自我を持つに至った経緯は何ですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "14",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.828,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.827,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.826,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.844,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.836,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.825,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.823,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.823,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.837,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.824,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C1-10",
+      "role": "C-1",
+      "question": "受肉が成立するために必要な条件は何で、宿儺の指の場合それはどう満たされますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "10",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.835,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.833,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.84,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.832,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.843,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.84,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.839,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.842,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.839,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C2-01",
+      "role": "C-2",
+      "question": "五条悟と夏油傑が決定的に袂を分かつまでの因果を、天内理子の事件から順に説明してください。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "23",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.849,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C2-02",
+      "role": "C-2",
+      "question": "羂索が夏油傑の肉体を使うことで、呪術界の意思決定にどのような影響が及びましたか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "15",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.884,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.884,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.869,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C2-03",
+      "role": "C-2",
+      "question": "禪院家の術式重視と男尊女卑は、禪院真希の立場と選択にどう影響しましたか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "22",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.843,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.845,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.842,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.842,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.841,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C2-04",
+      "role": "C-2",
+      "question": "加茂憲紀と脹相は同じ赤血操術を持ちますが、呪術界での立場が異なるのはなぜですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "23",
+          "score": 0.887,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.88,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.896,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.868,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.896,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.896,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.857,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.879,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C2-05",
+      "role": "C-2",
+      "question": "獄門疆による五条悟の封印は、呪術高専と呪術界の勢力均衡をどう変えましたか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "11",
+          "score": 0.886,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.895,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.893,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.894,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "5",
+          "score": 0.893,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C2-06",
+      "role": "C-2",
+      "question": "死滅回游の開催に至るまでに羂索が整えた準備は、それぞれどう繋がっていますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "33",
+          "score": 0.903,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.893,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.902,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.902,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.902,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.902,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.902,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.903,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.901,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.902,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.901,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.857,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.902,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.902,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.901,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.901,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C2-07",
+      "role": "C-2",
+      "question": "虎杖悠仁の出自が、脹相と羂索の双方にとって重要であるのはなぜですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "23",
+          "score": 0.86,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.866,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.866,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.849,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C2-08",
+      "role": "C-2",
+      "question": "真人と虎杖・七海・順平・釘崎の因縁は、どの順序でどう連鎖しましたか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "20",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.849,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.871,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.871,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.871,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        }
+      ]
+    },
+    {
+      "id": "C2-09",
+      "role": "C-2",
+      "question": "与幸吉（究極メカ丸）が高専側と敵対勢力の双方に関わったのはなぜですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "14",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.831,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.832,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.849,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.833,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.832,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.832,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.831,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.828,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.834,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.833,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.829,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        }
+      ]
+    },
+    {
+      "id": "C2-10",
+      "role": "C-2",
+      "question": "伏黒恵が宿儺から強い関心を向けられる理由を、禪院家と十種影法術の関係から説明してください。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "23",
+          "score": 0.909,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.909,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.899,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.909,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.909,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.909,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.909,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.908,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.908,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.908,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.908,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.878,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.877,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.871,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.908,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.908,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.908,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.876,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.874,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.879,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.875,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C3-01",
+      "role": "C-3",
+      "question": "領域展開の必中効果が働かない例外的な状況にはどのようなものがありますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "28",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.829,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.819,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.831,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.845,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.854,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.829,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "5",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.821,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C3-02",
+      "role": "C-3",
+      "question": "秤金次の大当たり中の状態は、通常の反転術式使用者と何がどう違いますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "21",
+          "score": 0.836,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.868,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.843,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.868,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.868,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.868,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.838,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.838,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.834,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.839,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.835,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.867,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.838,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.837,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.837,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C3-03",
+      "role": "C-3",
+      "question": "日車寛見の誅伏賜死は、対象の罪の有無によって結果がどう変わりますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "17",
+          "score": 0.839,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.828,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.827,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "40",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.821,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.821,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "5",
+          "score": 0.847,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.838,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.826,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.824,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.822,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.82,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C3-04",
+      "role": "C-3",
+      "question": "宿儺の「解」と「捌」は対象によってどう使い分けられ、効果はどう異なりますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "8",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.858,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.857,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.857,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "40",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.871,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.871,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.861,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.857,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.862,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C3-05",
+      "role": "C-3",
+      "question": "呪言の反動はどのような条件で強まり、狗巻棘はそれをどう抑えていますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "20",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.842,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.835,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.841,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.839,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.837,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.836,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.833,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.842,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.84,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.838,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.837,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.835,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.834,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        }
+      ]
+    },
+    {
+      "id": "C3-06",
+      "role": "C-3",
+      "question": "呪霊操術で取り込める呪霊に等級や条件の制約はありますか。あるとすれば何ですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "28",
+          "score": 0.883,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "7",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.849,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.848,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.851,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "5",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.852,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.857,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.856,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C3-07",
+      "role": "C-3",
+      "question": "伏黒恵の嵌合暗翳庭が未完成寄りとされるのは、他の領域展開と比べて何が欠けているためですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "12",
+          "score": 0.892,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.892,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.857,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "9",
+          "score": 0.892,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.891,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.891,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.891,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.85,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.891,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.891,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.866,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "11",
+          "score": 0.891,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "8",
+          "score": 0.891,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.89,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.89,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.89,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.866,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.89,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.89,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.865,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C3-08",
+      "role": "C-3",
+      "question": "帳は誰でも出入りできますか。条件付きで制限される場合、その条件は何ですか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "19",
+          "score": 0.805,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.819,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "18",
+          "score": 0.818,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.797,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.818,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.818,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.818,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.818,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.818,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.818,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "5",
+          "score": 0.805,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.818,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.817,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.817,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.817,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.817,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.817,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.804,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "4",
+          "score": 0.804,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.804,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.8,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.799,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.796,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "2",
+          "score": 0.794,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C3-09",
+      "role": "C-3",
+      "question": "反転術式を他者に使える者と自己にしか使えない者の違いは何に由来しますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "18",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "13",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "15",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "35",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.853,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.831,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "23",
+          "score": 0.882,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "37",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.836,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.835,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "25",
+          "score": 0.836,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "14",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.88,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "12",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.833,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.833,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "24",
+          "score": 0.881,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.88,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.88,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.835,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.83,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    },
+    {
+      "id": "C3-10",
+      "role": "C-3",
+      "question": "死滅回游のルールは追加・変更されえますが、どの条件下で誰が変更できますか。",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "37",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 1
+        },
+        {
+          "chunk_id": "20",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 2
+        },
+        {
+          "chunk_id": "27",
+          "score": 0.864,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 3
+        },
+        {
+          "chunk_id": "36",
+          "score": 0.859,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 4
+        },
+        {
+          "chunk_id": "19",
+          "score": 0.842,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 5
+        },
+        {
+          "chunk_id": "10",
+          "score": 0.84,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 6
+        },
+        {
+          "chunk_id": "30",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 7
+        },
+        {
+          "chunk_id": "33",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 8
+        },
+        {
+          "chunk_id": "29",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 9
+        },
+        {
+          "chunk_id": "31",
+          "score": 0.842,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 10
+        },
+        {
+          "chunk_id": "40",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 11
+        },
+        {
+          "chunk_id": "5",
+          "score": 0.873,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 12
+        },
+        {
+          "chunk_id": "22",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 13
+        },
+        {
+          "chunk_id": "34",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 14
+        },
+        {
+          "chunk_id": "38",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 15
+        },
+        {
+          "chunk_id": "39",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 16
+        },
+        {
+          "chunk_id": "4",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 17
+        },
+        {
+          "chunk_id": "26",
+          "score": 0.863,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 18
+        },
+        {
+          "chunk_id": "16",
+          "score": 0.843,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 19
+        },
+        {
+          "chunk_id": "32",
+          "score": 0.855,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 20
+        },
+        {
+          "chunk_id": "17",
+          "score": 0.844,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 21
+        },
+        {
+          "chunk_id": "21",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 22
+        },
+        {
+          "chunk_id": "28",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 23
+        },
+        {
+          "chunk_id": "6",
+          "score": 0.872,
+          "citation": "jujutsu-kaisen-wikipedia.md p.0",
+          "rank": 24
+        }
+      ]
+    }
+  ]
+}

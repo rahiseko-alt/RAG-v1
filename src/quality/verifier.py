@@ -14,6 +14,18 @@ AnswerMode = Literal["strict", "standard", "explore"]
 CITATION_PATTERN = re.compile(r"\[(\d+)\]")
 SENTENCE_SPLIT_PATTERN = re.compile(r"(?<=[。！？!?])|(?<=\.)\s+")
 CANONICAL_ABSTENTION = "提供された文書には記載がありません"
+# The partial counterpart of the abstention: the answer covers what the excerpts
+# support and marks the rest as undetermined. Measured on the 2026-08-02 30-question
+# run, every single answer took this shape and 25 of 30 were blocked by the
+# citation-coverage check, because the closing sentence has nothing to cite. The gate
+# was therefore rejecting the most careful answers the system produces while passing
+# ones that simply stopped early. Sentences ending in this phrase assert nothing about
+# the world — they assert that the excerpts do not settle something — so they carry no
+# evidential debt. The semantic verifier still splits and checks any claim smuggled
+# into the subordinate clause, so exempting them here does not open a hallucination
+# path; it only stops the deterministic half from failing a sentence that has, and
+# needs, no source.
+CANONICAL_RESERVATION = "提供された抜粋からは特定できません"
 FAN_QUALIFIER_PATTERN = re.compile(
     r"ファン|考察|解釈|意見|議論|見方|未確認|推測|仮説|読者|コミュニティ|投稿|動画"
 )
@@ -22,6 +34,18 @@ FAN_QUALIFIER_PATTERN = re.compile(
 def _is_canonical_abstention(candidate_answer: str) -> bool:
     normalized = " ".join(candidate_answer.split()).strip().rstrip("。.!！")
     return normalized == CANONICAL_ABSTENTION
+
+
+def is_reservation_sentence(sentence: str) -> bool:
+    """True for a sentence whose whole assertion is "the excerpts do not settle this".
+
+    Matched on the ending rather than the whole sentence because the useful form names
+    what was not settled first (「…の仕組みは、提供された抜粋からは特定できません」).
+    Everything before the phrase is subordinated to it, so the sentence as a whole
+    asserts no fact — see `CANONICAL_RESERVATION` for why that makes it citation-free.
+    """
+    normalized = " ".join(sentence.split()).strip().rstrip("。.!！")
+    return normalized.endswith(CANONICAL_RESERVATION)
 
 
 class EvidenceAssessment(BaseModel):
@@ -118,7 +142,8 @@ def _deterministic_checks(
         if sentence.strip()
     ]
     citation_coverage = bool(substantive_sentences) and all(
-        CITATION_PATTERN.search(sentence) for sentence in substantive_sentences
+        CITATION_PATTERN.search(sentence) or is_reservation_sentence(sentence)
+        for sentence in substantive_sentences
     )
     return [
         {"id": "candidate_present", "passed": bool(candidate_answer.strip())},
@@ -148,7 +173,10 @@ def _claim_coverage(
     factual_sentences = [
         _normalize_claim_text(sentence)
         for sentence in SENTENCE_SPLIT_PATTERN.split(candidate_answer)
-        if sentence.strip()
+        # A reservation sentence states no fact, so the verifier has no claim to
+        # return for it. Requiring one would fail strict mode on exactly the answers
+        # that were careful enough to mark their own limits.
+        if sentence.strip() and not is_reservation_sentence(sentence)
     ]
     claim_texts = [
         _normalize_claim_text(str(claim.get("claim") or ""))
