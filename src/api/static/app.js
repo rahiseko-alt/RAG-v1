@@ -50,16 +50,22 @@ const elements = {
   refreshLedger: $("#refresh-ledger"),
   ledgerSummary: $("#ledger-summary"),
   traceDetail: $("#trace-detail"),
+  refreshQuarantine: $("#refresh-quarantine"),
+  quarantineRevision: $("#quarantine-revision"),
+  quarantineStatusFilter: $("#quarantine-status-filter"),
+  quarantineList: $("#quarantine-list"),
 };
 
 const state = {
   revisions: [],
+  activeRevisionId: "",
   jobs: new Map(),
   pollTimers: new Map(),
   approval: { allowed: false, revisionId: "" },
   loadedTabs: new Set(["question"]),
   runEvents: [],
   runEventSource: null,
+  coverageCandidates: [],
 };
 
 const pendingProcessSteps = [
@@ -251,6 +257,7 @@ function switchTab(tabName, focus = true) {
     state.loadedTabs.add(tabName);
     if (tabName === "knowledge" || tabName === "comparison") loadRevisions();
     if (tabName === "ledger") loadLedger();
+    if (tabName === "quarantine") loadQuarantineTab();
   }
 }
 
@@ -836,8 +843,7 @@ function revisionId(revision) {
 }
 
 function renderRevisionOptions() {
-  const current = elements.comparisonRevision.value;
-  elements.comparisonRevision.innerHTML = [
+  const options = [
     '<option value="">改訂を選択</option>',
     ...state.revisions.map((revision) => {
       const id = revisionId(revision);
@@ -845,8 +851,19 @@ function renderRevisionOptions() {
       return `<option value="${escapeHtml(id)}">${escapeHtml(label)} (${escapeHtml(id)})</option>`;
     }),
   ].join("");
+
+  const current = elements.comparisonRevision.value;
+  elements.comparisonRevision.innerHTML = options;
   if (state.revisions.some((revision) => revisionId(revision) === current)) {
     elements.comparisonRevision.value = current;
+  }
+
+  const currentQuarantine = elements.quarantineRevision.value;
+  elements.quarantineRevision.innerHTML = options;
+  if (currentQuarantine && state.revisions.some((revision) => revisionId(revision) === currentQuarantine)) {
+    elements.quarantineRevision.value = currentQuarantine;
+  } else if (state.activeRevisionId) {
+    elements.quarantineRevision.value = state.activeRevisionId;
   }
 }
 
@@ -899,6 +916,7 @@ async function loadRevisions() {
   try {
     const data = await apiFetch("/workbench/revisions");
     state.revisions = normalizeRevisions(data);
+    state.activeRevisionId = String(firstValue(data.active_revision_id, ""));
     renderRevisions();
   } catch (error) {
     elements.revisionList.innerHTML = `<p class="empty-message error-message">${escapeHtml(error.message)}</p>`;
@@ -1322,6 +1340,210 @@ elements.ledgerSummary.addEventListener("click", async (event) => {
     elements.traceDetail.innerHTML = `<p class="empty-message error-message">${escapeHtml(error.message)}</p>`;
   } finally {
     elements.traceDetail.setAttribute("aria-busy", "false");
+    setBusy(button, false);
+  }
+});
+
+const CANDIDATE_STATUS_LABELS = {
+  no_gap: "差分なし",
+  auto_classified: "採用候補",
+  auto_approved: "承認済み",
+  auto_rejected: "却下",
+  auto_quarantined: "隔離（要確認）",
+  implemented: "実装済み",
+  verified: "検証済み",
+  active: "活性化済み",
+};
+
+const CANDIDATE_STATUS_CLASSES = {
+  no_gap: "state-idle",
+  auto_classified: "state-idle",
+  auto_approved: "state-working",
+  auto_rejected: "state-error",
+  auto_quarantined: "state-blocked",
+  implemented: "state-working",
+  verified: "state-working",
+  active: "state-ok",
+};
+
+const CANDIDATE_RESOLVABLE_STATUSES = new Set(["auto_quarantined", "auto_rejected", "auto_classified"]);
+
+function candidateId(candidate) {
+  return String(firstValue(candidate.id, ""));
+}
+
+function normalizeCoverageCandidates(data) {
+  return asArray(firstValue(data.items, data.candidates, data));
+}
+
+function candidateActionButtons(candidate) {
+  const id = candidateId(candidate);
+  const status = String(firstValue(candidate.status, ""));
+  if (CANDIDATE_RESOLVABLE_STATUSES.has(status)) {
+    return `
+      <button class="button button-success button-compact" type="button" data-approve-candidate="${escapeHtml(id)}">
+        <span aria-hidden="true">✓</span> 承認
+      </button>
+      <button class="button button-danger button-compact" type="button" data-reject-candidate="${escapeHtml(id)}">
+        <span aria-hidden="true">×</span> 却下
+      </button>
+    `;
+  }
+  if (status === "auto_approved") {
+    return `
+      <button class="button button-primary button-compact" type="button" data-implement-candidate="${escapeHtml(id)}">
+        <span aria-hidden="true">▶</span> 改訂ドラフトを実装
+      </button>
+    `;
+  }
+  if (status === "implemented") {
+    return `
+      <button class="button button-primary button-compact" type="button" data-verify-candidate="${escapeHtml(id)}">
+        <span aria-hidden="true">✓</span> 検証（validation-jobの合格を確認）
+      </button>
+    `;
+  }
+  if (status === "verified") {
+    return `
+      <button class="button button-success button-compact" type="button" data-activate-candidate="${escapeHtml(id)}">
+        <span aria-hidden="true">★</span> 活性化
+      </button>
+    `;
+  }
+  return "";
+}
+
+function renderQuarantineList() {
+  const filter = elements.quarantineStatusFilter.value;
+  const items = filter
+    ? state.coverageCandidates.filter((candidate) => String(firstValue(candidate.status, "")) === filter)
+    : state.coverageCandidates;
+
+  if (!elements.quarantineRevision.value) {
+    elements.quarantineList.innerHTML = '<p class="empty-message">改訂を選択してください。</p>';
+    return;
+  }
+  if (!items.length) {
+    elements.quarantineList.innerHTML = '<p class="empty-message">該当する候補はありません。</p>';
+    return;
+  }
+
+  elements.quarantineList.innerHTML = items
+    .map((candidate) => {
+      const status = String(firstValue(candidate.status, ""));
+      const statusLabel = firstValue(CANDIDATE_STATUS_LABELS[status], status, "不明");
+      const statusClass = firstValue(CANDIDATE_STATUS_CLASSES[status], "state-idle");
+      const factCheck = candidate.fact_check || {};
+      const reason = firstValue(
+        candidate.status_reason,
+        candidate.candidate_reason,
+        factCheck.reason,
+        ""
+      );
+      return `
+        <article class="revision-row">
+          <div class="row-heading">
+            <div>
+              <strong>${escapeHtml(firstValue(candidate.question, "（質問なし）"))}</strong>
+              <span>ID ${escapeHtml(candidateId(candidate))}</span>
+            </div>
+            <span class="state-badge ${escapeHtml(statusClass)}">${escapeHtml(statusLabel)}</span>
+          </div>
+          <dl class="inline-data">
+            <div><dt>分類</dt><dd>${escapeHtml(firstValue(candidate.disposition, "—"))}</dd></div>
+            <div><dt>原因</dt><dd>${escapeHtml(firstValue(candidate.failure_cause, "—"))}</dd></div>
+            <div><dt>更新</dt><dd>${escapeHtml(formatDate(firstValue(candidate.updated_at, candidate.created_at)))}</dd></div>
+          </dl>
+          ${
+            reason
+              ? `<details class="candidate-details"><summary>理由を表示</summary><p>${escapeHtml(reason)}</p></details>`
+              : ""
+          }
+          <div class="row-actions">${candidateActionButtons(candidate)}</div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function loadQuarantineCandidates() {
+  const revisionId = elements.quarantineRevision.value;
+  if (!revisionId) {
+    state.coverageCandidates = [];
+    renderQuarantineList();
+    return;
+  }
+  elements.quarantineList.setAttribute("aria-busy", "true");
+  try {
+    const data = await apiFetch(`/workbench/revisions/${encodeURIComponent(revisionId)}/coverage-candidates`);
+    state.coverageCandidates = normalizeCoverageCandidates(data);
+    renderQuarantineList();
+  } catch (error) {
+    elements.quarantineList.innerHTML = `<p class="empty-message error-message">${escapeHtml(error.message)}</p>`;
+    state.coverageCandidates = [];
+  } finally {
+    elements.quarantineList.setAttribute("aria-busy", "false");
+  }
+}
+
+async function loadQuarantineTab() {
+  if (!state.revisions.length) await loadRevisions();
+  await loadQuarantineCandidates();
+}
+
+elements.refreshQuarantine.addEventListener("click", loadQuarantineCandidates);
+elements.quarantineRevision.addEventListener("change", loadQuarantineCandidates);
+elements.quarantineStatusFilter.addEventListener("change", renderQuarantineList);
+
+elements.quarantineList.addEventListener("click", async (event) => {
+  const approveButton = event.target.closest("[data-approve-candidate]");
+  const rejectButton = event.target.closest("[data-reject-candidate]");
+  const implementButton = event.target.closest("[data-implement-candidate]");
+  const verifyButton = event.target.closest("[data-verify-candidate]");
+  const activateButton = event.target.closest("[data-activate-candidate]");
+  const button = approveButton || rejectButton || implementButton || verifyButton || activateButton;
+  if (!button) return;
+
+  setBusy(button, true, "処理中…");
+  try {
+    if (approveButton) {
+      const id = approveButton.dataset.approveCandidate;
+      await apiFetch(`/workbench/coverage-candidates/${encodeURIComponent(id)}/resolve`, {
+        method: "POST",
+        body: JSON.stringify({ status: "auto_approved", reason: "ワークベンチから承認" }),
+      });
+      setGlobalStatus(`候補 ${id} を承認しました。`);
+    } else if (rejectButton) {
+      const id = rejectButton.dataset.rejectCandidate;
+      await apiFetch(`/workbench/coverage-candidates/${encodeURIComponent(id)}/resolve`, {
+        method: "POST",
+        body: JSON.stringify({ status: "auto_rejected", reason: "ワークベンチから却下" }),
+      });
+      setGlobalStatus(`候補 ${id} を却下しました。`);
+    } else if (implementButton) {
+      const id = implementButton.dataset.implementCandidate;
+      await apiFetch(`/workbench/coverage-candidates/${encodeURIComponent(id)}/implement`, {
+        method: "POST",
+      });
+      setGlobalStatus(`候補 ${id} の改訂ドラフトを作成しました。`);
+    } else if (verifyButton) {
+      const id = verifyButton.dataset.verifyCandidate;
+      await apiFetch(`/workbench/coverage-candidates/${encodeURIComponent(id)}/verify`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      setGlobalStatus(`候補 ${id} を検証済みにしました。`);
+    } else if (activateButton) {
+      const id = activateButton.dataset.activateCandidate;
+      await apiFetch(`/workbench/coverage-candidates/${encodeURIComponent(id)}/activate`, {
+        method: "POST",
+        body: JSON.stringify({ reason: "ワークベンチから活性化" }),
+      });
+      setGlobalStatus(`候補 ${id} を活性化しました。`);
+    }
+    await loadQuarantineCandidates();
+  } catch (error) {
+    setGlobalStatus(`操作に失敗しました: ${error.message}`);
     setBusy(button, false);
   }
 });

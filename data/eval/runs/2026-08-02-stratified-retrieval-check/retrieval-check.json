@@ -1,0 +1,1372 @@
+{
+  "summary": {
+    "revision_id": "7d6f3cfd902d46508a3b10899ee76c05",
+    "source_sha256": "48682c7b526ad08eafa5ae38b5b1254767b2e53017d4660d235cb74ab6dcebb2",
+    "engine_fingerprint": "e997d91a8692f2dcbaefc290c873731d0b1748cf4d33979e125e8e9f3268175a",
+    "chunks_indexed": 41,
+    "questions": 100,
+    "with_gold_chunks": 50,
+    "span_verified": 50,
+    "recall_all_gold": 50,
+    "difficulty_counts": {
+      "easy": 37,
+      "medium": 13,
+      "hard": 0
+    },
+    "by_stratum": {
+      "easy_factual": {
+        "n": 25,
+        "recall": 25,
+        "easy": 21,
+        "medium": 4,
+        "hard": 0
+      },
+      "medium_multi_chunk": {
+        "n": 15,
+        "recall": 15,
+        "easy": 11,
+        "medium": 4,
+        "hard": 0
+      },
+      "paraphrase": {
+        "n": 10,
+        "recall": 10,
+        "easy": 5,
+        "medium": 5,
+        "hard": 0
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "E-01",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "6"
+      ],
+      "retrieved_count": 22,
+      "gold_ranks": {
+        "6": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-02",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "6"
+      ],
+      "retrieved_count": 20,
+      "gold_ranks": {
+        "6": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-03",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "7"
+      ],
+      "retrieved_count": 23,
+      "gold_ranks": {
+        "7": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-04",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "8"
+      ],
+      "retrieved_count": 13,
+      "gold_ranks": {
+        "8": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-05",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "8"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "8": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-06",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "9"
+      ],
+      "retrieved_count": 16,
+      "gold_ranks": {
+        "9": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-07",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "10"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "10": 5
+      },
+      "best_rank": 5,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "E-08",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "11"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "11": 8
+      },
+      "best_rank": 8,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "E-09",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "12"
+      ],
+      "retrieved_count": 23,
+      "gold_ranks": {
+        "12": 11
+      },
+      "best_rank": 11,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "E-10",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "12"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "12": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-11",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "13"
+      ],
+      "retrieved_count": 23,
+      "gold_ranks": {
+        "13": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-12",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "14"
+      ],
+      "retrieved_count": 20,
+      "gold_ranks": {
+        "14": 3
+      },
+      "best_rank": 3,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-13",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "15"
+      ],
+      "retrieved_count": 23,
+      "gold_ranks": {
+        "15": 2
+      },
+      "best_rank": 2,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-14",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "15"
+      ],
+      "retrieved_count": 22,
+      "gold_ranks": {
+        "15": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-15",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "16"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "16": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-16",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "17"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "17": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-17",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "18"
+      ],
+      "retrieved_count": 23,
+      "gold_ranks": {
+        "18": 3
+      },
+      "best_rank": 3,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-18",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "19"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "19": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-19",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "20"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "20": 2
+      },
+      "best_rank": 2,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-20",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "21"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "21": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-21",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "22"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "22": 2
+      },
+      "best_rank": 2,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-22",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "23"
+      ],
+      "retrieved_count": 20,
+      "gold_ranks": {
+        "23": 18
+      },
+      "best_rank": 18,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "E-23",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "24"
+      ],
+      "retrieved_count": 17,
+      "gold_ranks": {
+        "24": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-24",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "25"
+      ],
+      "retrieved_count": 23,
+      "gold_ranks": {
+        "25": 2
+      },
+      "best_rank": 2,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "E-25",
+      "stratum": "easy_factual",
+      "gold_chunk_ids": [
+        "34"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "34": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-01",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "21",
+        "14"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "21": 2,
+        "14": 3
+      },
+      "best_rank": 2,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-02",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "20",
+        "22"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "20": 1,
+        "22": 11
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-03",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "14",
+        "16"
+      ],
+      "retrieved_count": 21,
+      "gold_ranks": {
+        "14": 6,
+        "16": 4
+      },
+      "best_rank": 4,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "M-04",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "19",
+        "13"
+      ],
+      "retrieved_count": 23,
+      "gold_ranks": {
+        "19": 6,
+        "13": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-05",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "19",
+        "14"
+      ],
+      "retrieved_count": 22,
+      "gold_ranks": {
+        "19": 5,
+        "14": 4
+      },
+      "best_rank": 4,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "M-06",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "13",
+        "15"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "13": 1,
+        "15": 2
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-07",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "18",
+        "14"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "18": 3,
+        "14": 6
+      },
+      "best_rank": 3,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-08",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "15",
+        "19"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "15": 8,
+        "19": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-09",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "19",
+        "16"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "19": 5,
+        "16": 7
+      },
+      "best_rank": 5,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "M-10",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "22",
+        "21"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "22": 1,
+        "21": 2
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-11",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "23",
+        "8"
+      ],
+      "retrieved_count": 22,
+      "gold_ranks": {
+        "23": 1,
+        "8": 6
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-12",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "21",
+        "14"
+      ],
+      "retrieved_count": 22,
+      "gold_ranks": {
+        "21": 7,
+        "14": 5
+      },
+      "best_rank": 5,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "M-13",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "15",
+        "9"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "15": 2,
+        "9": 11
+      },
+      "best_rank": 2,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-14",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "14",
+        "12"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "14": 1,
+        "12": 20
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "M-15",
+      "stratum": "medium_multi_chunk",
+      "gold_chunk_ids": [
+        "11",
+        "20"
+      ],
+      "retrieved_count": 22,
+      "gold_ranks": {
+        "11": 1,
+        "20": 4
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "P-01",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "11"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "11": 10
+      },
+      "best_rank": 10,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "P-02",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "6"
+      ],
+      "retrieved_count": 19,
+      "gold_ranks": {
+        "6": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "P-03",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "18"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "18": 3
+      },
+      "best_rank": 3,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "P-04",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "18"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "18": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "P-05",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "34"
+      ],
+      "retrieved_count": 22,
+      "gold_ranks": {
+        "34": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "P-06",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "18"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "18": 4
+      },
+      "best_rank": 4,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "P-07",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "25"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "25": 8
+      },
+      "best_rank": 8,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "P-08",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "19"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "19": 1
+      },
+      "best_rank": 1,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "easy"
+    },
+    {
+      "id": "P-09",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "23"
+      ],
+      "retrieved_count": 21,
+      "gold_ranks": {
+        "23": 18
+      },
+      "best_rank": 18,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "P-10",
+      "stratum": "paraphrase",
+      "gold_chunk_ids": [
+        "19"
+      ],
+      "retrieved_count": 24,
+      "gold_ranks": {
+        "19": 9
+      },
+      "best_rank": 9,
+      "all_gold_retrieved": true,
+      "span_verified": true,
+      "measured_difficulty": "medium"
+    },
+    {
+      "id": "C1-01",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C1-02",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C1-03",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C1-04",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C1-05",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C1-06",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C1-07",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C1-08",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C1-09",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C1-10",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-01",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-02",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-03",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-04",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-05",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-06",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-07",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-08",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 23,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-09",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 19,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C2-10",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-01",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-02",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-03",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-04",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-05",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 22,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-06",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-07",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-08",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-09",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "C3-10",
+      "stratum": "hard_causal",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-01",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-02",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 18,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-03",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-04",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 21,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-05",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 23,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-06",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-07",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 23,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-08",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-09",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 20,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-10",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 16,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-11",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 15,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "U-12",
+      "stratum": "unanswerable_out_of_db",
+      "gold_chunk_ids": [],
+      "retrieved_count": 14,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "F-01",
+      "stratum": "false_premise",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "F-02",
+      "stratum": "false_premise",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "F-03",
+      "stratum": "false_premise",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "F-04",
+      "stratum": "false_premise",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "F-05",
+      "stratum": "false_premise",
+      "gold_chunk_ids": [],
+      "retrieved_count": 22,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "F-06",
+      "stratum": "false_premise",
+      "gold_chunk_ids": [],
+      "retrieved_count": 20,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "F-07",
+      "stratum": "false_premise",
+      "gold_chunk_ids": [],
+      "retrieved_count": 24,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    },
+    {
+      "id": "F-08",
+      "stratum": "false_premise",
+      "gold_chunk_ids": [],
+      "retrieved_count": 23,
+      "gold_ranks": {},
+      "best_rank": null,
+      "all_gold_retrieved": false,
+      "span_verified": true,
+      "measured_difficulty": null
+    }
+  ]
+}

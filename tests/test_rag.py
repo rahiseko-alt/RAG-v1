@@ -154,6 +154,38 @@ def test_rerank_promotes_answer_pattern_over_generic_term_match():
     assert reranked[0][0].metadata["rerank_score"] > reranked[1][0].metadata["rerank_score"]
 
 
+def test_langchain_constructor_kwargs_still_exist():
+    """Guard the two `# type: ignore[call-arg]` sites in `src/rag/__init__.py`.
+
+    Those ignores exist because langchain aliases the pydantic fields we pass
+    (`model_name`/`model`, `max_tokens`/`max_tokens_to_sample`) and the plugin builds
+    `__init__` from the alias, so mypy rejects field names that work at runtime. The
+    cost is that the ignore covers the whole call: any *other* bad keyword on those
+    two lines would also stop being reported. This asserts each keyword we actually
+    pass is still accepted, so a dependency bump that renames or drops one fails CI
+    here rather than at runtime — the embedding path only loads under `-m slow`, and
+    the chat path only with an API key, so neither is exercised by the default run.
+
+    Reads class metadata only; it never constructs either object, so no model
+    download and no network.
+    """
+    from langchain_anthropic import ChatAnthropic
+    from langchain_huggingface import HuggingFaceEmbeddings
+
+    for cls, passed in (
+        (HuggingFaceEmbeddings, ("model_name", "encode_kwargs")),
+        (ChatAnthropic, ("model", "max_tokens", "timeout", "stop")),
+    ):
+        # Field names (as opposed to aliases) are only accepted because of this.
+        assert cls.model_config.get("populate_by_name") is True, cls.__name__
+        aliases = {field.alias for field in cls.model_fields.values() if field.alias}
+        for keyword in passed:
+            assert keyword in cls.model_fields or keyword in aliases, (
+                f"{cls.__name__} no longer accepts {keyword!r}; "
+                "src/rag/__init__.py passes it under a call-arg ignore"
+            )
+
+
 @pytest.mark.slow
 def test_retrieval_finds_relevant():
     """埋め込みモデルのロードが要るため slow。設定された例示質問で関連チャンクが上位に来る。"""
