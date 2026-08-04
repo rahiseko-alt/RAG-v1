@@ -10,3 +10,40 @@ checked_at = "2026-07-31"
 eval_set = "data/eval/jujutsu-kaisen-questions.json"
 example_question = "呪術廻戦の作者は誰ですか？"
 expected_terms = ["芥見下々", "作者"]
+
+# 検索の語彙。ここに書いた語だけがナレッジ固有で、`src/rag` には残さない。
+# 日本語の文法語（です・ます・なぜ 等）と疑問詞（誰・何・理由）は
+# `src/knowledge_config.py` の言語既定に持たせてあり、以下はそれに **追加** される。
+[lexical]
+# 全チャンクに出るためエンティティとして扱っても弁別力が無い語。
+stop_terms = ["呪術廻戦"]
+# 「何を訊いているか」は表すが、対象そのものを指さない語。
+# エンティティ一致の加点対象から外し、意図の判定にだけ使う。
+generic_terms = ["術式", "領域", "名セリフ", "セリフ"]
+
+# 質問の意図と、その答えを含むチャンクの見分け方。
+# `triggers` が質問に含まれると、その意図が立つ。加点するのは `markers` 以下で、
+# `triggers` だけを書いた意図は「認識はするが順位は動かさない」。
+[[lexical.intents]]
+name = "technique"
+triggers = ["術式"]
+# 術式を「説明する」チャンクではなく「誰の術式か」を書いたチャンクの語形。
+markers = ["術式「", "術式は", "術式:", "術式：", "使い手", "操術", "呪法"]
+# 同時に出たら加点する組。
+paired_markers = [["術式「", "使い手"]]
+# エンティティ名とこれらが近いほど加点する（同一文で結び付いている証拠）。
+proximity_terms = ["術式", "操術", "呪法", "使い手"]
+# 一般解説チャンクに頻出し、エンティティ一致が無いときは減点する語。
+demoted_terms = ["反転術式"]
+
+[[lexical.intents]]
+name = "domain"
+triggers = ["領域"]
+
+[[lexical.intents]]
+name = "voice_actor"
+triggers = ["声優", "声"]
+
+[[lexical.intents]]
+name = "creator"
+triggers = ["作者", "原作者"]
