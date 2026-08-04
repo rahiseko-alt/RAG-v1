@@ -15,6 +15,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+import src.rag as rag  # noqa: E402
 from src.ingest import load_and_chunk  # noqa: E402
 from src.knowledge_config import get_active_knowledge  # noqa: E402
 from src.rag import (  # noqa: E402
@@ -132,6 +133,26 @@ def test_bm25_rescue_adds_entity_chunk_when_vector_search_misses_it():
         for document, _score in rescued
         if document.metadata["chunk_id"] == 20
     )
+
+
+def test_query_terms_match_across_spacing_width_and_case_variants():
+    """表記が違うだけの質問と本文が、検索語の一致まで到達すること。
+
+    正規化関数単体のテスト（tests/test_text_normalize.py）は等価性しか見ておらず、
+    それが `_query_terms` と本文照合まで実際に効いているかは別問題なので、
+    ここは**検索語が本文に一致すること**を直接確かめる。
+    """
+    from src.knowledge_config import LexicalProfile
+    from src.text_normalize import normalize_for_matching
+
+    profile = LexicalProfile()
+    # 質問は空白あり・全角、本文は詰め・半角。正規化が無ければ一致しない組み合わせ。
+    terms = rag._query_terms("ＣＯＶＩＤ-19 では 500 mg を投与しますか", profile=profile)
+    text = normalize_for_matching("covid-19の患者には500mgを投与する")
+
+    matched = [term for term in terms if term in text]
+    assert "500mg" in matched, f"単位前の空白が吸収されていない: {terms}"
+    assert "covid-19" in matched, f"全角・大小文字が吸収されていない: {terms}"
 
 
 def test_rerank_promotes_answer_pattern_over_generic_term_match():

@@ -21,6 +21,7 @@ from typing import Any, Iterator, Literal
 from pydantic import BaseModel, Field
 
 from src.knowledge_config import PRODUCT_ROOT
+from src.text_normalize import normalize_for_matching as _normalize_text
 
 
 DEFAULT_STRUCTURED_DB_PATH = PRODUCT_ROOT / "data" / "runtime" / "structured_knowledge.sqlite3"
@@ -95,18 +96,6 @@ def _decode(value: str | None, fallback: Any) -> Any:
     return json.loads(value) if value else fallback
 
 
-def _expand_iteration_marks(value: str) -> str:
-    chars: list[str] = []
-    for char in value:
-        if char == "々" and chars:
-            chars.append(chars[-1])
-        else:
-            chars.append(char)
-    return "".join(chars)
-
-
-def _normalize_text(value: str) -> str:
-    return _expand_iteration_marks(value).casefold()
 
 
 def _utc_now() -> str:
