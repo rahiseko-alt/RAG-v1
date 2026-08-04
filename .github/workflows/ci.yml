@@ -18,7 +18,7 @@ jobs:
       # fetch-depth: 0 は下の「コミット衛生」検査が PR の差分コミットを
       # 辿るために必要（既定の shallow clone だと base..HEAD が解決できない）。
       # リポジトリは数MBなので全履歴取得のコストは無視できる。
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
