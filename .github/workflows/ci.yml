@@ -37,7 +37,11 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           # noreply として許可する形: GitHub の noreply（ID付き/なし両方）と、
           # コミットを作る各エージェントの noreply。
-          allow='^([0-9]+\+)?[A-Za-z0-9._-]+@users\.noreply\.github\.com$|^[A-Za-z0-9._-]+@noreply\.[A-Za-z0-9.-]+$|^noreply@[A-Za-z0-9.-]+$'
+          # ⚠ ローカル部に `[` `]` を含める必要がある。bot のアドレスが
+          #    `49699333+dependabot[bot]@users.noreply.github.com` の形を取るため、
+          #    角括弧を許可しないと Dependabot の PR が全て赤になる（実地で確認済み）。
+          #    POSIX の括弧表現では `]` を先頭に置くとリテラルとして扱われる＝`[][A-Za-z...]`。
+          allow='^([0-9]+\+)?[][A-Za-z0-9._-]+@users\.noreply\.github\.com$|^[][A-Za-z0-9._-]+@noreply\.[A-Za-z0-9.-]+$|^noreply@[A-Za-z0-9.-]+$'
 
           leaked=0
           while IFS='|' read -r sha email role; do
