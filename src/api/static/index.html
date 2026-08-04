@@ -66,6 +66,17 @@
         >
           台帳・監査
         </button>
+        <button
+          id="tab-quarantine"
+          class="tab-button"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-quarantine"
+          tabindex="-1"
+        >
+          隔離一覧
+        </button>
       </div>
     </nav>
 
@@ -361,6 +372,56 @@
           </div>
           <div id="trace-detail" class="trace-detail" aria-live="polite">
             <p class="empty-message">台帳の「トレース確認」から監査情報を表示できます。</p>
+          </div>
+        </section>
+      </section>
+
+      <section
+        id="panel-quarantine"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-quarantine"
+        tabindex="0"
+        hidden
+      >
+        <section class="panel" aria-labelledby="quarantine-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">弱点候補の確認と昇格</p>
+              <h2 id="quarantine-title">隔離一覧</h2>
+            </div>
+            <button id="refresh-quarantine" class="button button-secondary button-compact" type="button">
+              <span aria-hidden="true">↻</span> 一覧を更新
+            </button>
+          </div>
+          <p class="section-note">
+            coverage-loop が生成した候補の状態遷移
+            （隔離/却下/採用候補 → 承認 → 実装 → 検証 → 活性化）をここで確認・操作します。
+          </p>
+          <div class="form-grid">
+            <div class="field">
+              <label for="quarantine-revision">改訂</label>
+              <select id="quarantine-revision">
+                <option value="">改訂を選択</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="quarantine-status-filter">状態で絞り込み</label>
+              <select id="quarantine-status-filter">
+                <option value="">すべて</option>
+                <option value="auto_quarantined">隔離（要確認）</option>
+                <option value="auto_rejected">却下</option>
+                <option value="auto_classified">採用候補</option>
+                <option value="auto_approved">承認済み</option>
+                <option value="implemented">実装済み</option>
+                <option value="verified">検証済み</option>
+                <option value="active">活性化済み</option>
+                <option value="no_gap">差分なし</option>
+              </select>
+            </div>
+          </div>
+          <div id="quarantine-list" class="revision-list" aria-live="polite" aria-busy="false">
+            <p class="empty-message">改訂を選択してください。</p>
           </div>
         </section>
       </section>

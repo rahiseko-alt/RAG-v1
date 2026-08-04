@@ -14,6 +14,7 @@ import json
 import statistics
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 from src.knowledge_config import get_active_knowledge
 
@@ -82,12 +83,23 @@ def aggregate(items: list[dict], verdicts: dict) -> dict:
     verdicts 形式: { judge_id: { item_id: {"faithfulness":int, "relevance":int, "no_misinfo":int, "comment":str} } }
     各アイテム×各軸で、評価者間の**中央値・最頻値**を出す（平均は使わない）。
     評価が割れた（スコア幅 >=2）軸は disagreement として列挙し人手サンプリングへ回す。
+
+    アイテムは旧形式（`in_doc: bool`）と層別セット形式（`stratum`/`expected_behavior`）の
+    どちらでも受け付ける。どちらのキーも無ければ集計自体は成立するので必須にしない
+    （`data/eval/stratified-eval-set-v1.json` は `in_doc` を持たない）。
     """
     judges = list(verdicts.keys())
     per_item = []
     for it in items:
-        row = {"id": it["id"], "question": it["question"], "in_doc": it["in_doc"]}
-        axes = {}
+        row: dict[str, Any] = {"id": it["id"], "question": it["question"], "in_doc": it.get("in_doc")}
+        if "stratum" in it:
+            row["stratum"] = it["stratum"]
+        if "expected_behavior" in it:
+            row["expected_behavior"] = it["expected_behavior"]
+        # Values are heterogeneous (list of scores, median, mode), so without the
+        # annotation the inferred value type is a union and `axes[ak]["median"] >= …`
+        # below is a type error rather than a numeric comparison.
+        axes: dict[str, dict[str, Any]] = {}
         disagree = []
         for ak in AXIS_KEYS:
             # 評価者JSONに軸キーが欠けていても落ちないよう 0（未採点扱い）で補完
@@ -111,7 +123,23 @@ def aggregate(items: list[dict], verdicts: dict) -> dict:
 
     n = len(per_item)
     npass = sum(1 for r in per_item if r["pass"])
-    return {"per_item": per_item, "overall": overall, "pass_rate": [npass, n], "judges": judges}
+    result: dict[str, Any] = {
+        "per_item": per_item,
+        "overall": overall,
+        "pass_rate": [npass, n],
+        "judges": judges,
+    }
+
+    strata = sorted({r["stratum"] for r in per_item if "stratum" in r})
+    if strata:
+        result["pass_rate_by_stratum"] = {
+            stratum: [
+                sum(1 for r in per_item if r.get("stratum") == stratum and r["pass"]),
+                sum(1 for r in per_item if r.get("stratum") == stratum),
+            ]
+            for stratum in strata
+        }
+    return result
 
 
 def build_report(items_path, answers_path, verdicts_path, out_html, human_sampling=None) -> str:

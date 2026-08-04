@@ -83,6 +83,28 @@
 - [x] 調整台帳とLangfuse着弾poll
 - [x] 非エンジニア向け [workbench-guide.md](workbench-guide.md)
 
+### Coverage Loop（弱点仮説生成・検証ワークフロー）
+
+- [x] **D判定に失敗原因分類（8種）を追加**（2026-08-01）：`src/coverage_loop.py` の
+  `FactCheckJudgment.failure_cause` と `classify_coverage_item()`。敵対検証で
+  「A/B/C/Dループは『ナレッジ不足確定』ではなく『BがAより弱く見えた差分』しか出さない」
+  「Dが機械的に missing_knowledge 一択にすると誤検知を量産する」と指摘された点への対応
+  （`docs/session-reports/2026-08-01-coverage-loop-design.md`「敵対検証の結果」参照）
+  - 分類は `missing_knowledge` / `retrieval_failure` / `generation_failure` /
+    `chunking_failure`（ナレッジ改善で解ける＝候補化対象）と
+    `ambiguous_question` / `invalid_A` / `out_of_scope`（却下）／`needs_quarantine`（隔離）
+  - `failure_cause` は任意項目。既存の呼び出し元（`failure_cause` 無しの `fact_checks`）は
+    従来ヒューリスティックにフォールバックし、挙動が変わらないことを後方互換テストで確認
+  - 分類が与えられても機械的に信用せず、`external_status != pass` なのに
+    `missing_knowledge` を主張する等の**矛盾は `needs_quarantine` にフェイルクローズ**する
+    （サイレントにナレッジ追加候補化しない）
+  - `LLMFactChecker` のプロンプトに8分類の選択肢と判断基準を追加
+  - `CoverageLoopResult` に `disposition_counts` / `cause_counts` の集計を追加（既存フィールドは
+    非破壊。API のレスポンスモデルは `dict[str, Any]` で厳格スキーマ無し）
+  - テスト: `tests/test_coverage_loop.py`（新規・分類の決定表を1ケース1行でカバー）
+- [ ] 台帳のSQLite永続化、`auto_approved`/`auto_rejected`/`auto_quarantined` の状態遷移、
+  quarantine一覧API/UI（`docs/handoff.md` の次回やる事を参照）
+
 ## LLMプロバイダ切替 — OpenAI対応
 
 状態: 追加（2026-07-30）
