@@ -63,7 +63,7 @@ jobs:
           echo "コミット衛生 OK: $base..HEAD の全コミットが noreply アドレス"
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
