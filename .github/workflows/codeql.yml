@@ -26,7 +26,7 @@ jobs:
         # 設定が見つからず「1 configuration not found」で check が赤くなる。
         language: [python, javascript-typescript]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
