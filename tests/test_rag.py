@@ -135,18 +135,27 @@ def test_bm25_rescue_adds_entity_chunk_when_vector_search_misses_it():
 
 
 def test_rerank_promotes_answer_pattern_over_generic_term_match():
+    """The answer-shaped chunk wins on its wording alone.
+
+    Both documents carry the same entity, the same vector score and the same
+    retrieval metadata, so every other term in `_lexical_rerank_score` cancels out
+    and only the configured intent markers can decide the order. An earlier version
+    of this test gave the answer chunk a bm25 bonus the generic one lacked, and so
+    passed even with the intent config removed entirely.
+    """
+    shared_metadata = {"retrieval_relation": "bm25_rescue", "bm25_score": 2.5}
     generic = Document(
         page_content="術式とは呪力を流して発動する特殊能力。冥冥の名前も別文脈で出る。",
-        metadata={"chunk_id": 1},
+        metadata={"chunk_id": 1, **shared_metadata},
     )
     answer = Document(
         page_content="冥冥は1級術師。烏を操る術式「黒鳥操術」の使い手。",
-        metadata={"chunk_id": 2, "retrieval_relation": "bm25_rescue", "bm25_score": 2.5},
+        metadata={"chunk_id": 2, **shared_metadata},
     )
 
     reranked = rerank_retrieved_documents(
         "冥々の術式は？",
-        [(generic, 0.99), (answer, 0.80)],
+        [(generic, 0.99), (answer, 0.99)],
         max_results=2,
     )
 

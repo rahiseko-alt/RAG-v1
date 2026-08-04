@@ -31,7 +31,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langgraph.graph import END, START, StateGraph
 
 from src.ingest import CHUNK_OVERLAP, CHUNK_SIZE, load_and_chunk, source_sha256
-from src.knowledge_config import get_active_knowledge
+from src.knowledge_config import LexicalProfile, get_active_knowledge, get_lexical_profile
 from src.observability import build_langfuse_runnable_config
 
 load_dotenv()  # リポジトリ直下 .env の ANTHROPIC_API_KEY 等を環境変数へ
@@ -346,44 +346,28 @@ def _expand_iteration_marks(value: str) -> str:
     return "".join(chars)
 
 
-def _query_terms(question: str) -> list[str]:
+def _query_terms(question: str, *, profile: LexicalProfile | None = None) -> list[str]:
+    lexical = profile or get_lexical_profile()
     normalized = _expand_iteration_marks(question)
     pieces = re.split(r"[\s、。！？!?・/／（）()「」『』【】\[\]のはがをにへでとやもかからまで]+", normalized)
-    stop_terms = {
-        "です",
-        "ます",
-        "する",
-        "した",
-        "して",
-        "どんな",
-        "なぜ",
-        "理由",
-        "教えて",
-        "について",
-        "呪術廻戦",
-    }
     terms: list[str] = []
     for piece in pieces:
         term = piece.strip()
-        if len(term) < 2 or term in stop_terms:
+        if len(term) < 2 or term in lexical.stop_terms:
             continue
         if term not in terms:
             terms.append(term)
     return terms
 
 
-def _intent_terms(question: str) -> set[str]:
+def _intent_terms(question: str, *, profile: LexicalProfile | None = None) -> set[str]:
+    lexical = profile or get_lexical_profile()
     normalized = _expand_iteration_marks(question)
-    intents: set[str] = set()
-    if "術式" in normalized:
-        intents.add("technique")
-    if "領域" in normalized:
-        intents.add("domain")
-    if "声優" in normalized or "声" in normalized:
-        intents.add("voice_actor")
-    if "作者" in normalized or "原作者" in normalized:
-        intents.add("creator")
-    return intents
+    return {
+        intent.name
+        for intent in lexical.intents
+        if any(trigger in normalized for trigger in intent.triggers)
+    }
 
 
 def _term_positions(text: str, term: str) -> list[int]:
@@ -413,12 +397,18 @@ def _minimum_distance(text: str, left_terms: list[str], right_terms: list[str]) 
     return min(abs(left - right) for left in left_positions for right in right_positions)
 
 
-def _lexical_rerank_score(question: str, document: Document, vector_score: float) -> float:
+def _lexical_rerank_score(
+    question: str,
+    document: Document,
+    vector_score: float,
+    *,
+    profile: LexicalProfile | None = None,
+) -> float:
+    lexical = profile or get_lexical_profile()
     text = _expand_iteration_marks(document.page_content)
-    terms = _query_terms(question)
-    intents = _intent_terms(question)
-    generic_terms = {"術式", "領域", "名セリフ", "セリフ", "理由", "誰", "何"}
-    entity_terms = [term for term in terms if term not in generic_terms]
+    terms = _query_terms(question, profile=lexical)
+    intents = _intent_terms(question, profile=lexical)
+    entity_terms = [term for term in terms if term not in lexical.generic_terms]
     matched_entities = [term for term in entity_terms if term in text]
     matched_terms = [term for term in terms if term in text]
 
@@ -428,25 +418,22 @@ def _lexical_rerank_score(question: str, document: Document, vector_score: float
     if terms and len(matched_terms) == len(terms):
         score += 4
 
-    if "technique" in intents:
-        technique_markers = [
-            "術式「",
-            "術式は",
-            "術式:",
-            "術式：",
-            "使い手",
-            "操術",
-            "呪法",
-        ]
-        marker_hits = [marker for marker in technique_markers if marker in text]
+    for intent in lexical.intents:
+        if intent.name not in intents:
+            continue
+        marker_hits = [marker for marker in intent.markers if marker in text]
         score += min(12, len(marker_hits) * 3)
-        if "術式「" in text and "使い手" in text:
-            score += 5
-        distance = _minimum_distance(text, entity_terms, ["術式", "操術", "呪法", "使い手"])
-        if distance is not None:
-            score += max(0.0, 10.0 - (distance / 50.0))
-        if "反転術式" in text and not matched_entities:
-            score -= 8
+        for group in intent.paired_markers:
+            if group and all(marker in text for marker in group):
+                score += 5
+        if intent.proximity_terms:
+            distance = _minimum_distance(text, entity_terms, list(intent.proximity_terms))
+            if distance is not None:
+                score += max(0.0, 10.0 - (distance / 50.0))
+        if not matched_entities:
+            for demoted in intent.demoted_terms:
+                if demoted in text:
+                    score -= 8
 
     relation = str(document.metadata.get("retrieval_relation") or "")
     bm25_score = float(document.metadata.get("bm25_score") or 0)
@@ -467,9 +454,12 @@ def rerank_retrieved_documents(
     max_results: int,
 ) -> list[tuple[Document, float]]:
     """Combine vector similarity with lexical intent signals for final context order."""
+    # Resolved once per call: scoring is per document, and the profile is identical
+    # across them.
+    lexical = get_lexical_profile()
     ranked = [
         (
-            _lexical_rerank_score(question, document, float(score)),
+            _lexical_rerank_score(question, document, float(score), profile=lexical),
             index,
             document,
             float(score),

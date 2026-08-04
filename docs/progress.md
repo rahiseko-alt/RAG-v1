@@ -32,6 +32,7 @@
 状態: コアRAG＋CLI＋教材ノート＋FastAPI＋透明型RAG UI 完了。ナレッジ設定分離まで実装（2026-07-31）
 
 - [x] 既定の検索対象を `config/knowledge.toml` で管理。本文、出典URL、ライセンス、評価セット、Chroma collection、例示質問をコード外へ分離
+- [x] 再ランキングのドメイン語彙（除外語・意図判定・加点する語形）を同ファイルの `[lexical]` 節へ分離。`src/rag` から特定ナレッジの語を除去
 - [x] 対象文書を選定: **WHO HEARTS「Healthy-lifestyle counselling」**（30ページ・CC BY-NC-SA 3.0 IGO・再配布可をライセンス検証）。`data/sample/who-hearts-healthy-lifestyle-counselling.pdf`（データカードは data/sample/README.md）
 - [x] チャンク分割・埋め込み・Chroma格納: `src/ingest`（pypdf＋RecursiveCharacterTextSplitter・30ページ→71チャンク・出典metadata付き）／`src/rag`（多言語埋め込み intfloat/multilingual-e5-small・Chroma cosine・`chroma/`に永続化）
 - [x] LangGraphで検索→生成フロー: `src/rag` の StateGraph（retrieve→generate）。生成は OpenAI / Anthropic を `LLM_PROVIDER` で切替可能。既定は OpenAI（`gpt-5.6-sol`）で、文脈のみ根拠に日本語回答＋引用
