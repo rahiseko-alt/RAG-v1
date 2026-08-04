@@ -2,7 +2,7 @@
 
 登録済みナレッジ文書に対する質問応答システム（RAG）と、その回答品質評価結果を集計・可視化する仕組みを組み合わせたプロジェクトです。
 
-> **現在の状態: 単一PC向け品質改善ワークベンチ。** 回答照合、fail-closed出荷停止、SQLite版管理、before/after、全件回帰検査、承認・却下、調整台帳、Langfuse着弾確認、非エンジニア向け4タブUIまで実装済みです。現在地は [docs/current-plan-report.md](docs/current-plan-report.md)、操作と判断基準は [docs/workbench-guide.md](docs/workbench-guide.md) にまとめています。
+> **現在の状態: 単一PC向け品質改善ワークベンチ。** 回答照合、fail-closed出荷停止、SQLite版管理、before/after、全件回帰検査、承認・却下、調整台帳、Langfuse着弾確認、非エンジニア向け5タブUI（隔離一覧を含む）まで実装済みです。現在地は [docs/current-plan-report.md](docs/current-plan-report.md)、操作と判断基準は [docs/workbench-guide.md](docs/workbench-guide.md) にまとめています。
 
 > **注意:** このプロジェクトは学習・ポートフォリオ用デモです。現在の既定ナレッジは `config/knowledge.toml` で指定されています。原典確認や専門判断を置き換えるものではありません。
 
@@ -171,7 +171,7 @@ FastAPIデモは以下で起動できます。
 uv run uvicorn src.api:app --host 127.0.0.1 --port 8010
 ```
 
-- `GET /`: 4タブ品質改善ワークベンチ
+- `GET /`: 5タブ品質改善ワークベンチ
 - `POST /ask`: 質問、回答照合、出荷判定、監査記録
 - `POST /runs`: 非同期run作成
 - `GET /runs/{id}` / `GET /runs/{id}/events`: run状態とSSE工程イベント
@@ -205,7 +205,7 @@ uv run pytest tests/e2e -m e2e
 | 1 | 失敗原因分類器の精度検証 | 完了（22/27・81.5%。`chunking_failure` のみ未検証） |
 | 2 | ループを閉じる（候補→改訂→検証→採用の状態遷移） | 完了 |
 | 3 | 隔離一覧UI・APIの穴埋め・品質ゲートの実証 | 完了 |
-| 4 | ドメイン移植性と統治（既定ナレッジの外出し・依存脆弱性ゲート・branch protection） | 未着手 |
+| 4 | ドメイン移植性と統治 | 統治は完了（branch protection・secret scanning・コミット衛生ゲート）。**ドメイン用語の外出しと依存脆弱性ゲートが未着手** |
 | 5 | 納品検証（ドキュメント整合・クリーンcloneでの再現確認） | 未着手 |
 
 ## 監査ログ
