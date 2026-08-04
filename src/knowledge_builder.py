@@ -14,7 +14,7 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from src.knowledge_config import PRODUCT_ROOT
 
@@ -354,7 +354,10 @@ def fetch_youtube(spec: SourceSpec) -> list[FetchedPage]:
     return [_fetched_page(spec, url=spec.url, title=title, text="\n\n".join(lines))]
 
 
-FETCHERS = {
+# Annotated rather than inferred: fetchers return either a plain page list or a
+# FetchBatch, and the inferred join of those signatures collapses to `object`, which
+# makes the non-batch branch in `build_knowledge` untypeable.
+FETCHERS: dict[str, Callable[[SourceSpec], list[FetchedPage] | FetchBatch]] = {
     "crawl": fetch_crawl,
     "local": fetch_local,
     "reddit": fetch_reddit,

@@ -1,0 +1,364 @@
+{
+  "gold_set": "data/eval/classifier-gold-set-v1.json",
+  "gold_set_meta": {
+    "chunks_indexed": 41,
+    "engine_fingerprint": "e997d91a8692f2dcbaefc290c873731d0b1748cf4d33979e125e8e9f3268175a",
+    "eval_set": "data/eval/stratified-eval-set-v1.json",
+    "generated_by": "scripts.build_classifier_gold_set",
+    "per_label": 6,
+    "revision_id": "7d6f3cfd902d46508a3b10899ee76c05",
+    "shortfalls": {
+      "chunking_failure": 5,
+      "retrieval_failure": 4
+    },
+    "source_sha256": "48682c7b526ad08eafa5ae38b5b1254767b2e53017d4660d235cb74ab6dcebb2"
+  },
+  "summary": {
+    "total": 27,
+    "correct": 22,
+    "accuracy": 0.8148148148148148,
+    "confusion_matrix": {
+      "retrieval_failure": {
+        "retrieval_failure": 4
+      },
+      "missing_knowledge": {
+        "missing_knowledge": 6
+      },
+      "generation_failure": {
+        "generation_failure": 6
+      },
+      "chunking_failure": {
+        "generation_failure": 5
+      },
+      "invalid_A": {
+        "invalid_A": 6
+      }
+    },
+    "by_label": {
+      "chunking_failure": {
+        "support": 5,
+        "precision": null,
+        "recall": 0.0
+      },
+      "generation_failure": {
+        "support": 6,
+        "precision": 0.5454545454545454,
+        "recall": 1.0
+      },
+      "invalid_A": {
+        "support": 6,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "missing_knowledge": {
+        "support": 6,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "retrieval_failure": {
+        "support": 4,
+        "precision": 1.0,
+        "recall": 1.0
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "G-RETRIEVAL-01",
+      "source_id": "E-12",
+      "question": "西宮桃は何に乗って空中を移動しますか。",
+      "gold_cause": "retrieval_failure",
+      "predicted_cause": "retrieval_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as fail / Step 1: surfaced chunks 9 and 11 both only list 西宮桃 as a name among Kyoto-school characters (org roster / arc summary); neither states how she moves through the air, and together they still don't cover it, so generation_failure/chunking_failure are ruled out. Step 2: corpus_probe shows '京都校三年' and '使った空中機動' are present_but_unsurfaced, both traced to chunk 14 only — which matches A's cited source (corpus-chunk:14) verbatim. The fact exists in the corpus but retrieval surfaced chunks 9/11 instead of chunk 14.",
+      "judgment_reason": "Step 1: surfaced chunks 9 and 11 both only list 西宮桃 as a name among Kyoto-school characters (org roster / arc summary); neither states how she moves through the air, and together they still don't cover it, so generation_failure/chunking_failure are ruled out. Step 2: corpus_probe shows '京都校三年' and '使った空中機動' are present_but_unsurfaced, both traced to chunk 14 only — which matches A's cited source (corpus-chunk:14) verbatim. The fact exists in the corpus but retrieval surfaced chunks 9/11 instead of chunk 14."
+    },
+    {
+      "id": "G-RETRIEVAL-02",
+      "source_id": "E-13",
+      "question": "両面宿儺は作中でどんな異名で呼ばれていますか。",
+      "gold_cause": "retrieval_failure",
+      "predicted_cause": "retrieval_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as fail / Step 1: the single surfaced chunk (29) discusses domain-expansion clash mechanics and end-game fan discourse; it never mentions any epithet for 両面宿儺, so it doesn't answer the question and generation_failure/chunking_failure don't apply. Step 2: corpus_probe shows '両面宿儺' and '呼ばれる' are both present_but_unsurfaced and co-occur only in chunk 15, matching A's cited source (corpus-chunk:15, span '両面宿儺は「呪いの王」と呼ばれる') verbatim. The fact exists in the corpus but retrieval surfaced chunk 29 instead of chunk 15.",
+      "judgment_reason": "Step 1: the single surfaced chunk (29) discusses domain-expansion clash mechanics and end-game fan discourse; it never mentions any epithet for 両面宿儺, so it doesn't answer the question and generation_failure/chunking_failure don't apply. Step 2: corpus_probe shows '両面宿儺' and '呼ばれる' are both present_but_unsurfaced and co-occur only in chunk 15, matching A's cited source (corpus-chunk:15, span '両面宿儺は「呪いの王」と呼ばれる') verbatim. The fact exists in the corpus but retrieval surfaced chunk 29 instead of chunk 15."
+    },
+    {
+      "id": "G-RETRIEVAL-03",
+      "source_id": "E-17",
+      "question": "黒閃は、どんな条件がそろったときに起きる現象ですか。",
+      "gold_cause": "retrieval_failure",
+      "predicted_cause": "retrieval_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as fail / Step 1: surfaced chunk 12 only notes that 虎杖 has 'experienced' 黒閃 and is strong in melee; chunk 34 only lists 黒閃 among Power System terms to be explained elsewhere. Neither, alone or combined, states the triggering condition, so generation_failure/chunking_failure don't apply. Step 2: corpus_probe shows '衝突', '極めて短い時間差', '起きた時', '発生する現象' are all present_but_unsurfaced and traced only to chunk 18, matching A's cited source (corpus-chunk:18, span '打撃と呪力の衝突が極めて短い時間差で起きた時に発生する現象') verbatim. The definitional fact exists in the corpus but retrieval surfaced chunks 12/34 instead of chunk 18.",
+      "judgment_reason": "Step 1: surfaced chunk 12 only notes that 虎杖 has 'experienced' 黒閃 and is strong in melee; chunk 34 only lists 黒閃 among Power System terms to be explained elsewhere. Neither, alone or combined, states the triggering condition, so generation_failure/chunking_failure don't apply. Step 2: corpus_probe shows '衝突', '極めて短い時間差', '起きた時', '発生する現象' are all present_but_unsurfaced and traced only to chunk 18, matching A's cited source (corpus-chunk:18, span '打撃と呪力の衝突が極めて短い時間差で起きた時に発生する現象') verbatim. The definitional fact exists in the corpus but retrieval surfaced chunks 12/34 instead of chunk 18."
+    },
+    {
+      "id": "G-RETRIEVAL-04",
+      "source_id": "E-19",
+      "question": "伏黒恵の式神のうち、相手に適応していく能力で知られるのはどれですか。",
+      "gold_cause": "retrieval_failure",
+      "predicted_cause": "retrieval_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as abstain / Step 1: the only surfaced chunk (chunk_id 22) is about 領域展開 (domain expansions) for various characters, including 伏黒恵の嵌合暗翳庭 — it never discusses shikigami or adaptation ability, so it does not answer the question even partially; this rules out generation_failure and chunking_failure. Step 2: corpus_probe shows '魔虚羅' and '適応能力' are present_but_unsurfaced (chunk_id 20), and A's evidence (corpus-chunk:20, source_type official) quotes the exact sentence '魔虚羅は適応能力を持つ強力な式神として知られる' which matches chunk 20's real content per the probe. The fact exists in the corpus but the retriever never surfaced chunk 20 for this query, so this is retrieval_failure, not missing_knowledge.",
+      "judgment_reason": "Step 1: the only surfaced chunk (chunk_id 22) is about 領域展開 (domain expansions) for various characters, including 伏黒恵の嵌合暗翳庭 — it never discusses shikigami or adaptation ability, so it does not answer the question even partially; this rules out generation_failure and chunking_failure. Step 2: corpus_probe shows '魔虚羅' and '適応能力' are present_but_unsurfaced (chunk_id 20), and A's evidence (corpus-chunk:20, source_type official) quotes the exact sentence '魔虚羅は適応能力を持つ強力な式神として知られる' which matches chunk 20's real content per the probe. The fact exists in the corpus but the retriever never surfaced chunk 20 for this query, so this is retrieval_failure, not missing_knowledge."
+    },
+    {
+      "id": "G-MISSING-01",
+      "source_id": "U-01",
+      "question": "五条悟の誕生日はいつですか。",
+      "gold_cause": "missing_knowledge",
+      "predicted_cause": "missing_knowledge",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as abstain / 五条悟の誕生日（生年月日）に関する記述をナレッジに追加する。 / Step 1: all 24 surfaced chunks (extensive character/story/technique summaries) contain zero mention of Gojo's birthday, not even partially, so generation_failure and chunking_failure are ruled out. Step 2: corpus_probe shows '誕生日' and '12月7日' both have corpus_hit_count 0 across the WHOLE 41-chunk corpus (absent_from_corpus, not merely unsurfaced) — the fact is not encoded anywhere in the knowledge base, so this is missing_knowledge rather than retrieval_failure.",
+      "judgment_reason": "Step 1: all 24 surfaced chunks (extensive character/story/technique summaries) contain zero mention of Gojo's birthday, not even partially, so generation_failure and chunking_failure are ruled out. Step 2: corpus_probe shows '誕生日' and '12月7日' both have corpus_hit_count 0 across the WHOLE 41-chunk corpus (absent_from_corpus, not merely unsurfaced) — the fact is not encoded anywhere in the knowledge base, so this is missing_knowledge rather than retrieval_failure."
+    },
+    {
+      "id": "G-MISSING-02",
+      "source_id": "U-05",
+      "question": "パンダは核をいくつ持っていますか。",
+      "gold_cause": "missing_knowledge",
+      "predicted_cause": "missing_knowledge",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as abstain / パンダ（呪骸）が持つ核の具体的な数（3つ）をナレッジに追加する。現状は『複数の核を持つ呪骸』とのみ記載されている。 / Step 1: surfaced chunk_id 13 states パンダ is '複数の核を持つ呪骸' (has multiple cores) — this answers only part of the question (confirms plurality) but not the exact count of 3, so per the partial-answer rule I carry the unresolved part (the specific number) to step 2. Step 2: corpus_probe shows both 'いくつ持ってい' and '3つ持つ' have corpus_hit_count 0 across the whole corpus (absent_from_corpus, no present_but_unsurfaced hits) — no chunk anywhere states a specific core count, so the specific number is missing_knowledge rather than retrieval_failure or chunking_failure.",
+      "judgment_reason": "Step 1: surfaced chunk_id 13 states パンダ is '複数の核を持つ呪骸' (has multiple cores) — this answers only part of the question (confirms plurality) but not the exact count of 3, so per the partial-answer rule I carry the unresolved part (the specific number) to step 2. Step 2: corpus_probe shows both 'いくつ持ってい' and '3つ持つ' have corpus_hit_count 0 across the whole corpus (absent_from_corpus, no present_but_unsurfaced hits) — no chunk anywhere states a specific core count, so the specific number is missing_knowledge rather than retrieval_failure or chunking_failure."
+    },
+    {
+      "id": "G-MISSING-03",
+      "source_id": "U-09",
+      "question": "魔虚羅は同じ攻撃を何回受けると適応が完了するのですか。",
+      "gold_cause": "missing_knowledge",
+      "predicted_cause": "missing_knowledge",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as abstain / 魔虚羅が同じ攻撃を何回受けると適応が完了するか、という具体的な回数についての記述をナレッジに追加する。 / Step 1: all surfaced_texts (ranks 1-20) were read in full; multiple chunks (36,37,31,28,35,20,12) discuss 魔虚羅 and its 適応 in the context of fan/YouTube commentary, but none of them, individually or combined, states any number of hits required to complete adaptation — so this is not generation_failure and not chunking_failure (there is no partial fact split across chunks, it's simply absent everywhere). Step 2: corpus_probe shows corpus_hit_count for '魔虚羅' is 7 and surfaced_hit_count is also 7 (identical chunk id sets) — i.e. every chunk in the whole 41-chunk corpus that mentions 魔虚羅 was already surfaced, so there is no unsurfaced chunk that could contain the answer (present_but_unsurfaced is empty), ruling out retrieval_failure. The count-specific terms ('何回受ける','同じ攻撃','8回受ける','完了する') are absent from the whole corpus (corpus_hit_count 0), consistent with the corpus never having recorded this specific numeric fact. A's answer is a specific, internally coherent claim backed by a cited reliable_secondary reference, so it is usable as an external answer; B correctly abstained since the knowledge base has nothing on this point.",
+      "judgment_reason": "Step 1: all surfaced_texts (ranks 1-20) were read in full; multiple chunks (36,37,31,28,35,20,12) discuss 魔虚羅 and its 適応 in the context of fan/YouTube commentary, but none of them, individually or combined, states any number of hits required to complete adaptation — so this is not generation_failure and not chunking_failure (there is no partial fact split across chunks, it's simply absent everywhere). Step 2: corpus_probe shows corpus_hit_count for '魔虚羅' is 7 and surfaced_hit_count is also 7 (identical chunk id sets) — i.e. every chunk in the whole 41-chunk corpus that mentions 魔虚羅 was already surfaced, so there is no unsurfaced chunk that could contain the answer (present_but_unsurfaced is empty), ruling out retrieval_failure. The count-specific terms ('何回受ける','同じ攻撃','8回受ける','完了する') are absent from the whole corpus (corpus_hit_count 0), consistent with the corpus never having recorded this specific numeric fact. A's answer is a specific, internally coherent claim backed by a cited reliable_secondary reference, so it is usable as an external answer; B correctly abstained since the knowledge base has nothing on this point."
+    },
+    {
+      "id": "G-MISSING-04",
+      "source_id": "U-10",
+      "question": "TVアニメ『呪術廻戦』第1期の監督は誰ですか。",
+      "gold_cause": "missing_knowledge",
+      "predicted_cause": "missing_knowledge",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as abstain / TVアニメ『呪術廻戦』第1期の監督名（スタッフ・制作クレジット情報）をナレッジに追加する。 / Step 1: surfaced_texts include chunk 23, which has the full '## アニメ展開' section ('TVアニメ『呪術廻戦』はMAPPA制作。第1期は2020年10月から2021年3月まで放送され...') and chunk 24 continues with season 2/3/4 dates — these give studio and broadcast dates but never name a director, and no other surfaced chunk mentions staff/director either, so this is not generation_failure and there's no partial-fact-split pattern to call chunking_failure. Step 2: corpus_probe shows '監督' (director) has corpus_hit_count 0 across the entire 41-chunk corpus — the word never appears anywhere, not just in unsurfaced chunks — and 'TVアニメ'/'第1期' are already fully surfaced (3/3 and 2/2). present_but_unsurfaced is empty, ruling out retrieval_failure. This supports missing_knowledge: the corpus simply never recorded director/staff information. A's claim is specific and cites a reliable_secondary reference, making it a usable external answer; B correctly abstained.",
+      "judgment_reason": "Step 1: surfaced_texts include chunk 23, which has the full '## アニメ展開' section ('TVアニメ『呪術廻戦』はMAPPA制作。第1期は2020年10月から2021年3月まで放送され...') and chunk 24 continues with season 2/3/4 dates — these give studio and broadcast dates but never name a director, and no other surfaced chunk mentions staff/director either, so this is not generation_failure and there's no partial-fact-split pattern to call chunking_failure. Step 2: corpus_probe shows '監督' (director) has corpus_hit_count 0 across the entire 41-chunk corpus — the word never appears anywhere, not just in unsurfaced chunks — and 'TVアニメ'/'第1期' are already fully surfaced (3/3 and 2/2). present_but_unsurfaced is empty, ruling out retrieval_failure. This supports missing_knowledge: the corpus simply never recorded director/staff information. A's claim is specific and cites a reliable_secondary reference, making it a usable external answer; B correctly abstained."
+    },
+    {
+      "id": "G-MISSING-05",
+      "source_id": "U-11",
+      "question": "劇場版『呪術廻戦 0』の興行収入はいくらでしたか。",
+      "gold_cause": "missing_knowledge",
+      "predicted_cause": "missing_knowledge",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as abstain / 劇場版『呪術廻戦 0』の興行収入（金額）をナレッジに追加する。 / Step 1: surfaced_texts include chunk 23 ('劇場版『呪術廻戦 0』は2021年12月24日に公開された。前日譚『0』を原作とし、乙骨憂太と祈本里香、夏油傑の物語を扱う。') and chunk 25's '## 反響' section (which gives manga circulation figures, not box office) — read in full, neither this nor any other surfaced chunk mentions box office revenue, so this is not generation_failure, and there is no fragment-of-the-fact pattern across chunks to call chunking_failure. Step 2: corpus_probe shows '興行収入' (box office revenue) has corpus_hit_count 0 across the whole 41-chunk corpus — never appears anywhere — while '劇場版' is already fully surfaced (2/2, present_but_unsurfaced empty), ruling out retrieval_failure. This supports missing_knowledge: the corpus records the release date and story summary of the film but never recorded any revenue figures. A's claim is specific and cites a reliable_secondary reference, making it a usable external answer; B correctly abstained.",
+      "judgment_reason": "Step 1: surfaced_texts include chunk 23 ('劇場版『呪術廻戦 0』は2021年12月24日に公開された。前日譚『0』を原作とし、乙骨憂太と祈本里香、夏油傑の物語を扱う。') and chunk 25's '## 反響' section (which gives manga circulation figures, not box office) — read in full, neither this nor any other surfaced chunk mentions box office revenue, so this is not generation_failure, and there is no fragment-of-the-fact pattern across chunks to call chunking_failure. Step 2: corpus_probe shows '興行収入' (box office revenue) has corpus_hit_count 0 across the whole 41-chunk corpus — never appears anywhere — while '劇場版' is already fully surfaced (2/2, present_but_unsurfaced empty), ruling out retrieval_failure. This supports missing_knowledge: the corpus records the release date and story summary of the film but never recorded any revenue figures. A's claim is specific and cites a reliable_secondary reference, making it a usable external answer; B correctly abstained."
+    },
+    {
+      "id": "G-MISSING-06",
+      "source_id": "U-12",
+      "question": "『呪術廻戦』単行本第1巻の発売日はいつですか。",
+      "gold_cause": "missing_knowledge",
+      "predicted_cause": "missing_knowledge",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as abstain / 『呪術廻戦』単行本第1巻の具体的な発売日（日付）をナレッジに追加する。 / Step 1: read all 14 surfaced_texts in full; none mention a release date for volume 1 (chunk 6 only gives the serialization run 2018年14号~2024年44号 and total volume count; chunk 7 gives fanbook/movie release dates, not volume 1). No single chunk nor combination of chunks carries this fact, so it is not generation_failure or chunking_failure. Step 2: corpus_probe is present, not truncated, and all three probed terms tied to the disputed fact (単行本第1巻, 発売日, 2018年3月2日) have corpus_hit_count 0 — absent from the whole 41-chunk corpus, not just the surfaced set. That supports missing_knowledge over retrieval_failure. A's claim is a single basic, internally coherent factual statement (though unsourced in the sources list), so external_status passes conservatively; B correctly abstained ('記載がありません') given the corpus lacks the fact.",
+      "judgment_reason": "Step 1: read all 14 surfaced_texts in full; none mention a release date for volume 1 (chunk 6 only gives the serialization run 2018年14号~2024年44号 and total volume count; chunk 7 gives fanbook/movie release dates, not volume 1). No single chunk nor combination of chunks carries this fact, so it is not generation_failure or chunking_failure. Step 2: corpus_probe is present, not truncated, and all three probed terms tied to the disputed fact (単行本第1巻, 発売日, 2018年3月2日) have corpus_hit_count 0 — absent from the whole 41-chunk corpus, not just the surfaced set. That supports missing_knowledge over retrieval_failure. A's claim is a single basic, internally coherent factual statement (though unsourced in the sources list), so external_status passes conservatively; B correctly abstained ('記載がありません') given the corpus lacks the fact."
+    },
+    {
+      "id": "G-GENERATION-01",
+      "source_id": "E-20",
+      "question": "投射呪法は、どのような戦い方をする術式ですか。",
+      "gold_cause": "generation_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as fail / Step 1 settles it: surfaced_texts rank 1 (chunk_id 21) contains verbatim '投射呪法は禪院直毘人や禪院直哉に関わる術式。動きをフレームに分けるような高速戦闘が特徴。', which directly and fully answers the question about 投射呪法's fighting style, matching A's answer exactly. B was handed this chunk yet answered '記載がありません' (not stated), so B ignored evidence it already had. A's answer cites corpus-chunk:21 as an official-source span matching that same text, so external_status passes.",
+      "judgment_reason": "Step 1 settles it: surfaced_texts rank 1 (chunk_id 21) contains verbatim '投射呪法は禪院直毘人や禪院直哉に関わる術式。動きをフレームに分けるような高速戦闘が特徴。', which directly and fully answers the question about 投射呪法's fighting style, matching A's answer exactly. B was handed this chunk yet answered '記載がありません' (not stated), so B ignored evidence it already had. A's answer cites corpus-chunk:21 as an official-source span matching that same text, so external_status passes."
+    },
+    {
+      "id": "G-GENERATION-02",
+      "source_id": "E-21",
+      "question": "漏瑚が展開する領域には、どんな名前が付いていますか。",
+      "gold_cause": "generation_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as fail / Step 1 settles it: surfaced_texts rank 2 (chunk_id 22) contains verbatim '漏瑚の蓋棺鉄囲山は、火山・熱に関係する領域。', which directly names 漏瑚's domain expansion as asked. B was handed this chunk yet answered '記載がありません' (not stated), so B ignored a retrieved chunk that already carried the fact. A's answer cites corpus-chunk:22 as an official-source span matching that same text, so external_status passes.",
+      "judgment_reason": "Step 1 settles it: surfaced_texts rank 2 (chunk_id 22) contains verbatim '漏瑚の蓋棺鉄囲山は、火山・熱に関係する領域。', which directly names 漏瑚's domain expansion as asked. B was handed this chunk yet answered '記載がありません' (not stated), so B ignored a retrieved chunk that already carried the fact. A's answer cites corpus-chunk:22 as an official-source span matching that same text, so external_status passes."
+    },
+    {
+      "id": "G-GENERATION-03",
+      "source_id": "E-22",
+      "question": "TVアニメ版を制作しているスタジオはどこですか。",
+      "gold_cause": "generation_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as fail / surfaced_texts rank18 (chunk_id 23) contains the sentence \"TVアニメ『呪術廻戦』はMAPPA制作。\" verbatim, which directly answers the question. B was handed this chunk (retrieved and surfaced, unresolved:false) but answered '記載がありません' instead of using it. Step 1 of evidence_order resolves this without needing the corpus_probe.",
+      "judgment_reason": "surfaced_texts rank18 (chunk_id 23) contains the sentence \"TVアニメ『呪術廻戦』はMAPPA制作。\" verbatim, which directly answers the question. B was handed this chunk (retrieved and surfaced, unresolved:false) but answered '記載がありません' instead of using it. Step 1 of evidence_order resolves this without needing the corpus_probe."
+    },
+    {
+      "id": "G-GENERATION-04",
+      "source_id": "E-23",
+      "question": "アニメの第3期は、いつ放送されたとされていますか。",
+      "gold_cause": "generation_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as fail / surfaced_texts rank1 (chunk_id 24) contains \"第3期「死滅回游 前編」は2026年1月から3月まで放送されたとされる。\" verbatim, directly answering the question. This chunk was the top-ranked retrieved chunk and was fully surfaced (unresolved:false), yet B answered '記載がありません'. Step 1 of evidence_order resolves this; corpus_probe not needed (and it corroborates, showing all relevant terms present_in_surfaced).",
+      "judgment_reason": "surfaced_texts rank1 (chunk_id 24) contains \"第3期「死滅回游 前編」は2026年1月から3月まで放送されたとされる。\" verbatim, directly answering the question. This chunk was the top-ranked retrieved chunk and was fully surfaced (unresolved:false), yet B answered '記載がありません'. Step 1 of evidence_order resolves this; corpus_probe not needed (and it corroborates, showing all relevant terms present_in_surfaced)."
+    },
+    {
+      "id": "G-GENERATION-05",
+      "source_id": "E-24",
+      "question": "このシリーズの単行本は、これまでにどれくらい売れているとされていますか。",
+      "gold_cause": "generation_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as fail / surfaced_texts rank2 (chunk_id 25) contains \"シリーズは大きな反響を得た。Wikipediaでは2025年12月時点でシリーズ累計発行部数が1億5000万部を突破していると記載されている。\" which directly answers the question about total volume sales. This chunk was retrieved (rank2, score 0.837) and fully surfaced (unresolved:false), yet B answered '記載がありません'. Step 1 of evidence_order resolves this without needing corpus_probe.",
+      "judgment_reason": "surfaced_texts rank2 (chunk_id 25) contains \"シリーズは大きな反響を得た。Wikipediaでは2025年12月時点でシリーズ累計発行部数が1億5000万部を突破していると記載されている。\" which directly answers the question about total volume sales. This chunk was retrieved (rank2, score 0.837) and fully surfaced (unresolved:false), yet B answered '記載がありません'. Step 1 of evidence_order resolves this without needing corpus_probe."
+    },
+    {
+      "id": "G-GENERATION-06",
+      "source_id": "E-25",
+      "question": "領域展開は、英語圏の解説ではどんな語に対応させると探しやすいですか。",
+      "gold_cause": "generation_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": true,
+      "disposition": "add_candidate",
+      "disposition_reason": "B abstained / D judged B as fail / surfaced_texts rank 1 (chunk 34) contains the exact sentence 'Cursed Energy は呪力、Cursed Technique は術式、Domain Expansion は領域展開、...として対応させると検索しやすい', which directly answers the question about which English term to map 領域展開 to for easy searching. B still answered '記載がありません' despite this chunk being handed to it, so the cause is generation ignoring a retrieved chunk, not missing knowledge.",
+      "judgment_reason": "surfaced_texts rank 1 (chunk 34) contains the exact sentence 'Cursed Energy は呪力、Cursed Technique は術式、Domain Expansion は領域展開、...として対応させると検索しやすい', which directly answers the question about which English term to map 領域展開 to for easy searching. B still answered '記載がありません' despite this chunk being handed to it, so the cause is generation ignoring a retrieved chunk, not missing knowledge."
+    },
+    {
+      "id": "G-CHUNKING-01",
+      "source_id": "M-03",
+      "question": "赤血操術を使う人物として名前が挙がる二人は、それぞれどんな立場・出自ですか。",
+      "gold_cause": "chunking_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": false,
+      "disposition": "add_candidate",
+      "disposition_reason": "D judged B as fail / The question asks about both people who use 赤血操術. B's answer only covers 加茂憲紀 (from surfaced chunk 14). But surfaced_texts rank 4 (chunk 16) contains a complete, self-sufficient sentence for the other person: '脹相は呪胎九相図の一人。赤血操術を使い、壊相・血塗を兄弟として大切にする。' This single chunk fully answers the 脹相 half of the question on its own (not split across chunks), yet B omitted it entirely despite having it surfaced, so this is generation ignoring a retrieved chunk rather than chunking splitting the fact.",
+      "judgment_reason": "The question asks about both people who use 赤血操術. B's answer only covers 加茂憲紀 (from surfaced chunk 14). But surfaced_texts rank 4 (chunk 16) contains a complete, self-sufficient sentence for the other person: '脹相は呪胎九相図の一人。赤血操術を使い、壊相・血塗を兄弟として大切にする。' This single chunk fully answers the 脹相 half of the question on its own (not split across chunks), yet B omitted it entirely despite having it surfaced, so this is generation ignoring a retrieved chunk rather than chunking splitting the fact."
+    },
+    {
+      "id": "G-CHUNKING-02",
+      "source_id": "M-07",
+      "question": "簡易領域は何のための技術ですか。また、それを使う京都校の生徒は誰で何年生ですか。",
+      "gold_cause": "chunking_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": false,
+      "disposition": "add_candidate",
+      "disposition_reason": "D judged B as fail / The question has two parts: what 簡易領域 is for, and which Kyoto-school student uses it and what grade. B answered only the first part (chunk 18, rank 3: '簡易領域: 領域への対抗策の一つ。必中効果を中和するなど、防御的に使われる。'). But surfaced_texts rank 6 (chunk 14) contains a complete, self-contained sentence answering the second part: '三輪霞は京都校二年。シン・陰流の簡易領域や刀を用いる。まじめで常識人寄りの人物。' This single chunk fully answers the student/grade half on its own, yet B dropped it even though it was surfaced, so this is generation ignoring a retrieved chunk rather than the fact being split across chunks.",
+      "judgment_reason": "The question has two parts: what 簡易領域 is for, and which Kyoto-school student uses it and what grade. B answered only the first part (chunk 18, rank 3: '簡易領域: 領域への対抗策の一つ。必中効果を中和するなど、防御的に使われる。'). But surfaced_texts rank 6 (chunk 14) contains a complete, self-contained sentence answering the second part: '三輪霞は京都校二年。シン・陰流の簡易領域や刀を用いる。まじめで常識人寄りの人物。' This single chunk fully answers the student/grade half on its own, yet B dropped it even though it was surfaced, so this is generation ignoring a retrieved chunk rather than the fact being split across chunks."
+    },
+    {
+      "id": "G-CHUNKING-03",
+      "source_id": "M-08",
+      "question": "死滅回游を設計した人物は誰ですか。また、その死滅回游で泳者にルールを伝える存在は何と呼ばれますか。",
+      "gold_cause": "chunking_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": false,
+      "disposition": "add_candidate",
+      "disposition_reason": "D judged B as fail / Step 1 settles it: surfaced chunk 19 (rank 1) contains 'コガネ: 死滅回游において泳者に情報やルールを伝える存在。', directly answering the second half of the question (what conveys rules to swimmers), and surfaced chunk 15 (rank 8) contains '死滅回游の設計者として重要' confirming 羂索 as designer for the first half. Both single chunks each fully carry one sub-fact (not split across chunks), so this is not chunking_failure. B's own answer text reproduces only the chunk-15 fact about 羂索 and completely omits the コガネ fact from chunk 19 despite it being surfaced at rank 1 -- generation ignored a retrieved chunk that already answered part of the question.",
+      "judgment_reason": "Step 1 settles it: surfaced chunk 19 (rank 1) contains 'コガネ: 死滅回游において泳者に情報やルールを伝える存在。', directly answering the second half of the question (what conveys rules to swimmers), and surfaced chunk 15 (rank 8) contains '死滅回游の設計者として重要' confirming 羂索 as designer for the first half. Both single chunks each fully carry one sub-fact (not split across chunks), so this is not chunking_failure. B's own answer text reproduces only the chunk-15 fact about 羂索 and completely omits the コガネ fact from chunk 19 despite it being surfaced at rank 1 -- generation ignored a retrieved chunk that already answered part of the question."
+    },
+    {
+      "id": "G-CHUNKING-04",
+      "source_id": "M-13",
+      "question": "無為転変を使う特級呪霊は誰で、その術式が重要になる編はどの編ですか。またその編には他に誰が関わりますか。",
+      "gold_cause": "chunking_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": false,
+      "disposition": "add_candidate",
+      "disposition_reason": "D judged B as fail / Step 1 settles it: surfaced chunk 9 (rank 11) contains '幼魚と逆罰編では、吉野順平、真人、七海建人が関わる。真人の無為転変と、人間の悪意・弱さを扱う暗いエピソードとして重要。', a single chunk that fully answers both the arc name and who else is involved -- so this is not chunking_failure. B's answer only reproduces the 'who uses 無為転変' fact from chunk 15 and omits the arc name and co-participants entirely, even though chunk 9 carrying that exact fact was surfaced to B. Generation failed to use a retrieved, relevant chunk.",
+      "judgment_reason": "Step 1 settles it: surfaced chunk 9 (rank 11) contains '幼魚と逆罰編では、吉野順平、真人、七海建人が関わる。真人の無為転変と、人間の悪意・弱さを扱う暗いエピソードとして重要。', a single chunk that fully answers both the arc name and who else is involved -- so this is not chunking_failure. B's answer only reproduces the 'who uses 無為転変' fact from chunk 15 and omits the arc name and co-participants entirely, even though chunk 9 carrying that exact fact was surfaced to B. Generation failed to use a retrieved, relevant chunk."
+    },
+    {
+      "id": "G-CHUNKING-05",
+      "source_id": "M-15",
+      "question": "御三家とはどの三つの家ですか。そのうち六眼と無下限呪術を持つ人物が属する家はどれで、六眼とはどういうものですか。",
+      "gold_cause": "chunking_failure",
+      "predicted_cause": "generation_failure",
+      "cause_correct": false,
+      "disposition": "add_candidate",
+      "disposition_reason": "D judged B as fail / Step 1 settles it: surfaced chunk 11 (rank 1) states '五条家は六眼と無下限呪術を持つ五条悟の存在が大きい', a single chunk answering which family holds 六眼/無下限呪術, and surfaced chunk 20 (rank 4) states '六眼は五条家に関わる特別な眼。呪力の認識・操作効率に関わり、五条悟の強さの根幹。', a single chunk defining 六眼 -- neither fact is split across chunks, so this is not chunking_failure. B's answer stops after naming the three families (御三家) and omits both the family attribution and the 六眼 definition despite both chunks being surfaced at high rank. Generation failed to use retrieved chunks that already answered the rest of the question.",
+      "judgment_reason": "Step 1 settles it: surfaced chunk 11 (rank 1) states '五条家は六眼と無下限呪術を持つ五条悟の存在が大きい', a single chunk answering which family holds 六眼/無下限呪術, and surfaced chunk 20 (rank 4) states '六眼は五条家に関わる特別な眼。呪力の認識・操作効率に関わり、五条悟の強さの根幹。', a single chunk defining 六眼 -- neither fact is split across chunks, so this is not chunking_failure. B's answer stops after naming the three families (御三家) and omits both the family attribution and the 六眼 definition despite both chunks being surfaced at high rank. Generation failed to use retrieved chunks that already answered the rest of the question."
+    },
+    {
+      "id": "G-INVALID-A-01",
+      "source_id": "F-01",
+      "question": "東堂葵の術式である芻霊呪法について、釘や藁人形をどう使って攻撃するのか教えてください。",
+      "gold_cause": "invalid_A",
+      "predicted_cause": "invalid_A",
+      "cause_correct": true,
+      "disposition": "rejected",
+      "disposition_reason": "B abstained / D judged B as abstain / Aの唯一の根拠は未検証のファンサイトであり(notes: '唯一の情報源はファンサイト。一次資料未確認。')、しかも『芻霊呪法が東堂葵の術式である』という前提自体がコーパスと矛盾する。surfaced_texts の chunk 12・20・25 はいずれも『芻霊呪法は釘崎野薔薇の術式。釘、金槌、藁人形、共鳴り、簪などを戦闘に用いる』と明記しており、釘や藁人形を使う術式は釘崎野薔薇のものであって東堂葵のものではない（東堂葵の術式は不義遊戯、chunk 14/21に記載）。Bは誤った前提を追認せず『記載がありません』と回答しており、これはgeneration_failureではなくAの前提が無効であることによるもの。",
+      "judgment_reason": "Aの唯一の根拠は未検証のファンサイトであり(notes: '唯一の情報源はファンサイト。一次資料未確認。')、しかも『芻霊呪法が東堂葵の術式である』という前提自体がコーパスと矛盾する。surfaced_texts の chunk 12・20・25 はいずれも『芻霊呪法は釘崎野薔薇の術式。釘、金槌、藁人形、共鳴り、簪などを戦闘に用いる』と明記しており、釘や藁人形を使う術式は釘崎野薔薇のものであって東堂葵のものではない（東堂葵の術式は不義遊戯、chunk 14/21に記載）。Bは誤った前提を追認せず『記載がありません』と回答しており、これはgeneration_failureではなくAの前提が無効であることによるもの。"
+    },
+    {
+      "id": "G-INVALID-A-02",
+      "source_id": "F-02",
+      "question": "日車寛見の領域展開「坐殺博徒」は、パチンコの大当たり状態がどのように戦闘力に結びつくのですか。",
+      "gold_cause": "invalid_A",
+      "predicted_cause": "invalid_A",
+      "cause_correct": true,
+      "disposition": "rejected",
+      "disposition_reason": "B abstained / D judged B as abstain / Aの唯一の根拠は未検証のファンサイトであり、『坐殺博徒が日車寛見の領域展開である』という前提がコーパスと矛盾する。surfaced_texts の chunk 21・13は『坐殺博徒は秤金次の領域展開。パチンコ台のような確率演出と大当たり状態が戦闘能力に直結する』と明記しており、坐殺博徒は秤金次のものである。日車寛見の領域展開は誅伏賜死（chunk 17・21に明記）。質問が聞く『大当たり状態がどう戦闘力に結びつくか』という核心自体はコーパスに存在するが、それは日車寛見ではなく秤金次に紐づく事実であり、Aの人物紐付けが誤っている。Bは誤った前提を追認せず『記載がありません』と回答しており、これはAの前提が無効であることによるもの。",
+      "judgment_reason": "Aの唯一の根拠は未検証のファンサイトであり、『坐殺博徒が日車寛見の領域展開である』という前提がコーパスと矛盾する。surfaced_texts の chunk 21・13は『坐殺博徒は秤金次の領域展開。パチンコ台のような確率演出と大当たり状態が戦闘能力に直結する』と明記しており、坐殺博徒は秤金次のものである。日車寛見の領域展開は誅伏賜死（chunk 17・21に明記）。質問が聞く『大当たり状態がどう戦闘力に結びつくか』という核心自体はコーパスに存在するが、それは日車寛見ではなく秤金次に紐づく事実であり、Aの人物紐付けが誤っている。Bは誤った前提を追認せず『記載がありません』と回答しており、これはAの前提が無効であることによるもの。"
+    },
+    {
+      "id": "G-INVALID-A-03",
+      "source_id": "F-03",
+      "question": "呪術界の御三家のうち、九十九家に相伝されている術式は何ですか。",
+      "gold_cause": "invalid_A",
+      "predicted_cause": "invalid_A",
+      "cause_correct": true,
+      "disposition": "rejected",
+      "disposition_reason": "B abstained / D judged B as abstain / Aの唯一の根拠は未検証のファンサイトであり、『御三家に九十九家という家が含まれる』という前提がコーパスと矛盾する。surfaced_texts の chunk 11・22は『御三家は五条家、禪院家、加茂家』と明記しており、九十九家は含まれていない。corpus_probeでも『九十九家』はコーパス全体でヒット数0（absent_from_corpus）であり、九十九家という家自体がこのナレッジベースに存在しない。Bは誤った前提を追認せず『記載がありません』と回答しており、これはAの前提が無効であることによるもの。",
+      "judgment_reason": "Aの唯一の根拠は未検証のファンサイトであり、『御三家に九十九家という家が含まれる』という前提がコーパスと矛盾する。surfaced_texts の chunk 11・22は『御三家は五条家、禪院家、加茂家』と明記しており、九十九家は含まれていない。corpus_probeでも『九十九家』はコーパス全体でヒット数0（absent_from_corpus）であり、九十九家という家自体がこのナレッジベースに存在しない。Bは誤った前提を追認せず『記載がありません』と回答しており、これはAの前提が無効であることによるもの。"
+    },
+    {
+      "id": "G-INVALID-A-04",
+      "source_id": "F-04",
+      "question": "死滅回游で泳者にルールや得点情報を伝えるシロガネは、どういう存在なのでしょうか。",
+      "gold_cause": "invalid_A",
+      "predicted_cause": "invalid_A",
+      "cause_correct": true,
+      "disposition": "rejected",
+      "disposition_reason": "B abstained / D judged B as abstain / Question asks about an entity named 'シロガネ' that conveys rules/score info to swimmers, but surfaced chunk 19 explicitly names this entity 'コガネ' (\"コガネ: 死滅回游において泳者に情報やルールを伝える存在。\"), not シロガネ. A affirms the シロガネ premise using only an unverified fan-wiki source ('唯一の情報源はファンサイト。一次資料未確認。'), which conflicts with the corpus's own wording. B's abstain ('記載がありません') is reasonable given the question uses a name absent from the corpus; this is not a retrieval/generation/chunking defect but an invalid external answer.",
+      "judgment_reason": "Question asks about an entity named 'シロガネ' that conveys rules/score info to swimmers, but surfaced chunk 19 explicitly names this entity 'コガネ' (\"コガネ: 死滅回游において泳者に情報やルールを伝える存在。\"), not シロガネ. A affirms the シロガネ premise using only an unverified fan-wiki source ('唯一の情報源はファンサイト。一次資料未確認。'), which conflicts with the corpus's own wording. B's abstain ('記載がありません') is reasonable given the question uses a name absent from the corpus; this is not a retrieval/generation/chunking defect but an invalid external answer."
+    },
+    {
+      "id": "G-INVALID-A-05",
+      "source_id": "F-05",
+      "question": "五条悟が師匠として夏油傑を指導していた時期の話を知りたいのですが、どのくらいの期間、師弟だったのですか。",
+      "gold_cause": "invalid_A",
+      "predicted_cause": "invalid_A",
+      "cause_correct": true,
+      "disposition": "rejected",
+      "disposition_reason": "B abstained / D judged B as abstain / Question presupposes a 師弟 (teacher-student) relationship between Gojo and Geto, but surfaced chunks 23 and 26 explicitly state they were 同級生 (classmates) who later 決別 (split apart) — no teacher-student framing appears anywhere in the surfaced text. A affirms the 師弟 premise using only an unverified fan-wiki source, directly contradicting the corpus. B's abstain is appropriate for a question built on a factually wrong premise, not a knowledge-base or retrieval defect.",
+      "judgment_reason": "Question presupposes a 師弟 (teacher-student) relationship between Gojo and Geto, but surfaced chunks 23 and 26 explicitly state they were 同級生 (classmates) who later 決別 (split apart) — no teacher-student framing appears anywhere in the surfaced text. A affirms the 師弟 premise using only an unverified fan-wiki source, directly contradicting the corpus. B's abstain is appropriate for a question built on a factually wrong premise, not a knowledge-base or retrieval defect."
+    },
+    {
+      "id": "G-INVALID-A-06",
+      "source_id": "F-06",
+      "question": "伏黒恵の兄である伏黒甚爾は、なぜ弟である恵の前から姿を消したのですか。",
+      "gold_cause": "invalid_A",
+      "predicted_cause": "invalid_A",
+      "cause_correct": true,
+      "disposition": "rejected",
+      "disposition_reason": "B abstained / D judged B as abstain / Question calls 伏黒甚爾 the 兄 (older brother) of 伏黒恵, but surfaced chunk 16 explicitly states he is '伏黒恵の父' (Megumi's father), not his brother. A affirms the 兄 premise using only an unverified fan-wiki source, directly contradicted by the corpus's own text. B's abstain is defensible given the question's premise does not match the corpus; not a retrieval/generation/chunking issue.",
+      "judgment_reason": "Question calls 伏黒甚爾 the 兄 (older brother) of 伏黒恵, but surfaced chunk 16 explicitly states he is '伏黒恵の父' (Megumi's father), not his brother. A affirms the 兄 premise using only an unverified fan-wiki source, directly contradicted by the corpus's own text. B's abstain is defensible given the question's premise does not match the corpus; not a retrieval/generation/chunking issue."
+    }
+  ]
+}

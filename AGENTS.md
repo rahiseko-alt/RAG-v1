@@ -44,6 +44,40 @@
 - 依存ライブラリの追加やパッケージマネージャーの混在は勝手にやらない（理由を添えて提案する）。
 - コミットは小さく、説明的に（1 コミット＝1 目的）。
 
+## 公開リポジトリとしての規律（このリポジトリは Public）
+
+**このリポジトリは GitHub 上で公開されており、就職活動のポートフォリオを兼ねる。**
+書いたものは全て第三者が読む前提で書くこと。「あとで消せばよい」は成立しない
+（Git の履歴からは消えず、`git log -p` で誰でも読める）。
+
+- **公開前提で書く。** `AGENTS.md` / `memory.md` / `docs/failures.md` / `docs/handoff.md` を含む
+  全てのファイルは、社外の技術者が読んで意味が通り、かつ読まれて困らない文体で書く。
+  身内向けの呼称・内輪の言い回し・弱みの自己申告は書かない。
+  **失敗の記録は残す**——`docs/failures.md` は隠すためではなく、事象・根因・教訓という
+  第三者に伝わる形で残すためにある。これは公開しても減点にならず、むしろ検証の規律の証拠になる。
+- **個人を特定する情報を書かない。** 個人メールアドレス、実名（LICENSE の著作権表記を除く）、
+  ローカルの絶対パス（`C:\Users\...` 等）、私的な予定や事情は、コード・ドキュメント・
+  コミットメッセージ・生成物（実行済ノートの HTML 出力を含む）のいずれにも書かない。
+- **コミットのメールアドレスは必ず noreply にする。** 作業前に確認すること。
+
+  ```bash
+  git config user.email        # noreply でなければ次で設定する
+  git config --global user.email '<GitHubID>+<username>@users.noreply.github.com'
+  ```
+
+  これは `ci.yml` の「コミット衛生」ステップが PR の差分コミットに対して**機械判定**する
+  （口頭ルールではなく CI が赤にする）。既存履歴は検査対象外——過去のマージコミットに
+  個人メールが残っており、全履歴を対象にすると恒久的に赤になるため。
+- ⚠ **マージコミットの author は CI では止められない。** PR を GitHub の画面/API でマージすると、
+  GitHub がアカウントの公開メール設定でコミットを刻む。これは**リポジトリ側の設定では変えられず**、
+  以下のアカウント設定でのみ塞げる（**人の操作が必要・AI は実行できない**）。
+
+  1. GitHub → Settings → **Emails** → **Keep my email addresses private** を ON
+  2. 同じ画面の **Block command line pushes that expose my email** も ON（ローカルからの流出も塞ぐ）
+
+  ON にすると、以後のマージコミットは `<ID>+<username>@users.noreply.github.com` になる。
+  **未実施の間は、PR をマージするたびに個人メールが履歴に増え続ける。**
+
 ## 検証の規律（恒久ルール）— 本人採点の禁止
 
 作業した本人が「できました」と言っても、それは証拠にならない。
@@ -66,6 +100,7 @@
 ```bash
 uv sync --locked --extra dev        # ← --extra dev は必須（後述）
 uv run ruff check src tests         # Lint（対象は src tests に限定。後述）
+uv run mypy src                     # 型（CI 接続済み。エラー 0 を維持する）
 uv run pytest -q                    # 実テスト（e2e/slow は pytest.ini で既定除外）
 uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別シェルで curl）
 ```
@@ -89,14 +124,24 @@ uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別�
 | `e2e` | Playwright のブラウザバイナリと、`127.0.0.1:8010` で起動済みの uvicorn を要求する | `uv run playwright install --with-deps chromium` → 別シェルで uvicorn を起動 → `uv run pytest tests/e2e -m e2e` |
 | `slow` | HuggingFace から埋め込みモデルを取得し、リポジトリ直下に `chroma/` を作る（外部ネットワーク依存） | `uv run pytest -m slow` |
 
+### 型ゲート（mypy）— `ci-green` に接続済み・エラー 0 を維持する
+
+- `uv run mypy src` は **0 errors**（17 files・2026-08-02 に解消）。`ci.yml` の `quality` ジョブに
+  `Types (mypy)` ステップとして繋いであり、`quality` が落ちれば `ci-green` も落ちる。
+- **新しいジョブではなくステップ**にしてある。`ci-green` の `needs:` と比較式に触らずに済ませる
+  ため（下記「CI の中身を変えるとき」の警告を参照）と、重い依存の install を二重に払わないため。
+- **エラー 0 を維持すること。** `# type: ignore` を足すときは、なぜ実行時には正しいのかを
+  コメントで必ず書く（`warn_unused_ignores = true` なので、不要になった ignore も赤くなる）。
+- 現存する `type: ignore` は `src/rag/__init__.py` の 2 箇所のみ。いずれも langchain 側の
+  pydantic フィールド別名（`model_name`↔`model` / `max_tokens`↔`max_tokens_to_sample`）と
+  プラグイン生成 `__init__` の食い違いで、`populate_by_name=True` のため実行時は正しい。
+  **実装のバグ抑制ではない。** ただし `ignore[call-arg]` は呼び出し全体に掛かるため、
+  この2行は他の引数ミスも報告されなくなる。その穴は
+  `tests/test_rag.py::test_langchain_constructor_kwargs_still_exist` が埋めている
+  （依存更新でキーワードが受理されなくなれば CI が落ちる）。**このテストを消さないこと。**
+
 ### 現在 `ci-green` に入っていないゲート（既知の欠落・要対応）
 
-「検証の規律」が求める **型チェックと依存脆弱性のゲートが、現時点では CI に入っていない**。
-埋めるまでは「型は未検査」と理解して扱うこと。
-
-- **型（mypy）**：`uv run mypy src` は現在 **34 errors in 6 files**。大半は
-  `WorkbenchStore.get_active_revision()` が `dict | None` を返すのに絞り込まずに添字アクセス
-  している箇所。修正は移行作業の範囲を超えるため未着手。**直したうえで CI に追加すること。**
 - **依存の脆弱性**：pnpm 時代の `pnpm audit --audit-level moderate` に相当するゲートが無い。
   `pip-audit` 等の導入を検討する（Dependabot は `.github/dependabot.yml` で `uv` を監視中）。
 
@@ -113,8 +158,13 @@ uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別�
 - **セッション開始時**：`docs/handoff.md` **と** `memory.md` を読み、要約してからユーザーに提示する。
   `memory.md` が「次セッション必読」として `docs/session-reports/` の最新レポートを指している場合は
   それも読む。
-- **セッション終了時**（区切りの良いタイミング）：`docs/handoff.md` の①〜③を今回の内容で上書きし、
-  `memory.md` の不変条件に変化があれば**上書きせず追記・更新**して commit & push する。
+- **セッション終了時**：`docs/handoff.md` 編集・commit・push・PR作成・main へのマージまでを含む
+  **一連の操作（フルチェックアウト）** は、**その全範囲をユーザーが明示的に指示した時にのみ**実行する
+  （区切りが良さそうに見えても AI が自分の判断だけで始めない。指示が無ければ「そろそろ区切りましょうか」
+  と提案するに留める）。**「引継ぎ書いて」等、範囲を絞った指示ならその範囲だけ行い、commit・push・PR・
+  マージへ勝手に広げない。** 全範囲の指示があれば、`docs/handoff.md` の①〜③を今回の内容で上書きし、
+  `memory.md` の不変条件に変化があれば**上書きせず追記・更新**してマージまで実行する
+  （詳細は `checkin-checkout` スキル参照）。
 - **なぜ2層か**：`docs/handoff.md` の3項目はすべて「今回のセッション」の話であり、
   「ユーザー都度承認は禁止」「製品API内で毎回LLM実行しない」のような**プロジェクト不変の設計決定**を
   書く場所が無い。①に書けば次のチェックアウトで消える。だから不変層を分けている。
@@ -147,7 +197,7 @@ uv run uvicorn src.api:app --host 127.0.0.1 --port 8010   # 起動確認（別�
 - IaC / デプロイ: **無し**（ローカル起動のみ）
 - テスト: **pytest**（`tests/`。e2e は Playwright）
 - CI: GitHub Actions（`.github/workflows/ci.yml`）
-- Lint: **ruff** ／ 型: **mypy**（設定はあるが CI 未接続。「Testing instructions」の既知の欠落を参照）
+- Lint: **ruff** ／ 型: **mypy**（CI 接続済み・エラー 0。「Testing instructions」参照）
 - 監査ログ: **Langfuse Cloud**（任意連携。環境変数が設定されている時だけ有効）
 
 主要コマンドは「Testing instructions」を参照。CLI は `uv run python -m src.rag.cli "質問"`。

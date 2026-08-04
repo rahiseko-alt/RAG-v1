@@ -1,0 +1,689 @@
+{
+  "aggregation": {
+    "total_questions": 30,
+    "add_candidates": 12,
+    "disposition_counts": {
+      "no_gap": 3,
+      "quarantined": 15,
+      "add_candidate": 12
+    },
+    "cause_counts": {
+      "generation_failure": 2,
+      "missing_knowledge": 25
+    },
+    "disposition_by_role": {
+      "C-1": {
+        "no_gap": 3,
+        "quarantined": 5,
+        "add_candidate": 2
+      },
+      "C-2": {
+        "add_candidate": 8,
+        "quarantined": 2
+      },
+      "C-3": {
+        "add_candidate": 2,
+        "quarantined": 8
+      }
+    },
+    "cause_by_role": {
+      "C-1": {
+        "None": 3,
+        "generation_failure": 2,
+        "missing_knowledge": 5
+      },
+      "C-2": {
+        "missing_knowledge": 10
+      },
+      "C-3": {
+        "missing_knowledge": 10
+      }
+    },
+    "disposition_by_role_new_only": {
+      "C-1": {
+        "no_gap": 2,
+        "quarantined": 4
+      },
+      "C-2": {
+        "add_candidate": 7,
+        "quarantined": 2
+      },
+      "C-3": {
+        "add_candidate": 2,
+        "quarantined": 5
+      }
+    },
+    "prior_gap_dispositions": {
+      "False": {
+        "no_gap": 2,
+        "quarantined": 11,
+        "add_candidate": 9
+      },
+      "True": {
+        "add_candidate": 3,
+        "quarantined": 4,
+        "no_gap": 1
+      }
+    },
+    "a_source_type_counts": {
+      "fan": 28,
+      "reliable_secondary": 13
+    },
+    "b_deterministic_pass_counts": {
+      "pass": 30
+    }
+  },
+  "rows": [
+    {
+      "id": "C1-01",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "no_gap",
+      "failure_cause": null,
+      "external_status": "pass",
+      "knowledge_status": "pass",
+      "same_answer": true,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "bd2da692e73a44bd9965e91c09a50e42",
+      "ledger_status": "no_gap",
+      "missing_knowledge": "",
+      "reason": "手順1で surfaced_texts を全件確認。rank2(chunk 18)の用語辞典に「呪力: 負の感情から生じるエネルギー」「反転術式: 負の呪力を掛け合わせて正のエネルギーを作る技術」「術式反転: 反転術式で生じた正のエネルギーを術式に流し、通常とは逆の効果を出す応用」が揃っており、rank6(chunk 35)も「反転術式と術式反転も混同されやすい。反転術式は正のエネルギーを作る技術、術式反転はその正のエネルギーを術式へ流す応用」と明示。rank4(chunk 12)に五条の術式順転「蒼」/術式反転「赫」もある。B はこの区別（作る側／流す側、後者は前者を前提）を A と同じ内容で断定して述べており、負けていない。B が留保した「なぜ負×負が正になるか」は A 側でもファン解説の「－×－＝＋」という比喩どまりで、probe でも「－×－＝＋」「比喩」は corpus_hit_count 0。争点となる核心部分は B が答えているため失敗としない。"
+    },
+    {
+      "id": "C1-02",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "generation_failure",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "ed9f81e40d774636a1ece4bf5470b191",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "手順1で確定。rank2(chunk 18)に「黒閃: 打撃と呪力の衝突が極めて短い時間差で起きた時に発生する現象。経験者は呪力の核心に近づくとされる。」があり、これが質問「なぜ精度が上がるとされるのか」の理由そのもの（A の核心主張『呪力の核心に大きく近づく』と同一）。B はこの一文を [2] として引用しながら「とだけ書かれています」と扱い、最後に「どのような機序で精度向上につながるのかは特定できません」と結論しており、手元にある答えを答えとして提示できていない。A 自身も機序は作中で比喩以上に説明されていないと認めているので、不足しているのは 0.000001 秒・威力2.5乗・ゾーンといった数値/比喩の装飾のみで、質問の「なぜ」ではない。retrieval は正常（probe: 黒閃 corpus 3 / surfaced 3、核心 corpus 2 / surfaced 2 で全件浮上）。よって生成側の失敗。"
+    },
+    {
+      "id": "C1-03",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "no_gap",
+      "failure_cause": null,
+      "external_status": "pass",
+      "knowledge_status": "pass",
+      "same_answer": true,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "f6f8f61e10504ac8be8499b522f6fef9",
+      "ledger_status": "no_gap",
+      "missing_knowledge": "",
+      "reason": "手順1で surfaced_texts を全件確認。rank2(chunk 18)「縛り: 条件や制約を設けることで力や効果を高める仕組み。自分への縛り、相手との契約的な縛りがある」、rank3(chunk 28)「縛りを『条件や制約と引き換えに効果を得る取引』と説明する。縛りは無料の強化ではない。何かを得るには、相応の制限、条件、手順、リスク、将来の不便さを負う必要がある」、rank1(chunk 35)「条件設定による取引。強力な縛りほど条件、代償、タイミング、本人の理解力が重要。何を捨てて何を得るかを決める仕組み」。B はこの『代償と引き換えの取引』という仕組みを A の『代償に対するリターン／足し引きの収支』と同内容で述べており、負けていない。B 末尾の留保（なぜ制約が出力に変換されるのかの機序は不明）は A も『物理的な機序は作中で説明されておらず、呪術界の原則として提示されているにとどまる』と同じ留保をしている。A の具体例（七海の時間外労働、帳の五条のみ通さない）は probe で「時間外労働」「通さない」ともに corpus_hit_count 0 だが、質問は仕組みを問うており具体例の有無は勝敗を分けない。"
+    },
+    {
+      "id": "C1-04",
+      "role": "C-1",
+      "prior_10q_gap": true,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "9357a9485e0a4fa3872dd8ab4d549f66",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "五条悟の「懐玉・玉折」編での転機の中身：伏黒甚爾との再戦で瀕死になり、死の間際に反転術式を会得して自らを回復させたこと。その反転術式の会得が無下限呪術の常時展開（維持にかかる呪力・脳への消耗を自己回復で相殺する）の前提であること。加えて生得の六眼による運用効率の良さが常時展開のもう一つの前提であること。",
+      "reason": "手順1：surfaced_texts 24件を全文確認したが、常時展開に至る経緯を述べる記述はどのチャンクにも無い。最も近いのが rank1(chunk 9)の「懐玉・玉折編は五条悟と夏油傑の過去編。天内理子、伏黒甚爾…が関わる。五条が現在の最強へ至る転機」で、転機があったことしか書かれていない。rank8(chunk 37)は「五条の強みは無下限呪術、六眼、無量空処、反転術式、戦闘センス」と列挙するのみで因果を持たない。rank3(chunk 20)も「六眼により極めて精密な呪力操作が可能」までで常時展開に触れない。複数チャンクを合成しても『反転術式の会得が常時展開の前提』は導けないため chunking_failure でもない。手順2：probe で「常時展開」corpus_hit_count 0（source=both）、「天逆鉾」「再戦」「会得して自」「回復させ」いずれも 0。retrieval_failure も否定できる — 「五条悟」corpus 13 / surfaced 13、「無下限呪術」6/6 と、関連チャンクは全て浮上済み（未浮上の chunk 18/34/35 は反転術式の定義文で、五条の経緯は含まない＝全文確認済み）。よってコーパスに当該知識が無い。"
+    },
+    {
+      "id": "C1-05",
+      "role": "C-1",
+      "prior_10q_gap": true,
+      "disposition": "quarantined",
+      "failure_cause": "generation_failure",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "5053bfadb30245299b7e0cd4f95ba11c",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "",
+      "reason": "手順1で確定。rank4(chunk 20)に「無下限呪術は五条悟の術式。…六眼により極めて精密な呪力操作が可能。」「六眼は五条家に関わる特別な眼。呪力の認識・操作効率に関わり、五条悟の強さの根幹。」の2文が同一チャンク内にあり、『六眼が呪力の認識・操作効率を高め、極めて精密な呪力操作を可能にするから運用の無駄が減る』という回答が単独チャンクから構成できる（A の『精密に見える→必要な量・場所にだけ配分→呪力ロスがほぼゼロ＝燃費』と同じ趣旨で、A 側も fan ソースの言い換えにすぎない）。B はこの一文を [4] として引用しながら「抜粋から言えるのは『関係する』までです」「どう下げるのかは特定できません」と結論し、手元の答えを答えとして出していない。probe でも「運用コスト」「燃費」は corpus_hit_count 0 だが、これは A の語が無いだけで内容（操作効率）は存在する。retrieval は正常（六眼 corpus 5 / surfaced 5、無下限呪術 6/6）。よって生成側の失敗。"
+    },
+    {
+      "id": "C1-06",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "c22c3158383d4466a96995d62a574346",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "簡易領域の中身: (1) 必中効果は相手の領域の内側でのみ働き、自分の簡易領域を重ねて範囲を上書きすることで効果が届かなくなる、という無効化の機序、(2) 蘆屋貞綱が考案したとされる「領域展開から身を守るための弱者の領域」であること、(3) 術式ではなく呪力操作の延長なので領域展開を使えない術師でも習得できること、(4) シン・陰流には「門外不出」の縛りがあること、(5) 領域展延との差分＝簡易領域は円状で発動中その場から動けないのに対し領域展延は移動可能、展延は術式を付与しない領域を膜状にまとうため五条の無下限の守りに触れられる、という比較。",
+      "reason": "手順1: surfaced 24件を通読。rank 1 (chunk 18) に「簡易領域: 領域への対抗策の一つ。必中効果を中和するなど、防御的に使われる」、rank 10 (chunk 19) に「領域展延: 領域を薄くまとい、相手の術式を中和するように使う技術」があり、両者の定義レベルの差（必中効果の中和 vs 術式の中和、膜状にまとう）まではチャンク内で答えられている（B もここは出せている）。しかし「なぜ必中を中和できるのか」の機序を書いたチャンクは 24件のいずれにも無く、可動性・術式付与の有無・門外不出といった実質的な差分もどのチャンクにも無い。手順2: probe で「簡易領域」の corpus_hit は chunk 13/14/18/34 の4件で、その4件すべてが surfaced 済み（present_but_unsurfaced は空）。つまり簡易領域に触れる全チャンクを見たうえで機序が無いので retrieval_failure ではない。争点語の「上書き」「無効化し」もコーパス不在。よって未収録と判断。"
+    },
+    {
+      "id": "C1-07",
+      "role": "C-1",
+      "prior_10q_gap": true,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "4a41a8e2e0f84228b228a23732e42f17",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "伏魔御厨子が「結界を閉じない領域」として成立する理由と代償: (1) 通常の領域展開は結界で空間を隔てた内側に生得領域を具現化して必中効果を得るのに対し、伏魔御厨子は結界を閉じない、(2) 閉じずに生得領域を具現化するのは「キャンバス無しで空に絵を描く」ほどの神業で、宿儺の呪力量と術式精度があって初めて成立する（作中で閉じない領域を使えたのは他に羂索のみ）、(3) 閉じないこと自体が「相手に逃げ道を与える」縛りとして働き、その見返りに必中効果の範囲が拡張され最大半径200メートルに達する、(4) 代償はその逃げ道そのもの＝対象を閉じ込めて確実に仕留めるという通常の領域の利点を放棄すること（領域からの離脱が可能になる）。",
+      "reason": "手順1: surfaced 24件を通読。伏魔御厨子に触れるのは rank 1/2 (chunk 22, 21)「結界を閉じない領域として語られることが多く、広範囲の斬撃が脅威」、rank 3 (chunk 36)「伏魔御厨子の開いた領域」、rank 9 (chunk 28)、rank 10 (chunk 37)、rank 11 (chunk 29)「宿儺の領域は範囲や開いた結界の性質が重要」だけで、いずれも「閉じない」という事実と論点名の列挙に留まり、成立理由も代償も書いていない。合成しても因果が出ないので chunking_failure でもない。手順2: probe で「伏魔御厨子」corpus_hit 6件（15/21/22/28/36/37）は全件 surfaced、「閉じない領域」corpus_hit 2件（21/22）も全件 surfaced で present_but_unsurfaced は「呪力量」のみ（chunk 7 は作品世界の一般説明で、この争点の因果を持つ根拠が無い）。争点語「逃げ道」「拡張され」「最大半径200メートル」はコーパス不在。よって retrieval ではなく未収録。"
+    },
+    {
+      "id": "C1-08",
+      "role": "C-1",
+      "prior_10q_gap": true,
+      "disposition": "no_gap",
+      "failure_cause": null,
+      "external_status": "pass",
+      "knowledge_status": "pass",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "95837b65698b4923a8c2e97034b0fd95",
+      "ledger_status": "no_gap",
+      "missing_knowledge": "",
+      "reason": "手順1で確定。rank 1 (chunk 19)「天与呪縛: 生まれつき大きな制約を受ける代わりに別の能力が高まる現象。伏黒甚爾…の理解に重要」が因果の型そのものを述べ、rank 2 (chunk 16)「伏黒甚爾は禪院家出身で、呪力を持たない代わりに極限の身体能力を持つ天与呪縛の人物」が甚爾の事例で制約（呪力なし）と向上（極限の身体能力）を対応させている。質問が求めた「因果＋甚爾の事例」はこの2件で満たされており、B も実際にその対応づけを出している。A が加える『代償の大きさ＝リターンの大きさ』は corpus の『代わりに高まる』の言い換えに近く、A 独自の追加事実は「呪力ゼロゆえ術師に感知されず結界をすり抜ける」「呪具（天逆鉾）で術式の欠如を補う」といった副次情報に留まるため、質問への回答としては B の失敗ではないと判断（差分があるので same_answer は false）。"
+    },
+    {
+      "id": "C1-09",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "3d4d3ac80fe74e51a5c6a1258b2b03c0",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "パンダに自我が生じた経緯: (1) パンダは「突然変異呪骸」＝完全自立型人工呪骸で、術師から供給される呪力で動くだけの通常の呪骸と違い呪力が自分自身のもので自己補完できる、(2) 作製手順は、肉体から魂の情報を複製して呪骸の核に入力し、相性の良い魂を宿した核を三つ用意して一体の呪骸に内蔵する、(3) その三つの魂が常に互いを観測し続けることで魂が安定し自我が芽生える、(4) 生後3か月を過ぎた頃に呪力の自己補完を始め術師の供給なしに自立する、(5) 三つの核はパンダ核・お兄ちゃん核（ゴリラモード）・お姉ちゃん核。",
+      "reason": "手順1: surfaced 24件を通読。パンダに触れるのは rank 2 (chunk 13)「夜蛾正道が作った突然変異呪骸。人語を話し、感情を持つ。複数の核を持つ呪骸として扱われる」「夜蛾正道は…パンダの生みの親」、rank 3 (chunk 19)「呪骸: 呪力を宿した人形や存在。パンダは突然変異呪骸」、rank 12 (chunk 11) の在籍者列挙のみ。『複数の核を持つ』までは出るが、その核が互いを観測して魂が安定する＝自我発生という経緯はどのチャンクにも無く、合成でも導けない。手順2: probe で「呪骸」corpus_hit 3件（13/14/19）は全件 surfaced、「突然変異呪骸」2件も全件 surfaced。さらに争点語「自我」が corpus_hit_count 0（コーパス全体で 0 件）。present_but_unsurfaced は「呪術高専東京校」のみで争点に無関係。よって retrieval ではなく未収録と判断。"
+    },
+    {
+      "id": "C1-10",
+      "role": "C-1",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "97c0106219f7440aabe42b47cbd0ad44",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "受肉の成立条件と宿儺の指での充足: (1) 受肉＝呪いが人の肉を得て顕現すること、(2) 条件は「主の魂・呪力が残った呪物が存在する」「器となる肉体がそれを体内に取り込む」「器がその呪力に耐えられる」の三つで、通常は器の意識が失われ肉体が乗っ取られる、(3) 器と呪物の人種・性別の一致は不要、(4) 宿儺は死後も肉体を滅ぼしきれず二十本の指が特級呪物として残ったため条件(1)(2)が満たされる、(5) 虎杖は呪いへの耐性が極めて強く乗っ取られずに自我を保った稀な例外で、この耐性が無ければ通常は呪物を飲んだ時点で死ぬ（条件(3)にあたる）。",
+      "reason": "手順1: surfaced 24件を通読。rank 2 (chunk 19)「受肉: 過去の術師や呪物が現代の肉体に宿り、人格や能力を発現すること」、rank 4 (chunk 15)「指が特級呪物として残り、虎杖がそれを取り込んだことで受肉する」、rank 12 (chunk 8)「特級呪物である両面宿儺の指を飲み込み、宿儺の器となった」で、質問後半の『宿儺の指の場合どう満たされるか』は器＝虎杖が指を取り込んだという水準まで答えられている（B もここは出せている）。一方、前半の『成立に必要な条件』は列挙どころか器側の適性・耐性に触れるチャンクが1件も無く、合成でも条件が立たない。手順2: probe で「受肉」corpus_hit 7件（10/15/19/20/26/27/36）は全件 surfaced、「呪物」「特級呪物」も争点チャンク（8/15/19）が surfaced 済みで present_but_unsurfaced は空。争点語「耐え」「意識」「必要な条件」はコーパス不在。よって retrieval ではなく未収録と判断。"
+    },
+    {
+      "id": "C2-01",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "10e760f0cb8644fbb887889487b766bb",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "懐玉・玉折編の出来事の順序と因果：星漿体・天内理子の護衛任務 → 伏黒甚爾（術師殺し）の襲撃で五条が敗れ理子が殺害される → 盤星教（時の器の会）信者の反応を目撃 → 夏油の思想的転換（非術師への疑念、灰原の死・九十九との対話） → 村人虐殺と呪術界からの離反 → 再会時の決別。ナレッジには関係する固有名詞（天内理子・星漿体・盤星教・伏黒甚爾）が列挙されるだけで、何が起きたかが1文も書かれていない。",
+      "reason": "手順1：surfaced 24件を全文確認。rank1(c23)『天内理子の事件や非術師をめぐる思想の違いにより決定的に分かれる』、rank2(c9)『懐玉・玉折編は五条悟と夏油傑の過去編。天内理子、伏黒甚爾、星漿体、天元、盤星教などが関わる。五条が現在の最強へ至る転機、夏油が呪詛師へ転落する思想的転換を描く』、rank4(c15)『ある事件と思想的転換を経て非術師を敵視する呪詛師となる』、rank7(c16)『伏黒甚爾は…五条と夏油の過去に決定的な影響を与える』、rank24(c26)『五条と夏油は同級生かつ決別した関係』。いずれも登場人物と結果のラベルのみで、事件の中身（理子の死、甚爾の襲撃結果、盤星教信者の反応、虐殺と離反）を述べた記述は1件も無い。複数を合成しても順序ある因果は再構成できないため chunking_failure でもない。手順2：probe で『天内理子』corpus 2件(c9,c23)・『星漿体』2件(c9,c16)・『伏黒甚爾』4件(c9,c12,c16,c19)がいずれも全て surfaced 済み＝理子関連の記述を持つチャンクは全て読めており present_but_unsurfaced 無し。未surfacedはc4,c14（c14は他問で全文確認済み＝京都校人物一覧で無関係）。よって retrieval_failure ではなく、コーパスに事件経過そのものが無い missing_knowledge。B は不足を明示しており捏造はしていない。"
+    },
+    {
+      "id": "C2-02",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "e7d895d6eea8422f9e759089168ab5ae",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "羂索が夏油の肉体を使ったことの「意思決定への作用」：脳移植で肉体を乗っ取る手口、夏油の死体を奪った『偽夏油』としての活動、呪術界側が敵を『離反した元同僚（特級呪詛師 夏油傑）』と誤認して千年生きる別人の潜伏を想定できず判断が遅れた点、渋谷事変での五条封印と、その後の呪術総監部の裁定（五条の永久追放・虎杖の死刑執行）への影響、過去に『加茂憲倫』として御三家に入り込んでいた点。",
+      "reason": "手順1：surfaced 24件を全文確認。rank1(c15)『羂索は他者の肉体を渡り歩く存在。夏油の肉体を利用し、呪霊操術や大規模な計画を進める。死滅回游の設計者』、rank2(c20)『呪霊操術は夏油傑の術式。羂索が夏油の肉体を使うことで物語後半にも大きく関わる』、rank8(c10)『渋谷事変後は呪術界の秩序が大きく変わる。虎杖の処分、乙骨の再登場、上層部の判断、羂索の計画…』、rank12(c11)『呪術界上層部は保守的で政治性が強く、虎杖や乙骨の処遇、五条封印後の判断などで物語に影響する』。肉体利用の事実と、上層部の判断が物語に影響することは別々に書かれているが、『肉体を使ったこと』が『意思決定』に作用したという接続を述べた記述はどのチャンクにも無く、合成しても導けない（＝chunking_failure ではない）。偽夏油・総監部・加茂憲倫・正体誤認に相当する記述は 24件中ゼロ。手順2：probe で『羂索』corpus 13件のうち未surfacedは c17,c29 のみで、両者とも他問で全文確認済み（c17=死滅回游の人物一覧、c29=終盤のファン評価論点）で本件の答えを含まない。『内部』の未surfaced c5,c40 は c5 が本ナレッジの出典管理メタ記述であり文脈違い。よって retrieval_failure ではなく missing_knowledge。"
+    },
+    {
+      "id": "C2-03",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "eb2557933a71405eb4a62d9ff9f2f2b0",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "真希の「選択」の具体：術式至上主義の家で術式を持たない者が血族でも落伍者として蔑まれること、真希・真依が女児かつ非術師として雑用等の冷遇を受けたこと、真希が家を出て東京都立呪術高専に入学したという経緯、『禪院家当主になって家を変える』という宣言、天与呪縛（呪力が無い代わりに卓越した身体能力）という因果の明示。",
+      "reason": "手順1：surfaced 24件を全文確認。質問の一部はチャンクで答えられており、B もそれを使えている——rank1(c22)『禪院家は術式と血統を重視する家…術式を持たない者への差別、男尊女卑、相伝術式への執着が物語上の問題として描かれる』が家の価値観を、rank6(c12)『禪院真希は…呪力をほぼ持たず呪具を扱う。禪院家から低く見られていたが、身体能力と戦闘技術で道を開く。伏黒甚爾と同じく天与呪縛の文脈で語られる』が“立場（低く見られた）”と“道の開き方（呪具・身体能力）”を述べている。B はこの2件を正しく引用しており generation_failure ではない。残るのは「家に対してどういう選択をしたか」（家を出て高専へ、当主宣言、真依との冷遇）で、これを述べたチャンクは24件中に無い。手順2：probe で『真希』corpus 9件(c8,c10,c11,c12,c14,c16,c19,c22,c26)が**全て surfaced 済み**＝真希に言及するチャンクは全部読んでおり present_but_unsurfaced ゼロ。『女性』『軽んじる文化』『一族』『雑用』『押しつけ』はいずれも corpus_hit 0（短いドメイン語である『女性』『一族』の不在は補強材料）。よって retrieval_failure ではなく missing_knowledge。"
+    },
+    {
+      "id": "C2-04",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "e9119b3c447f4b5696284fac3cd961df",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "立場の差を生む出自の中身：加茂憲紀が当主と愛人の子（庶子）でありながら赤血操術の発現により嫡男として迎えられ御三家の後継者になった経緯と、脹相が加茂憲倫（実体は羂索）の実験で生まれた呪胎九相図の長男＝人間と呪霊の混血で、加茂家の正統な血統として扱われず特級呪物・敵性存在とされた経緯。",
+      "reason": "手順1：surfaced 24件を全文確認。rank1(c23)/rank2(c22)は『加茂憲紀と脹相の対比を見ると、同じ赤血操術でも出自と立場が異なる』と**差があるという事実だけ**を述べ、理由を述べていない。rank3(c14)『加茂憲紀は京都校三年で加茂家の人物』、rank11(c16)『脹相は呪胎九相図の一人』、rank5(c20)『赤血操術は加茂家相伝の術式』、rank10(c11)『御三家…加茂家は赤血操術の家系』も同様で、庶子/嫡男・九相図の生成経緯・加茂憲倫に相当する記述は24件中ゼロ。複数合成しても『なぜ』は出ないため chunking_failure ではない。手順2：probe で『加茂憲紀』7件、『憲紀』7件、『脹相』8件、『赤血操術』7件、『加茂家』5件が**いずれも全件 surfaced 済み**＝当該人物・術式に言及するチャンクは全部読んでいる。短いドメイン語『当主』『嫡男』『庶子（れた庶子）』『身分』『後継者』はいずれも corpus_hit 0。よって missing_knowledge。"
+    },
+    {
+      "id": "C2-05",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "3657f903eec448fcac5ac3aa46683ba2",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "封印後の力関係の具体：五条が単独で戦局を決められる最大戦力であり封印で呪霊・呪詛師側の行動が自由化したこと、呪術総監部が五条を渋谷事変共同正犯として永久追放し封印解除も罪と定めた通達、虎杖の死刑執行猶予取り消しと執行決定（処刑役に乙骨を任命）、虎杖の猶予が五条の身柄保証で成立していたという依存関係、結果として高専が戦力減と内部分断を抱え羂索が死滅回游を始める下地が整った、という接続。",
+      "reason": "手順1：surfaced 24件を全文確認。rank4(c19)『獄門疆: 五条悟の封印に関わる特級呪物。渋谷事変後の展開で重要』、rank2(c10)『渋谷事変編…五条悟の封印…／渋谷事変後は呪術界の秩序が大きく変わる。虎杖の処分、乙骨の再登場、上層部の判断、羂索の計画、天元との接触が次の展開へつながる』、rank11(c22)『五条は個人として突出しており、呪術界の均衡に影響する』、rank1(c11)『呪術界上層部は…五条封印後の判断などで物語に影響する』、rank7(c17)『来栖華は…獄門疆から五条を解放する鍵』。ここまでで言えるのは「封印後に秩序が変わった」「五条は均衡に影響する存在」というラベルまでで、B はこれを正しく引用済み（generation_failure ではない）。どの勢力の力がどう移ったか（総監部の裁定、虎杖の処遇、羂索側の自由化）を述べた記述は24件中に無く、合成でも出ない。手順2：probe で『封印』corpus 5件、『獄門疆』3件がいずれも全件 surfaced 済み。未surfacedは『五条』のc4と『羂索側』のc36で、c36 は他問で全文確認済み（Culling Game 解説。主人公側の目的として『五条解放』を挙げるのみで力関係の変化は述べていない）。よって retrieval_failure ではなく missing_knowledge。"
+    },
+    {
+      "id": "C2-06",
+      "role": "C-2",
+      "prior_10q_gap": true,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "f40915613f4e4ce686d46bf175a50d22",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "羂索が死滅回游に至るまでに打った準備の因果連鎖：(1)脳を移し替えて肉体を渡り歩く長期計画、(2)加茂憲倫として呪胎九相図を作り、虎杖香織の肉体を乗っ取って虎杖悠仁を産ませたこと、(3)呪霊操術を持つ夏油傑の肉体を奪ったこと、(4)天元が進化により呪霊に近い存在となり呪霊操術の対象になり得ること、(5)渋谷事変で五条悟を獄門疆に封印し呪術界の統制を崩したこと、(6)約1000人の非術師にマーキングし術師として覚醒させ泳者として結界＝コロニーへ投入したこと、(7)これらが「天元と日本人全体の同化＝呪力の最適化」という最終目的に収束すること。",
+      "reason": "手順1：surfaced 24件を全文確認。rank 12(chunk 15)は『羂索は他者の肉体を渡り歩く存在。夏油の肉体を利用し…死滅回游の設計者として重要』と人物紹介のみで準備の中身が無い。rank 2(chunk 27)は死滅回游を『羂索が仕組んだ大規模な結界ゲーム』と定義した上で、むしろ『羂索の最終目的にどうつながるか』が混乱点だと述べるだけで目的自体を書いていない。rank 3(chunk 10)は渋谷事変での五条封印と『羂索の計画、天元との接触』の語のみ、rank 6(chunk 16)は『天元は…星漿体、同化、結界、羂索の計画と深く関係する』の一文のみ。準備を述べたチャンクが1つも無く、複数を合わせても因果連鎖は構成できない（chunking_failure でない）。手順2：短いドメイン語のうち『加茂憲倫』『虎杖香織』『死体』『進化』が corpus_hit_count=0。present_but_unsurfaced は空。羂索を含む未surfaced チャンク 12・23 は同一入力ファイルの C2-07 側で全文が見えており、いずれも虎杖の人物紹介・出自の示唆のみで準備の記述は無いため retrieval_failure も否定。よってコーパス自体に該当知識が無い。"
+    },
+    {
+      "id": "C2-07",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "84b4cb6ef6b54b028d77b0cd69e1e1b6",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "虎杖悠仁の出自の中身：羂索が母・虎杖香織の肉体を乗っ取った状態で虎杖を産ませ、宿儺の器として耐えうる身体を用意したこと（＝羂索にとっては計画の駒として不可欠）。および、羂索（加茂憲倫）の血が呪胎九相図と虎杖の双方に流れており脹相と虎杖が腹違いの兄弟であること、脹相が血縁の異変を感知する能力で壊相・血塗と同じ感覚を得て虎杖を弟と確信し守護者へ転じたこと（＝脹相にとっては血縁としての意味）。",
+      "reason": "手順1：surfaced 24件を全文確認。rank 1(chunk 23)が争点に最も近く『虎杖悠仁は単なる偶然の器ではなく、羂索や宿儺、脹相との関係を通じて出自が重要になる。詳細は物語後半の核心に関わる』と、重要である事実だけ述べて理由を明示的に保留している。rank 8(chunk 16)は『脹相は呪胎九相図の一人…後に虎杖との関係が重要になる』、rank 21(chunk 26)は『脹相と虎杖は物語後半で兄弟性が重要になる』で、いずれも兄弟性の“結論”すら血縁の根拠を伴わない。rank 12(chunk 15)の羂索紹介にも出自への言及なし。どのチャンクも理由を持たず、合成しても理由は導けない。手順2：短いドメイン語『加茂憲倫』『虎杖香織』『腹違い』『感知』がいずれも corpus_hit_count=0。present_but_unsurfaced は『回収』のみで争点に無関係。よって missing_knowledge。"
+    },
+    {
+      "id": "C2-08",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "d0b3b82157884c1682b7cfe6af9fa429",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "真人をめぐる因縁の具体的な出来事連鎖：映画館の殺人現場で非術師の吉野順平が真人を視認したことによる接触、真人が順平にいじめへの復讐手段として術式を与えたこと、七海建人が映画館事件の調査で虎杖に順平の調査を命じ虎杖と順平が交流したこと、真人が順平の母を殺させて復讐へ追い込み虎杖の眼前で順平を無為転変で改造・死亡させたこと、渋谷事変で真人が虎杖の眼前で七海を殺害し続いて釘崎に無為転変で致命傷を与え虎杖の心を折ろうとしたこと、東堂葵の介入で虎杖が反撃に転じたこと、真人にとって虎杖が宿儺ゆえの天敵だった動機。",
+      "reason": "手順1：surfaced 23件を全文確認。rank 1(chunk 20)は『無為転変は真人の術式…虎杖や七海、順平、釘崎との因縁に関わる』と4名を列挙するのみで順序も連鎖も無い。rank 2(chunk 9)の『幼魚と逆罰編では、吉野順平、真人、七海建人が関わる』と rank 3(chunk 10)の『渋谷事変編は…真人や漏瑚たち特級呪霊との戦い、虎杖の精神的打撃、七海や釘崎らの危機』を合わせると“編単位の前後関係”までは復元でき、B は実際そこまで到達している（この部分は chunking の問題ではなく解決済み）。残る『どう連鎖したか』＝個々の出来事と因果を書いたチャンクは1つも無い。rank 6(chunk 22)は自閉円頓裹の説明、rank 12(chunk 13)は七海の人物紹介にとどまる。手順2：残部について短いドメイン語『映画館』『視認』『調査』『殺し』がすべて corpus_hit_count=0、『吉野順平』は chunk 9 の1件のみで編の登場人物列挙。present_but_unsurfaced は『最後』のみで争点に無関係。よってコーパスに出来事レベルの記述が無い。"
+    },
+    {
+      "id": "C2-09",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "f58d08f0d6fe474f8447431283c9983e",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "与幸吉が双方に関わった動機と取引条件：天与呪縛で右腕・膝から下を欠き腰から下の感覚も無い代償に日本全土規模の術式範囲と莫大な呪力を得ていること、『普通の身体で京都校の皆と暮らす』という願いを真人の無為転変なら叶えられると知り真人・偽夏油（羂索）側と縛り（契約）を結んで内通者になったこと、思想的転向ではない私的取引であること、契約条件『京都校の人間には手を出さない』が京都姉妹校交流会の襲撃で破られ協力を破棄したこと、健康な肉体を得た直後に真人へ挑み敗れて死亡したこと。",
+      "reason": "手順1：surfaced 19件を全文確認。rank 1(chunk 14)は『究極メカ丸は与幸吉が遠隔操作するメカ型の呪骸。本人は天与呪縛により広範囲の術式操作能力を持つ一方、肉体に重い制約がある』と設定のみ、rank 2(chunk 10)は『宵祭り編では、究極メカ丸こと与幸吉と真人・夏油側の関係が焦点になる。渋谷事変直前の導火線にあたる』と関係の存在だけを述べ、動機・取引・条件・結末を一切書いていない。rank 3(chunk 21)は傀儡操術の術式説明、rank 5(chunk 19)は天与呪縛の用語定義。chunk 20 の無為転変の定義（肉体を変形させる）と chunk 14 の身体制約を並べても、両者を結ぶ取引の記述はコーパスに無く、合成では推測にしかならないため chunking_failure ではない。手順2：短いドメイン語『高専側』『願い』『普通』『叶う』がいずれも corpus_hit_count=0（『縛り』での取引記述も surfaced 中に存在せず）。present_but_unsurfaced は空で retrieval_failure も否定。よって missing_knowledge。"
+    },
+    {
+      "id": "C2-10",
+      "role": "C-2",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "35f9b9c8369449a9af1118ffa24a31db",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "宿儺が伏黒恵に関心を向ける理由：十種影法術が過去に六眼を持つ術師を破ったとされ五条悟の無下限呪術にも対抗しうる潜在能力を持つと評価されること、宿儺が惹かれたのは人格ではなく術式の到達点（調伏すれば適応能力を持つ八握剣異戒神将魔虚羅を得られる点）であること、そのため渋谷事変で伏黒を助けるなど一貫して生かし最終的に虎杖の身体から伏黒の身体へ受肉して十種影法術を我が物としたこと、支配のために津美紀を巻き込んだ段取り、宿儺が伏黒個人に情を持ったかは未確定であること。",
+      "reason": "手順1：surfaced 24件を全文確認。rank 1(chunk 23)は『伏黒恵は禪院家相伝の十種影法術を持ち、宿儺からも強い関心を向けられる』と“関心を向けられる”事実だけを述べ理由を書いていない（probe でも『強い関心』は chunk 23 の1件のみ）。rank 10(chunk 20)は『魔虚羅は適応能力を持つ強力な式神として知られる』、rank 4(chunk 11)・rank 3(chunk 22)は禪院家＝相伝術式・血統重視という家の説明、rank 2(chunk 12)は伏黒の式神一覧、rank 12(chunk 15)の宿儺紹介は『非常に利己的で、虎杖や伏黒をめぐる物語の核になる』止まり。これらを合成しても『宿儺が十種影法術の何を評価したか』という因果は導けず、chunking_failure ではない。手順2：残部について短いドメイン語『到達点』『持つ術師』『破ったこ(と)』『調伏すれば適応能力』が corpus_hit_count=0 で、六眼を破った逸話や器選定の理由がコーパスに無いことと整合する（『六眼』自体は5件あるが、いずれも五条の能力説明で十種影法術との対戦史ではない）。present_but_unsurfaced は空。よって missing_knowledge。"
+    },
+    {
+      "id": "C3-01",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 4,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "0b99da1c98ef48208601abe38eda8a17",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "領域展開の必中効果が成立しない例外の列挙とその条件：(1)落花の情による接触時のカウンター、(2)呪力を全く持たない者（天与呪縛／フィジカルギフテッド）は無機物扱いで領域内に閉じ込められない、(3)領域の外へ逃げる、(4)伏黒恵の嵌合暗翳庭のように結界を閉じ切れていない不完全な領域では必中効果がそもそも付与されない、(5)簡易領域はシン・陰流の技で術式を介さない結界を自身の周囲に張ることで中和する、という機序の明示。",
+      "reason": "手順1：surfaced_texts 全24件を読了。rank 6（chunk 18・術式用語辞典）が『簡易領域: 領域への対抗策の一つ。必中効果を中和する』『領域展延: 領域を薄くまとい、相手の術式を中和する』と単独で2つの例外を述べており、B はこの2つを実際に回答に反映済み（generation_failure ではない）。rank 8（chunk 29）『五条と宿儺はどちらも領域を展開し、必中効果の押し合いが起きる』が領域同士のぶつけ合いに相当する部分をカバー。残る例外（落花の情・呪力ゼロの者・領域外への脱出・不完全な領域）はどの surfaced チャンクにも記述なし。手順2：probe で短いドメイン語『落花』が corpus_hit_count 0（absent_from_corpus）。さらに『必中』は corpus 4チャンク（18,28,29,36）すべてが surfaced 済みで、コーパス内の必中言及は全て B に届いている＝retrieval_failure ではない。present_but_unsurfaced は『陰流』（chunk 14）のみだが、chunk 14 は他問の surfaced に現れており三輪霞の紹介文（シン・陰流の簡易領域や刀を用いる）で、必中の例外条件は含まない。よって残余はコーパス側の不足と判断。"
+    },
+    {
+      "id": "C3-02",
+      "role": "C-3",
+      "prior_10q_gap": true,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "33fe86321a3d488d96525b6c00335caf",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "坐殺博徒の大当たり状態の中身：一定時間（約4分11秒）呪力が無制限に溢れ続けること、その間は肉体が反射的に反転術式を行い欠損しても即時再生する（事実上不死身）こと、秤自身は反転術式を習得していないのに自動発動している点が通常の反転術式使用者（意識的な呪力操作・習得の難しさ・呪力消費が必要）との差であること、焼き切れた術式もラウンド中に回復すること。",
+      "reason": "手順1：surfaced_texts 全24件を読了。秤金次に触れるのは rank 1（chunk 21）『坐殺博徒は秤金次の領域展開。パチンコ台のような確率演出と大当たり状態が戦闘能力に直結する』、rank 2（chunk 13）『領域展開「坐殺博徒」による大当たり状態が特徴で、運と確率を戦闘能力に接続する特殊な術師』、rank 7（chunk 22）『戦闘そのものに特殊ルールを持ち込むタイプの領域』の3件のみで、いずれも大当たり中の状態そのものを記述していない。反転術式側は rank 3（chunk 18）『負の呪力を掛け合わせて正のエネルギーを作る技術。使える者は限られる』のみで、両者を結ぶ記述はどのチャンクにもない。複数チャンクを合わせても比較が成立しないので chunking_failure でもない。手順2：probe で『秤金次』corpus 4件・surfaced 4件、『大当たり』corpus 2件・surfaced 2件、『坐殺博徒』corpus 3件・surfaced 3件と全件到達済み、present_but_unsurfaced は空。短語の『反射』『回復』『再生』はいずれも absent_from_corpus。retrieval は尽くされており、内容自体がコーパスに無い。"
+    },
+    {
+      "id": "C3-03",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "c7f995dcc4344dd29cd0d21fad8b0da6",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "誅伏賜死の判定分岐：ジャッジマンが罪状を提示し弁論を経て判決が出ること、有罪なら付加刑『没収』で術式使用不可（術式を持たない者は呪力を練れなくなり、呪具所持者は呪具が対象）、罪が重ければ『死刑』が加わり日車に処刑人の剣が与えられ斬られた者は確実に死ぬこと、無罪判決なら一切のペナルティが生じず日車側は何も得られないこと（分岐は罪の有無ではなく判決に従属する）。",
+      "reason": "手順1：surfaced_texts 全24件を読了。誅伏賜死に触れるのは rank 1（chunk 17）『領域展開「誅伏賜死」と式神ジャッジマン、没収、死刑、処刑人の剣など、裁判を思わせる能力』、rank 2（chunk 21）『裁判の形式で罪や罰を扱い、没収や死刑判決が戦闘結果に影響する』、rank 3（chunk 22）『特殊ルールを持ち込むタイプの領域』の3件。没収・死刑・処刑人の剣という語は出るが、どれが有罪時の効果か、無罪時に何が起きるかという分岐は単独でも合成でも得られない。手順2：probe で『誅伏賜死』corpus 3件・surfaced 3件、『日車寛見』corpus 4件・surfaced 4件、『没収』『死刑』とも corpus 2件が全て surfaced、present_but_unsurfaced は空。未 surfaced の日車言及（chunk 10・31）は他問の surfaced 本文で確認でき、chunk 10 は人外魔境新宿決戦編の人物列挙、chunk 31 は『日車は裁判』という暗記のコツで、いずれも分岐を持たない。短語『有罪』『無罪判決』は absent_from_corpus。"
+    },
+    {
+      "id": "C3-04",
+      "role": "C-3",
+      "prior_10q_gap": true,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "ce06d0547e724bc48e82ffc97cf6ba08",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "解と捌の使い分け基準と効果差：対象が呪力を帯びているかで切り替わること（伏魔御厨子内では必中範囲の呪力持ちに『捌』、呪力の無いものに『解』が浴びせられる）、『解』は連射や形状調整が利く通常の飛ぶ斬撃であること、『捌』は相手の呪力量・強度に応じた出力で一太刀で卸す斬撃であり呪霊や呪力を纏った術師に有効であること。",
+      "reason": "手順1：surfaced_texts 全24件を読了。解・捌に触れるのは rank 6（chunk 21）の『御厨子は宿儺の術式として扱われる。斬撃系の解、捌、炎に関わる技、領域展開「伏魔御厨子」などが宿儺の戦闘で重要』という名称列挙のみ。rank 16（chunk 15）も『術式「御厨子」、斬撃、領域展開「伏魔御厨子」などが代表的』と列挙するだけで、使い分け条件も効果差も述べていない。他チャンク（22・36・37）は伏魔御厨子の結界が開いている点や領域戦の論点整理で、解／捌の区別には触れない。合成しても答えが出ないため chunking_failure でもない。手順2：probe で『斬撃』corpus 6チャンク（15,21,22,31,35,36）が全て surfaced、『伏魔御厨子』corpus 6件も全て surfaced、present_but_unsurfaced は空。解／捌を説明する記述があれば斬撃語を伴うはずで、その全件が B に届いている以上、retrieval ではなくコーパス側の不足。短語『使い分け』『呪力差』『卸す』も absent_from_corpus。"
+    },
+    {
+      "id": "C3-05",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "18f96904d3344c7fb92ea6bd547a07d7",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "呪言の反動が強まる条件（強い言葉を使ったとき、格上の相手に使ったとき、最悪の場合は命令が自分に返る、使いすぎると喉が痛んで戦闘不能に至る）と、狗巻棘の抑制策のうち喉スプレーの携行による喉の損耗ケア。おにぎりの具による語彙制限が『反動を抑えるための手段』であるという因果の明示も無い。",
+      "reason": "手順1：surfaced_texts 全22件を読了。後半（狗巻がどう抑えているか）は rank 1（chunk 20）『呪言は狗巻棘の術式。発した言葉が相手に強制力を持つ。反動があるため普段の発話を制限している』と rank 2（chunk 13）『普段は不用意に他人を呪わないため、おにぎりの具で会話する』が単独で答えており、B もこの2点を回答に反映済み（この部分は generation_failure ではない）。残る『反動が強まる条件』はどのチャンクにも無い。手順2：probe で『反動』は corpus_hit_count 1（chunk 20 のみ）で、その1件は surfaced 済み＝コーパス中の反動言及は全て B に届いている。『呪言』corpus 3件（12,13,20）・『狗巻棘』corpus 5件（8,11,12,13,20）も全件 surfaced、retrieval の取りこぼしは無い。短語『強い言葉』『痛み』『消耗』『語彙』は absent_from_corpus（present_but_unsurfaced の『格上』は chunk 40 だが、同チャンクは他問の surfaced 本文で YouTube 取得処理の方針を述べる内容と確認でき、呪言とは無関係）。"
+    },
+    {
+      "id": "C3-06",
+      "role": "C-3",
+      "prior_10q_gap": true,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 3,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "c7eaf971b95746e794c15adbf9a98f20",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "呪霊操術の取り込み条件：呪霊を球状（呪霊玉）にして飲み込む手順、原則として対象を調伏（屈服）させる必要があること、階級換算で2級以上の差があれば降伏を省いてほぼ無条件に取り込めること、既に主従関係が成立している呪霊は取り込めない（主を殺して座を奪えば可）こと、取り込み時点で当該術式の精度成長が止まること、取り込み数の上限は作中未明示であること。",
+      "reason": "手順1：surfaced 24件を全文確認。呪霊操術に触れるのは rank5(chunk20)『呪霊操術は夏油傑の術式。取り込んだ呪霊を使役する』と rank7(chunk15)『夏油傑は…呪霊操術を使う』および rank8(chunk25)の術式名対応表のみで、いずれも取り込みの手順・条件に一切触れない。rank4(chunk7)は等級制度の一般説明（特級〜4級、任務危険度で揺れる）だけで呪霊操術と結び付かない。rank1(chunk28)/rank2(chunk35)/rank6(chunk18)の『縛り＝条件と制約の取引』は別概念であり、複数チャンクを合成しても取り込み条件は導けない。手順2：probe で短いドメイン語『調伏』『主従関係』『呪霊玉』『球状』『等級差』『上限』がいずれも corpus_hit_count=0（absent_from_corpus）、present_but_unsurfaced は空。未surfaced 17件に該当語が存在する証拠もないため、コーパス側に情報が無いと判断。"
+    },
+    {
+      "id": "C3-07",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "add_candidate",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan",
+        "reliable_secondary"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "4852e653f3ba428682a17424d9bd41d8",
+      "ledger_status": "auto_classified",
+      "missing_knowledge": "嵌合暗翳庭が未完成とされる理由：結界を閉じ切れていないため『必殺』はおろか『必中』効果も付与されていないこと。完成した領域展開は生得領域を結界で外界から切り離して閉じ、内部に術式を付与して必中・必殺を得るという対比。嵌合暗翳庭は既存の建物の壁等で空間を代用しており独立した生得領域を成立させていないこと。現状の役割は影を敷き詰めて十種影法術の展開場所を確保し式神運用を最大化することに限られること。",
+      "reason": "手順1：surfaced 24件を全文確認。嵌合暗翳庭に言及するのは rank3(chunk22)『伏黒恵の嵌合暗翳庭は、十種影法術と影の性質を拡張する未完成寄りの領域として描かれる』と rank1(chunk12)『領域展開は嵌合暗翳庭』のみで、どちらも『未完成寄り』とラベルするだけで欠けている要素を述べていない。rank7(chunk18)の領域展開定義（生得領域を結界として展開する奥義、必中効果が関わる）と合成しても、『結界を閉じ切れていない／必中が付与されない』は推論であって記載ではない。なお chunk22 は宿儺の伏魔御厨子については『結界を閉じない領域』と書くが嵌合暗翳庭には同種の記述が無い。手順2：probe で短いドメイン語『必殺』が corpus_hit_count=0、『外界』も 0。present_but_unsurfaced は『内部』のみで、その所在 chunk5/40 はナレッジ管理方針の記述（他問の surfaced で全文既読）であり本件と無関係。よってコーパスに理由の記載が無いと判断。"
+    },
+    {
+      "id": "C3-08",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "18c7277b69ff4d809e0705c3d983fdaa",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "帳の出入り制限の具体条件：既定では出入りを妨げないこと、基本機能は外部からの視覚遮断と非術師に対する認識阻害であること、術者が張る際に条件を加えて出入りを制限できること、制限対象にできるのは人間・呪霊・呪物など『呪力にまつわるモノ』に限られること、実例（京都姉妹校交流会の『五条悟の侵入だけを拒む結界』、渋谷事変の複数層の結界）。",
+      "reason": "手順1：surfaced 24件を全文確認。帳に触れるのは rank1(chunk19) の用語辞典『帳: 外部から見えないようにしたり、条件付きで出入りを制限したりする結界。任務や襲撃で頻繁に使われる』のみ。これは質問前半（誰でも自由に出入りできるとは限らない）には答えるが、後半の『その条件は何か』には答えておらず、B もそこまでは正しく答えている。他の 23 件（結界・呪力・領域関連の chunk18/17/13 等）に帳の条件設定に関する記述は無く、合成しても後半は導けない。手順2：残る後半について probe を確認。『出入り』は corpus_hit_count=1（chunk19 のみ・surfaced 済）で、コーパス中で帳の出入りに触れる箇所は B が既に見た1箇所だけ。短いドメイン語『侵入』『一般人』『呪物など』はすべて absent_from_corpus。present_but_unsurfaced の『非術師』(chunk8/15/23)『京都姉妹校交流会』(chunk9/15/16) は他問の surfaced として全文既読で、いずれも夏油の思想や交流会編の概要であり帳の条件に触れないため retrieval_failure は否定。"
+    },
+    {
+      "id": "C3-09",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "e13264ab8dde40adba93a99c7e76d7fa",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "反転術式が他者に使えるか否かの分かれ目：生み出した正のエネルギーを体外へアウトプットできるかどうかであること。多くの術師は自分の体内でしか使えず、他者を治療できるのは家入硝子・乙骨憂太・両面宿儺などごく少数で、五条悟ですら自分しか治せないこと。原理は原作で明示されておらず、修行の段階ではなく生得的な資質・才能の差として語られること。",
+      "reason": "手順1：surfaced 24件を全文確認。反転術式の記述は rank1(chunk18)『反転術式: 負の呪力を掛け合わせて正のエネルギーを作る技術。自己治癒や他者治療に関わるが、使える者は限られる』、rank2(chunk13)『家入硝子は反転術式で他者を治療できる希少な人物』、rank4(chunk35)（反転術式と術式反転の区別）、rank9(chunk37)（五条の強みとして列挙）の4箇所。『使える者は限られる』『希少』とは書くが、他者可・自己限定を分ける原因には一切触れない。chunk18＋chunk13 を合成しても『家入は希少』止まりで由来は出ない。手順2：probe で短いドメイン語『体内』『体外』『回復』『希少性』『修行』がすべて absent_from_corpus、present_but_unsurfaced は空。アウトプット可否という争点語がコーパスに無く、未surfaced 側にある証拠も無いため missing_knowledge と判断。"
+    },
+    {
+      "id": "C3-10",
+      "role": "C-3",
+      "prior_10q_gap": false,
+      "disposition": "quarantined",
+      "failure_cause": "missing_knowledge",
+      "external_status": "pass",
+      "knowledge_status": "fail",
+      "same_answer": false,
+      "a_evidence_count": 2,
+      "a_source_types": [
+        "fan"
+      ],
+      "b_deterministic_pass": true,
+      "b_failed_checks": [],
+      "candidate_id": "39d24b42dad141c8a99d8bc776d892b1",
+      "ledger_status": "auto_quarantined",
+      "missing_knowledge": "死滅回游の総則追加ルール：泳者が自身に懸けられた得点を除く100得点を消費して管理者（コガネ）と交渉し総則を1つ追加できること、管理者は回游の永続に著しく障る場合を除き申請を認めなければならない義務があること、変更主体は泳者で承認者は管理者であること、実際に追加された例（結界間の移動許可・泳者の離脱許可）、得点規定（術師5点・非術師1点）。",
+      "reason": "手順1：surfaced 24件を全文確認。死滅回游のルール追加に触れるのは rank3(chunk27)『泳者、結界、コガネ、得点、ルール追加、術式剥奪…を分けて説明する』、rank5(chunk19)『コガネ: 泳者に情報やルールを伝える存在』『泳者: …ポイントやルール追加の対象になる』、rank2(chunk20) の同一定義、rank6(chunk10)『泳者、結界、コガネ、得点、ルール追加…が重要語』、rank4(chunk36)（解説動画の論点列挙）で、いずれも『ルール追加という要素が存在する』と列挙するだけ。追加の条件・主体・承認手続きはどのチャンクにも無く、合成しても導けない（chunk19 の『ルール追加の対象になる』は変更権者の記述ではない）。手順2：probe で短いドメイン語『総則』『管理者』『100得点』『参加者』『承認する』がすべて absent_from_corpus、present_but_unsurfaced は空。よってコーパスに条文相当の情報が無いと判断。"
+    }
+  ]
+}

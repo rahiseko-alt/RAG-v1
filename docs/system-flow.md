@@ -87,6 +87,11 @@ flowchart TD
 
 ### Dが出すべき分類
 
+**実装済み**（2026-08-01）：`src/coverage_loop.py` の `FactCheckJudgment.failure_cause` と
+`classify_coverage_item()`。ここに書かれている8分類はスキーマの型（`FailureCause`）として存在する。
+下表の「次の行き先」列（自動採用/自動却下/隔離への振り分けロジック、台帳への永続化、
+quarantine UI）はまだ未実装（`docs/handoff.md` の次回やる事を参照）。
+
 | 分類 | 意味 | 次の行き先 |
 |---|---|---|
 | `missing_knowledge` | 必要情報がナレッジにない | ナレッジ追加 |

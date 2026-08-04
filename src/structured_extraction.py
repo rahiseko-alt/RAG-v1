@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 from langchain_core.documents import Document
 from pydantic import BaseModel, Field
@@ -36,7 +36,16 @@ def _model_dump(model: BaseModel) -> dict[str, Any]:
     return model.dict()
 
 
-def _model_copy(model: BaseModel, update: dict[str, Any]) -> BaseModel:
+_ModelT = TypeVar("_ModelT", bound=BaseModel)
+
+
+def _model_copy(model: _ModelT, update: dict[str, Any]) -> _ModelT:
+    """Copy-with-update that keeps the concrete model type, not just `BaseModel`.
+
+    Callers append the result straight into `list[KnowledgeEntity]` /
+    `list[KnowledgeFact]`, so widening to `BaseModel` here would lose the element
+    type at every call site.
+    """
     if hasattr(model, "model_copy"):
         return model.model_copy(update=update)
     return model.copy(update=update)

@@ -180,7 +180,7 @@ class CoverageLoopRequest(BaseModel):
     focus: str | None = Field(default=None, min_length=1, max_length=1000)
     questions: list[Annotated[str, Field(min_length=1, max_length=4000)]] = Field(
         default_factory=list,
-        max_length=30,
+        max_length=200,
     )
     external_answers: dict[str, Any] = Field(default_factory=dict)
     knowledge_answers: dict[str, Any] = Field(default_factory=dict)
@@ -190,6 +190,22 @@ class CoverageLoopRequest(BaseModel):
     answer_mode: Literal["strict", "standard", "explore"] = "standard"
     allow_llm_agents: bool = False
     run_knowledge_answerer: bool = False
+    persist: bool = True
+
+
+class CoverageCandidateResolutionRequest(BaseModel):
+    status: Literal["auto_approved", "auto_rejected"]
+    reason: str = Field(default="", max_length=500)
+    operator: str | None = Field(default=None, max_length=120)
+
+
+class CoverageCandidateOperatorRequest(BaseModel):
+    operator: str | None = Field(default=None, max_length=120)
+
+
+class CoverageCandidateActivationRequest(BaseModel):
+    reason: str = Field(default="", max_length=500)
+    operator: str | None = Field(default=None, max_length=120)
 
 
 _RAG_CACHE: dict[str, Any] = {}
@@ -307,16 +323,20 @@ def _summarize_indexed_chunks(vs: Any) -> str:
     except Exception as exc:
         return f"索引チャンク一覧の取得に失敗: {safe_error_message(exc)}"
 
-    rows: list[tuple[int, str]] = []
+    rows: list[tuple[tuple[int, int], str]] = []
     documents = raw.get("documents", []) or []
     metadatas = raw.get("metadatas", []) or []
     for doc, metadata in zip(documents, metadatas):
         metadata = metadata or {}
         chunk_id = metadata.get("chunk_id")
         try:
-            sort_key = int(chunk_id)
-        except (TypeError, ValueError):
-            sort_key = 999999
+            # Rank by validity first so an unusable id always sorts last, however
+            # large a real id gets — the previous 999999 sentinel would have been
+            # overtaken by a genuine id past that count. OverflowError is caught
+            # alongside because int() raises it (not ValueError) for float("inf").
+            sort_key: tuple[int, int] = (1, 0) if chunk_id is None else (0, int(chunk_id))
+        except (TypeError, ValueError, OverflowError):
+            sort_key = (1, 0)
         snippet = " ".join(str(doc).split())[:90]
         rows.append(
             (
@@ -814,6 +834,13 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail="comparison requires one question")
         if request.question_limit is not None:
             raise HTTPException(status_code=400, detail="question_limit is not allowed for comparison")
+        if not is_generation_configured():
+            provider = get_llm_provider()
+            key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
+            raise HTTPException(
+                status_code=503,
+                detail=f"{key_name} is not configured for LLM_PROVIDER={provider}. Set it in .env before calling comparison-jobs.",
+            )
         return _create_job(
             revision_id=revision_id,
             kind="comparison",
@@ -832,6 +859,13 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             raise HTTPException(
                 status_code=400,
                 detail="full validation does not accept question or question_limit",
+            )
+        if not is_generation_configured():
+            provider = get_llm_provider()
+            key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
+            raise HTTPException(
+                status_code=503,
+                detail=f"{key_name} is not configured for LLM_PROVIDER={provider}. Set it in .env before calling validation-jobs.",
             )
         return _create_job(
             revision_id=revision_id,
@@ -889,6 +923,15 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
         payload: StructuredExtractionRequest | None = None,
     ) -> dict[str, Any]:
         request = payload or StructuredExtractionRequest()
+        # Only the real LLMStructuredExtractor (lazily built on first use) needs a
+        # key; an injected extractor (production alternative or test fake) does not.
+        if wb.structured_extractor is None and not is_generation_configured():
+            provider = get_llm_provider()
+            key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
+            raise HTTPException(
+                status_code=503,
+                detail=f"{key_name} is not configured for LLM_PROVIDER={provider}. Set it in .env before calling structured-extract.",
+            )
         try:
             return wb.extract_revision_structured_records(
                 revision_id,
@@ -909,7 +952,13 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
         payload: CoverageLoopRequest | None = None,
     ) -> dict[str, Any]:
         request = payload or CoverageLoopRequest()
-        requires_local_llm = request.allow_llm_agents or request.run_knowledge_answerer
+        # `run_coverage_loop` always calls the LLM question generator for round >= 2
+        # (only round 0 gets the caller's seed_questions; later rounds generate from
+        # previous findings), so a multi-round request needs a key even when
+        # allow_llm_agents/run_knowledge_answerer are both false.
+        requires_local_llm = (
+            request.allow_llm_agents or request.run_knowledge_answerer or request.rounds > 1
+        )
         if requires_local_llm and not is_generation_configured():
             provider = get_llm_provider()
             key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
@@ -930,6 +979,7 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
                 answer_mode=request.answer_mode,
                 allow_llm_agents=request.allow_llm_agents,
                 run_knowledge_answerer=request.run_knowledge_answerer,
+                persist=request.persist,
             )
         except WorkbenchNotFoundError as exc:
             raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
@@ -937,6 +987,95 @@ def create_app(workbench: QualityWorkbench | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=safe_error_message(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=500, detail=safe_error_message(exc)) from exc
+
+    @app.get("/workbench/revisions/{revision_id}/coverage-candidates")
+    def list_coverage_candidates(
+        revision_id: str,
+        status: str | None = None,
+    ) -> dict[str, Any]:
+        try:
+            wb.store.get_revision(revision_id)
+            return {"items": wb.store.list_coverage_candidates(revision_id, status=status)}
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/coverage-candidates/{candidate_id}/resolve")
+    def resolve_coverage_candidate(
+        candidate_id: str,
+        payload: CoverageCandidateResolutionRequest,
+    ) -> dict[str, Any]:
+        try:
+            return wb.store.resolve_coverage_candidate(
+                candidate_id,
+                status=payload.status,
+                reason=payload.reason.strip(),
+                operator=(payload.operator.strip() if payload.operator else None),
+            )
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except (WorkbenchConflictError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
+
+    @app.get("/workbench/coverage-candidates/{candidate_id}")
+    def get_coverage_candidate(candidate_id: str) -> dict[str, Any]:
+        try:
+            return wb.store.get_coverage_candidate(candidate_id)
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/coverage-candidates/{candidate_id}/implement")
+    def implement_coverage_candidate(candidate_id: str) -> dict[str, Any]:
+        """`auto_approved` -> `implemented` (Phase 2): builds a knowledge-revision draft
+        from the candidate with no LLM call — see `QualityWorkbench.
+        implement_coverage_candidate`."""
+        try:
+            return wb.implement_coverage_candidate(candidate_id)
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except (WorkbenchConflictError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/coverage-candidates/{candidate_id}/verify")
+    def verify_coverage_candidate(
+        candidate_id: str,
+        payload: CoverageCandidateOperatorRequest | None = None,
+    ) -> dict[str, Any]:
+        """`implemented` -> `verified` (Phase 2): requires a passed validation job for
+        the implemented revision that also clears `is_promotion_eligible` (improvement
+        confirmed, no regression, and the failure_cause is on the auto-promotable
+        allowlist — `chunking_failure` is excluded, see `src/coverage_loop.py`)."""
+        request = payload or CoverageCandidateOperatorRequest()
+        try:
+            return wb.store.verify_coverage_candidate(
+                candidate_id,
+                operator=(request.operator.strip() if request.operator else None),
+            )
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except (WorkbenchConflictError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
+
+    @app.post("/workbench/coverage-candidates/{candidate_id}/activate")
+    def activate_coverage_candidate(
+        candidate_id: str,
+        payload: CoverageCandidateActivationRequest | None = None,
+    ) -> dict[str, Any]:
+        """`verified` -> `active` (Phase 2): activates the candidate's implemented
+        revision via the same strict path as `/workbench/revisions/{id}/approve`
+        (`QualityWorkbench.activate_coverage_candidate`)."""
+        request = payload or CoverageCandidateActivationRequest()
+        try:
+            result = wb.activate_coverage_candidate(
+                candidate_id,
+                reason=request.reason.strip(),
+                operator=(request.operator.strip() if request.operator else None),
+            )
+            wb.clear_rag_cache()
+            return result
+        except WorkbenchNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=safe_error_message(exc)) from exc
+        except (WorkbenchConflictError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=safe_error_message(exc)) from exc
 
     @app.post("/workbench/revisions/{revision_id}/approve")
     def approve_revision(
