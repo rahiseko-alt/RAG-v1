@@ -15,6 +15,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+import src.rag as rag  # noqa: E402
 from src.ingest import load_and_chunk  # noqa: E402
 from src.knowledge_config import get_active_knowledge  # noqa: E402
 from src.rag import (  # noqa: E402
@@ -131,6 +132,39 @@ def test_bm25_rescue_adds_entity_chunk_when_vector_search_misses_it():
         document.metadata.get("bm25_score")
         for document, _score in rescued
         if document.metadata["chunk_id"] == 20
+    )
+
+
+def test_rerank_matches_documents_written_in_a_different_width_and_spacing():
+    """表記が違うだけの本文が、再ランクで実際に一致として扱われること。
+
+    正規化関数単体のテスト（tests/test_text_normalize.py）は等価性しか見ておらず、
+    それが検索に効いているかは別問題。さらに、テスト側で本文を正規化してから
+    突き合わせると**本文側の正規化が消えても通る**ため、ここは生の
+    `Document.page_content` を渡して `rerank_retrieved_documents` に正規化させる。
+
+    本文だけを全角・空白ありにしてあるので、本文側の正規化が無ければ語が一致せず、
+    ベクトル類似度が高い無関係チャンクに負ける。
+    """
+    from src.knowledge_config import LexicalProfile
+
+    monkeypatch_profile = LexicalProfile()
+    variant = Document(
+        page_content="ＣＯＶＩＤ-19 の患者には 500 mg を投与する。",
+        metadata={"chunk_id": 1},
+    )
+    unrelated = Document(page_content="無関係な内容です。", metadata={"chunk_id": 2})
+
+    scored_variant = rag._lexical_rerank_score(
+        "covid-19 の 500mg について", variant, 0.50, profile=monkeypatch_profile
+    )
+    scored_unrelated = rag._lexical_rerank_score(
+        "covid-19 の 500mg について", unrelated, 0.95, profile=monkeypatch_profile
+    )
+
+    # 無関係チャンクの方がベクトル類似度は高い。本文側の正規化が効いて初めて逆転する。
+    assert scored_variant > scored_unrelated, (
+        f"本文側の正規化が効いていない: variant={scored_variant} unrelated={scored_unrelated}"
     )
 
 

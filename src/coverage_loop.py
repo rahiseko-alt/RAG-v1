@@ -13,7 +13,8 @@ from src.rag import AnswerMode, build_chat_model, get_generation_model
 # retrieval lane does. A probe that tokenized differently from the retriever would
 # report "the corpus does not contain this" for wording the retriever can in fact
 # match, which is the exact mistake the probe exists to prevent.
-from src.rag import _expand_iteration_marks, _query_terms
+from src.rag import _query_terms
+from src.text_normalize import normalize_for_matching
 
 
 AgentRole = Literal["external", "knowledge"]
@@ -449,7 +450,7 @@ def build_corpus_probe(
         if str(chunk.chunk_id)
     }
     normalized_corpus = [
-        (chunk.chunk_id, _expand_iteration_marks(chunk.text)) for chunk in corpus
+        (chunk.chunk_id, normalize_for_matching(chunk.text)) for chunk in corpus
     ]
 
     probed: list[CorpusTermEvidence] = []

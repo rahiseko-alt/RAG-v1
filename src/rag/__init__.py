@@ -32,6 +32,7 @@ from langgraph.graph import END, START, StateGraph
 
 from src.ingest import CHUNK_OVERLAP, CHUNK_SIZE, load_and_chunk, source_sha256
 from src.knowledge_config import LexicalProfile, get_active_knowledge, get_lexical_profile
+from src.text_normalize import normalize_for_matching
 from src.observability import build_langfuse_runnable_config
 
 load_dotenv()  # リポジトリ直下 .env の ANTHROPIC_API_KEY 等を環境変数へ
@@ -336,19 +337,9 @@ def expand_with_neighbor_chunks(
     return list(selected.values())
 
 
-def _expand_iteration_marks(value: str) -> str:
-    chars: list[str] = []
-    for char in value:
-        if char == "々" and chars:
-            chars.append(chars[-1])
-        else:
-            chars.append(char)
-    return "".join(chars)
-
-
 def _query_terms(question: str, *, profile: LexicalProfile | None = None) -> list[str]:
     lexical = profile or get_lexical_profile()
-    normalized = _expand_iteration_marks(question)
+    normalized = normalize_for_matching(question)
     pieces = re.split(r"[\s、。！？!?・/／（）()「」『』【】\[\]のはがをにへでとやもかからまで]+", normalized)
     terms: list[str] = []
     for piece in pieces:
@@ -362,7 +353,7 @@ def _query_terms(question: str, *, profile: LexicalProfile | None = None) -> lis
 
 def _intent_terms(question: str, *, profile: LexicalProfile | None = None) -> set[str]:
     lexical = profile or get_lexical_profile()
-    normalized = _expand_iteration_marks(question)
+    normalized = normalize_for_matching(question)
     return {
         intent.name
         for intent in lexical.intents
@@ -405,7 +396,7 @@ def _lexical_rerank_score(
     profile: LexicalProfile | None = None,
 ) -> float:
     lexical = profile or get_lexical_profile()
-    text = _expand_iteration_marks(document.page_content)
+    text = normalize_for_matching(document.page_content)
     terms = _query_terms(question, profile=lexical)
     intents = _intent_terms(question, profile=lexical)
     entity_terms = [term for term in terms if term not in lexical.generic_terms]
@@ -484,7 +475,7 @@ def _bm25_rank_documents(
     terms = _query_terms(question)
     if not terms or not documents:
         return []
-    normalized_documents = [_expand_iteration_marks(str(text or "")) for text in documents]
+    normalized_documents = [normalize_for_matching(str(text or "")) for text in documents]
     document_lengths = [max(1.0, len(text) / 80.0) for text in normalized_documents]
     average_length = sum(document_lengths) / len(document_lengths)
     document_count = len(normalized_documents)
