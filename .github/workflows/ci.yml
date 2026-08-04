@@ -15,7 +15,48 @@ jobs:
     name: lint / test / 起動スモーク
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 は下の「コミット衛生」検査が PR の差分コミットを
+      # 辿るために必要（既定の shallow clone だと base..HEAD が解決できない）。
+      # リポジトリは数MBなので全履歴取得のコストは無視できる。
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 個人メールアドレスの流出を機械で止める。ローカルの git config は
+      # クローンで運ばれず、人の設定漏れを口頭ルールで防ぐことはできないため、
+      # 「AI の自己申告を証拠にしない」のと同じ理由でここで機械判定する。
+      #
+      # 検査対象は PR の差分コミットのみ。既存履歴には過去のマージコミット由来の
+      # 個人メールが残っており、全履歴を対象にすると恒久的に赤になるため。
+      # ⚠ マージコミットの author は GitHub 側が刻むので、この検査では止められない。
+      #    そちらは GitHub アカウント設定 "Keep my email addresses private" で塞ぐ
+      #    （AGENTS.md「公開リポジトリとしての規律」を参照）。
+      - name: コミット衛生（author/committer メールが noreply か）
+        if: github.event_name == 'pull_request'
+        run: |
+          base='${{ github.event.pull_request.base.sha }}'
+          # noreply として許可する形: GitHub の noreply（ID付き/なし両方）と、
+          # コミットを作る各エージェントの noreply。
+          allow='^([0-9]+\+)?[A-Za-z0-9._-]+@users\.noreply\.github\.com$|^[A-Za-z0-9._-]+@noreply\.[A-Za-z0-9.-]+$|^noreply@[A-Za-z0-9.-]+$'
+
+          leaked=0
+          while IFS='|' read -r sha email role; do
+            [ -z "$sha" ] && continue
+            if ! printf '%s' "$email" | grep -qE "$allow"; then
+              echo "FAIL: $sha の $role メールが noreply ではありません: $email"
+              leaked=1
+            fi
+          done <<EOF
+          $(git log --no-merges --format='%H|%ae|author' "$base..HEAD"; git log --no-merges --format='%H|%ce|committer' "$base..HEAD")
+          EOF
+
+          if [ "$leaked" != "0" ]; then
+            echo ""
+            echo "対処: git config user.email を noreply アドレスに設定し、該当コミットを作り直してください。"
+            echo "  git config --global user.email '<ID>+<username>@users.noreply.github.com'"
+            exit 1
+          fi
+          echo "コミット衛生 OK: $base..HEAD の全コミットが noreply アドレス"
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6

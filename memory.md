@@ -112,17 +112,20 @@
 - **[importance:M][2026-08-01] C役は3人化済み設計: C-1 因果xマニアック、C-2 因果x複数人/組織、C-3 条件/例外x時系列/比較。敵対検証により実ユーザーログ由来・曖昧質問・手順系・エラー系・権限系・no-answer系も追加すべき。**
 - **[importance:M][2026-08-01] 10問coverage loop実験では10問中6件が追加候補。弱点は情報量だけでなく、因果の橋・条件・例外・比較・前提設定の不足。30問質問生成までは完了、A/B/D全実行は未完。**
 
-- **現フェーズ: Stage 1-4 完遂。ポートフォリオ戦略＝能力単位の独立カード集（製品でなく"能力"軸でタグ化・応募時は当てはめ3〜5行のみ新規作成）。能力カード8枚（medguide4＋kosespark4）は既存ポートフォリオ `docs/deliverables/development-career-summary-technical.md` 末尾「## 能力カード」節に統合済（フォーマット・置き場・枚数の3未決点は解消済）。**⚠ この統合先は分割元の vibe-base 側にあり、本リポジトリには存在しない**（本リポには `docs/capability-cards.html` の閲覧ビューのみ）**
-- **[importance:M][2026-07-04] kosespark由来4枚（音声認識/用語補正/動画音声パイプライン/ローカルAI統合）は前回調査ベースで未再検証。案件当てはめ前に kosespark 側で実物確認が要る — plan: なし**
-- **[importance:L][2026-07-04] 案件当てはめ3〜5行の作成は実際の募集要項が出た時点で着手（雛形化は不要とマスター確認済） — plan: なし**
+- **現フェーズ: Stage 1-4 完遂。** 以降は 5フェーズ納品計画（Phase 1〜3 完了・上記参照）で進めている。
+- **[importance:H][2026-08-04] 応募活動そのものに関する私的なメモ（能力カードの構成、他プロジェクト
+  kosespark 由来の項目、募集要項が出てからの作業計画）は、このリポジトリが Public であるため
+  ここから除去した。** 本リポジトリ外で管理すること。**AGENTS.md「公開リポジトリとしての規律」の
+  とおり、私的な事情・予定は今後もここに書かない**（Git 履歴には過去の記載が残るため、
+  完全に消すには履歴の書き換えが必要である点は認識しておく）。
 - 4段階計画: Stage1 Python基礎[完了] → Stage2 分類[完了] → Stage3 RAG[完了] → Stage4 評価ループ[完了]
-- **分岐制御（信頼性の機械強制）**: 信頼物は3層防御（定説→一次URL→独立サブAI check）必須。設計committed（`docs/branch-control-design.md`）。**vibe-base配備はマスター判断（担当AIは配備しない）**
+- **分岐制御（信頼性の機械強制）**: 信頼物は3層防御（定説→一次URL→独立サブAI check）必須。設計committed（`docs/branch-control-design.md`）。**配備の可否は人が判断する（AIは自分の判断で配備しない）**
 
 ### Stage 3 成果物（完遂済・2026-07-04）
 - 題材: WHO HEARTS「Healthy-lifestyle counselling」PDF（`data/sample/`・CC BY-NC-SA 3.0 IGO・再配布可検証済・データカードは data/sample/README.md）
 - `src/ingest`（pypdf＋RecursiveCharacterTextSplitter・30p→71チャンク・出典metadata）／`src/rag`（e5多言語埋め込み＋Chroma cosine＋LangGraph retrieve→generate＋ChatAnthropic日本語引用回答）／`src/rag/cli.py`／`notebooks/03-rag-walkthrough.ipynb`／`tests/test_rag.py`（3 passed）
 - 核＝**出典追跡パネル**（回答が実在チャンクに根拠づくか目視＝Stage1-2定説照合のRAG版）
-- 検証: ingest/埋め込み/Chroma/クロスリンガル検索は自動検証済。**生成はAPIキー未設定のため担当AI(Claude)が生成ノードとして実物チャンクから回答を作り end-to-end実演**（運動/禁煙は出典付き回答・インスリン投与量は「記載なし」で幻覚抑止を実証・マスター確認済）
+- 検証: ingest/埋め込み/Chroma/クロスリンガル検索は自動検証済。**生成はAPIキー未設定のため担当AI(Claude)が生成ノードとして実物チャンクから回答を作り end-to-end実演**（運動/禁煙は出典付き回答・インスリン投与量は「記載なし」で幻覚抑止を実証・確認済）
 - 依存: venv導入済（langchain 1.3系・要 langchain-text-splitters）。生成モデル既定 claude-opus-4-8（env `ANTHROPIC_MODEL` で上書き可）。**opus-4-8 は temperature送ると400** → ChatAnthropicに temperature渡さない
 - 罠: sklearn/HF cache symlink警告は無害。chroma/・HFキャッシュ・venv・.env は gitignore
 
@@ -133,16 +136,16 @@
 
 ### このプロジェクトの真の目的（毎回忘れるな）
 1. 今までやらなかった開発（Python ML/DL）を実際にやる
-2. **その概要と流れをマスターが理解する**（成果物は「動くコード」だけでなく、マスターが読んで流れを追える教材であること）
+2. **その概要と流れを非専門家が理解できる形にする**（成果物は「動くコード」だけでなく、読んで流れを追える教材であること）
 
-→ 各 Stage の成果物は解説付きノート＋実行済HTML化でマスターに「見せる」。判定はマスターが「流れが理解できた」と言えること。
+→ 各 Stage の成果物は解説付きノート＋実行済HTML化で「見せる」。達成判定は、読み手が「流れが理解できた」と言えること。
 
-### 【重要・全Stage踏襲】素人が妥当性を判断できる3点セット（マスター指示・2026-07-04確立）
+### 【重要・全Stage踏襲】非専門家が妥当性を判断できる3点セット（2026-07-04確立）
 Stage1で確立。**Stage2以降のノートも必ずこの型を踏襲する**:
 1. **図・表の用語は日本語**（素人はまず読めることが前提）
 2. **結論（データの傾向）と医学的定説の照合**を文章で載せる（向きが一致→分析健全／逆向き→バグを疑える）
 3. **定説はサブエージェント（research-analyst等）に出典付きで調査**させる（AHA/ACC・査読論文限定・URL必須・確度明記）
-- 狙い: 素人はPython(途中経過)を読めないが、**ゴール=結論から途中経過の妥当性/異常を判別**できる（＝健全性チェック）
+- 狙い: 非専門家はPython(途中経過)を読めないが、**ゴール=結論から途中経過の妥当性/異常を判別**できる（＝健全性チェック）
 - 必須ガード: **相関≠因果**を明記（データは定説を「証明」しない）／医療助言でない旨の注記／定説は争いのない教科書レベルに限定
 - Stage1実績: 5項目（年齢/性別/最大心拍数/ST低下/コレステロール）すべて定説と向き一致
 
@@ -151,7 +154,7 @@ Stage1で確立。**Stage2以降のノートも必ずこの型を踏襲する**:
 - 実行検証: `jupyter nbconvert --to html --execute` EXIT 0・図8点・日本語フォント(Yu Gothic)描画OK
   - 図の実体は **`notebooks/01-foundations.html` に base64 で埋め込み済み**（追跡下）。単体 PNG を置く
     `notebooks/outputs/` は `.gitignore` 対象で**リポジトリには無い**（要るならノートを再実行して生成）
-- 定説照合の可読性再設計済（マスター指示 2026-07-04）: ⑦に**照合スコアカード図** `00-scorecard.png`（matplotlib・PNG＝GitHub公開でも装飾が剥がれない）を主役配置。判定は Okabe-Ito 緑 `#009E73`＋✓＋テキストの3点併記（色単独依存を回避・WCAG 1.4.1）。図見出しは Assertion-Evidence（結論文）化・各図直後の照合は1行凝縮・順序は現状維持（照合は末尾）。→ この見せ方は [[skill-design-from-master-view]] 的に Stage2 以降も踏襲
+- 定説照合の可読性を再設計済（2026-07-04）: ⑦に**照合スコアカード図** `00-scorecard.png`（matplotlib・PNG＝GitHub公開でも装飾が剥がれない）を主役配置。判定は Okabe-Ito 緑 `#009E73`＋✓＋テキストの3点併記（色単独依存を回避・WCAG 1.4.1）。図見出しは Assertion-Evidence（結論文）化・各図直後の照合は1行凝縮・順序は現状維持（照合は末尾）。→ この「読み手の視点から設計する」見せ方は Stage2 以降も踏襲
 - 環境: リポジトリ直下の `venv/`（.gitignore済。当時のパスは `products/medguide-rag/venv/`）。現在の依存管理は uv（`uv sync --locked --extra dev`）
 - データ: `data/sample/heart-disease-cleveland.csv`（出典UCI ID45・CC BY 4.0・列辞書は data/sample/README.md）
 
@@ -173,5 +176,5 @@ Stage1で確立。**Stage2以降のノートも必ずこの型を踏襲する**:
 
 ## メモ
 
-- マスター規律「平均値のみ禁止・中央値/最頻値を実数で」→ Stage1ノート統計節に反映済。以降のStageでも踏襲
+- 統計の規律「平均値のみの提示は禁止・中央値/最頻値を実数で示す」→ Stage1ノート統計節に反映済。以降のStageでも踏襲
 - Windows cp932 の罠 → ファイルIOは `encoding='utf-8'` 明示（ノート内で実施済）
