@@ -6,51 +6,79 @@
 
 ## ①今回実施
 
-`codex/public-delivery-workbench` で開発してきた **medguide-rag を本リポジトリへ取り込み、
-開発土台をこのリポジトリに一本化**した。テンプレを卒業し、medguide-rag 専用の開発リポジトリになった。
+5フェーズ納品計画の**Phase 3（画面とAPIの穴を埋め、ゲートを実証する）を完了**。
+Phase 2で閉じたループを、実際に画面とAPIから使える形にした。
 
-着手前に、移行計画を**3視点の敵対検証サブエージェント**（ルール整合性／技術リスク／運用継続性）に
-かけ、当初計画の複数の致命的欠陥を潰してから実行した。主な修正：
+- **項目1・隔離一覧UI（PR #26 `16421cb`）**：`GET /workbench/coverage-candidates/{id}`、
+  `.../implement`、`.../verify`、`.../activate`の4エンドポイントを追加し、
+  `index.html`/`app.js`に「隔離一覧」タブ（状態別バッジ・状態別アクションボタン）を実装。
+  APIパイプラインテストとPlaywright e2e（承認ボタンが実際に`/resolve`を叩くことをモック越しに
+  証明）で検証済み。
+- **項目2〜5（PR #27 `35b16ff`）**：
+  - `CoverageLoopRequest.questions`の上限を30→200に引き上げ、100問の層別セット
+    （`data/eval/stratified-eval-set-v1.json`）が投入できるようにした。
+  - `structured-extract`（従来500）・`comparison-jobs`/`validation-jobs`（従来202受理後に
+    ジョブ内部で非同期に失敗——`comparison`ジョブは全項目エラーでも`status="passed"`になる
+    設計上の穴があった）に、`/ask` `/runs`と同じ503+明示メッセージのガードを追加。
+  - explore modeの合格・不合格経路テストを追加（strict/standardは既存）。
+  - `src/eval/aggregate()`が層別セット項目（`in_doc`キー無し）で`KeyError`していたのを修正し、
+    `pass_rate_by_stratum`集計を追加。
+- **敵対検証で実バグ2件を発見・修正（`327b381`）**：
+  1. explore modeテストの1つが「authority_alignment不要」を謳いながら、使ったクレーム文言が
+     たまたまfan-qualifierパターンに一致し、その経路を一度も検証していなかった
+     （検証エージェントが`_release_policy`に実際に回帰を注入し、テストが検知しないことを実証）。
+     非該当文言を使う専用テストケースに分離して修正。
+  2. `/coverage-loop`のキーガードが`rounds>1`のケースを見落としていた——ラウンド2以降は
+     `allow_llm_agents`/`run_knowledge_answerer`の値に関わらずLLM質問生成器を呼ぶため、
+     両方false・キー未設定・`rounds>=2`だと生のプロバイダエラーで500になっていた
+     （このPRが確立した503基準から外れる既存の穴）。ガードに`rounds>1`条件を追加して修正。
 
-- **CI コマンドが誤りだった**：`uv sync` は `[project.optional-dependencies] dev` を入れないため
-  `ruff`/`pytest` が入らない（`--extra dev` が必須）。さらに `--extra dev` を付けると e2e テストの
-  `skipif` が外れて確実に赤くなるため、`pytest.ini` で `-m "not e2e and not slow"` を既定にした。
-- **`ruff` は 3 件ではなく 10 件赤**（全て `notebooks/*.ipynb`）。対象を `src tests` に限定した。
-- **`ci-green` の契約**：`needs:` と比較式の 2 箇所を同時に直さないと workflow が startup failure に
-  なり、check run が生成されず branch protection が永久に待ち状態になる。両方直した。
-- **`auto-merge.yml` を一時無効化**：人手の承認なしに `--squash --delete-branch` を実行するため、
-  13 コミットの開発履歴と原本ブランチが失われるところだった。
-- **`prod-smoke.yml` を削除**：無関係な Vercel デプロイ（cc-v2-web）を検査して緑を出すだけの偽の緑。
-- **引継ぎ体系の二重化を解消**：`docs/handoff.md`（3項目・毎回上書き）に `memory.md` の
-  `[importance:H]` を畳むと 1 サイクルで消える。2層構造として整理し、`checkin-checkout` スキルの
-  チェックイン手順を「両方読む」に変更した（これが無いと `memory.md` を読む機械的トリガが無い）。
+詳細は `docs/session-reports/2026-08-03-phase3-ui-and-gates.md`。
 
-その他：`.gitignore` を和集合にして SQLite 台帳・Chroma・venv の混入経路を塞ぎ、`codeql.yml` を
-Python へ、`dependabot.yml` を uv へ変更。`roadmap-state.json` の虚偽（実装済みの Phase 3 UI を
-未完了と主張していた）を訂正し、`docs/session-reports/README.md` に旧パスの読み替え表を追加した。
+**CI evidence**：PR #26（`16421cb9`）・PR #27（`35b16ff5`）ともに`ci-green`緑でマージ済み。
+品質チェック（ruff/mypy/pytest 172件、実uvicornサーバー起動下でe2e含む）は全て緑。
 
 ## ②今回トラブル
 
-- **タグの push がプロキシに 403 で拒否された**。`archive/codex-public-delivery-workbench` を作れて
-  いない。ただし `--allow-unrelated-histories` のマージにより 13 コミットは `main` 系列の祖先に
-  なっており、`c6335e8` 等の commit SHA は到達可能（確認済み）。**PR は必ずマージコミットで
-  マージすること。squash すると履歴が潰れる。**
-- **`mypy src` が 34 errors**（`get_active_revision()` の `dict | None` を絞り込まずに添字アクセス
-  している箇所が大半）。修正は移行の範囲を超えるため、型ゲートは `ci-green` に入れず「既知の欠落」
-  として AGENTS.md に明記した。
-- **CI は今回の push が初回実行**。`astral-sh/setup-uv@v6` の可用性、cold install（torch + CUDA で
-  約 2.8GiB）の所要時間、uvicorn スモークの実挙動はまだ実測されていない。
+**敵対検証で見つかった2件は、どちらも「新しいテスト・新しいガードを書いた直後の
+一つ抜け」という同じ形をしていた**——実装そのものではなく、検証・網羅の側に穴があった。
+
+1. explore modeテストで、狙った条件（authority_alignment=False）を本当に発生させているか
+   自分で確認せずにテストを書いた。テストが緑になることと、テストが主張どおりの経路を
+   通っていることは別——既存の類似テスト（`test_word_explanation_does_not_count_as_fan_theory_label`）
+   と同じ文言を使い回すべきだった。
+2. `/coverage-loop`の既存ガード（`allow_llm_agents or run_knowledge_answerer`）を見て
+   「これで全部か」を確認せず、新しいエンドポイント2つ（comparison/validation-jobs）だけに
+   注意が向いていた。ガードを追加する作業では、**同じキー依存の入口が他に無いか
+   横断的に洗い出す**（今回は`run_coverage_loop`内部の`rounds`ループを実際に読んで発覚）。
+
+いずれも `docs/failures.md` に根因・教訓を追記済み。
 
 ## ③次回やる事
 
-1. **CI を緑にする**（最優先）。初回 run の結果を見て詰める。
-2. **手順0 の適用**（ユーザー作業）。`main` は現在 `protected: false`。`ci-green` の check run が
-   実際に生成されたことを確認してから、Ruleset で必須化する。`GITHUB_TOKEN` では設定できない。
-3. 旧ブランチ `codex/public-delivery-workbench` の削除（PR マージ後）。
-4. Dependabot PR の整理：#5〜#8（npm）と #1・#2（setup-node / pnpm-action-setup）はクローズ。
-   **#3 actions/checkout と #4 codeql-action は Python 移行後も有効なので残す。**
-5. 本題の開発：**coverage-loop の D 判定スキーマに失敗原因分類を追加**
-   （`missing_knowledge` / `retrieval_failure` / `generation_failure` / `chunking_failure` /
-   `ambiguous_question` / `invalid_A` / `out_of_scope` / `needs_quarantine`）。
-   詳細は `docs/session-reports/2026-08-01-coverage-loop-design.md`「次にやるべきこと」。
-6. 積み残し：`mypy` の 34 件を直して型ゲートを `ci-green` に追加。依存脆弱性ゲート（`pip-audit` 等）。
+**Phase 4（ドメイン移植性と統治）に進む。** 5フェーズ計画は
+`/root/.claude/plans/3-5-100-melodic-plum.md`に保存済み（Phase 1〜3の結果を反映し完了マークを
+追加済み。コンテナ固有パスのため次回セッションでは失われている可能性が高く、必要ならこの
+handoffと計画の要点から作り直すこと）。
+
+1. **【Phase 4】ドメイン移植性**：`src/rag/__init__.py`の`_query_terms`/`_intent_terms`に
+   `"呪術廻戦"`等がハードコード（`config/knowledge.toml`へ外出しが必要）。表記ゆれ正規化が
+   `々`の展開のみ（`5mg`/`5 mg`、`COVID-19`/全角COVID-19等を別物扱い）。既定ナレッジが
+   医療系（README/製品名）と呪術廻戦（実データ）で食い違っている。
+2. **【Phase 4】統治**：`main`は`protected: false`のまま（手順0未実施・人の管理者権限が必要）。
+   CodeQLが`ci-green`の`needs`に入っていない。pip-audit等の依存脆弱性ゲートが無い。
+   `auto-merge.yml`は`--squash --delete-branch`のまま無効化されているだけ
+   （マージコミット方式に直すか削除するか未決）。Dependabot滞留
+   （#4は2026年12月のv3サポート終了で期限付き・最優先）。
+3. **`build_report`/`_render_html`（`src/eval/__init__.py`）の`it["in_doc"]`/`it["context"]`
+   直接参照は今回対象外にした**：現状呼び出し元が無いため実害は無いが、将来層別セットを
+   `build_report`に接続する際は同じ修正が必要になる（Phase 3セッションレポートに記録済み）。
+4. **答えの無い層12問・誤前提層8問（`data/eval/stratified-eval-set-v1.json`）はまだ未測定**
+   （生成が必要なため）。上限撤廃で100問セットは投入可能になったので、次はこの実測を検討できる。
+5. **`chunking_failure`の真のゴールドセットは未構成**：`medium_multi_chunk`層は多段推論の測定には
+   有効だが、真のchunking_failure（1事実がチャンク境界で分断され、どちらのチャンクにも完全な
+   事実が無い状態）を構成できていない。
+6. **失敗分類の欠落（FP3/FP7/Self-Knowledge）**：Phase 2・3で意図的に見送った。
+   taxonomy拡張の要否を改めて検討すること。
+7. **Phase 5（納品検証）**：roadmap.md/original-plan.mdの二重定義解消、陳腐化した記述の一掃、
+   README是正、SECURITY.md等の商用ハイジーン成果物、クリーンclone検証。Phase 1〜4完了後。

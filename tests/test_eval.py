@@ -43,6 +43,31 @@ def test_all_good_pass():
         assert row["axes"][ak]["median"] == 2
 
 
+def test_aggregate_accepts_stratified_items_without_in_doc():
+    """`data/eval/stratified-eval-set-v1.json` items use `stratum`/`expected_behavior`
+    instead of the legacy `in_doc` flag; aggregate must not KeyError on them, and
+    should report a per-stratum pass rate breakdown."""
+    items = [
+        {"id": "E-01", "question": "…", "stratum": "easy_factual"},
+        {"id": "U-01", "question": "…", "stratum": "unanswerable_out_of_db", "expected_behavior": "abstain"},
+    ]
+    verdicts = {
+        "j1": {"E-01": _verdict(2, 2, 2), "U-01": _verdict(0, 2, 0)},
+        "j2": {"E-01": _verdict(2, 2, 2), "U-01": _verdict(0, 2, 0)},
+    }
+
+    agg = aggregate(items, verdicts)
+
+    assert agg["pass_rate"] == [1, 2]
+    assert agg["pass_rate_by_stratum"] == {
+        "easy_factual": [1, 1],
+        "unanswerable_out_of_db": [0, 1],
+    }
+    rows = {row["id"]: row for row in agg["per_item"]}
+    assert rows["E-01"]["in_doc"] is None
+    assert rows["U-01"]["expected_behavior"] == "abstain"
+
+
 def test_disagreement_detected():
     items = [{"id": "q1", "question": "…", "in_doc": True}]
     # faithfulness が 0 と 2 に割れる → 幅>=2 で disagreement

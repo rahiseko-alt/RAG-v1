@@ -59,7 +59,11 @@ SYSTEM_PROMPT = (
     "2. 抜粋に根拠が無い、または質問が文書の対象外の場合は『提供された文書には記載がありません』と答える。\n"
     "3. 回答は日本語で、平易に述べる。1文には1つの事実主張だけを書き、各文の末尾には根拠にした抜粋番号を [1] のように付す。\n"
     "4. authority=fan の抜粋だけに基づく内容は、公式事実として断定せず、ファンの考察・解釈・意見であることを文中に明記する。"
-    "公式・reference と fan が矛盾する場合は公式・reference を優先する。"
+    "公式・reference と fan が矛盾する場合は公式・reference を優先する。\n"
+    "5. 抜粋で一部だけ答えられる場合は、答えられる部分を述べたうえで、答えられない部分を"
+    "『（何が）は、提供された抜粋からは特定できません。』という形の文で必ず締めくくる。"
+    "この言い回しは品質検査が『事実を主張していない文』として扱う唯一の形式であり、"
+    "言い換えると引用番号が無い文とみなされて回答全体が差し止められる。"
 )
 
 
@@ -76,7 +80,12 @@ class E5Embeddings(HuggingFaceEmbeddings):
 def get_embeddings() -> E5Embeddings:
     """ローカル多言語埋め込みモデルを返す（初回はモデルDLが走る）。"""
     return E5Embeddings(
-        model_name=EMBED_MODEL,
+        # HuggingFaceEmbeddings declares this field as `model_name` with alias `model`.
+        # The pydantic plugin builds __init__ from the alias, so mypy only accepts
+        # `model=`; the field name works at runtime because populate_by_name is True.
+        # Kept as the documented `model_name` rather than switching to the alias to
+        # satisfy the checker.
+        model_name=EMBED_MODEL,  # type: ignore[call-arg]
         encode_kwargs={"normalize_embeddings": True},  # cosine 前提で正規化
     )
 
@@ -172,7 +181,12 @@ def build_chat_model(model: str | None = None):
             ) from exc
         return ChatOpenAI(model=model, timeout=60)
     # temperature 等のサンプリング引数は渡さない（opus-4-8 等では 400 になるため）
-    return ChatAnthropic(model=model, max_tokens=1024, timeout=60, stop=None)
+    # `model` / `max_tokens` are the field names; ChatAnthropic aliases them to
+    # `model_name` / `max_tokens_to_sample`, and the pydantic plugin builds __init__
+    # from those aliases, so mypy rejects the field names that work at runtime
+    # (populate_by_name is True). Suppressed rather than switched to the aliases:
+    # `max_tokens_to_sample` is Anthropic's deprecated spelling.
+    return ChatAnthropic(model=model, max_tokens=1024, timeout=60, stop=None)  # type: ignore[call-arg]
 
 
 # ---- LangGraph: retrieve → generate ----
@@ -263,7 +277,9 @@ def expand_with_neighbor_chunks(
         key = document.metadata.get("chunk_id", document.page_content)
         selected[key] = (document, score)
 
-    neighbor_ids = sorted(
+    # Typed as chroma's own `$in` element union rather than `list[int]`: list is
+    # invariant, so a `list[int]` does not satisfy `list[str | int | float | bool]`.
+    neighbor_ids: list[str | int | float | bool] = sorted(
         {
             chunk_id
             for document, _score in hits
@@ -275,8 +291,13 @@ def expand_with_neighbor_chunks(
     )
     if not neighbor_ids:
         return list(selected.values())
+    # The operator key has to carry chroma's Literal type, not plain `str`, for the
+    # clause to match its `Where` union.
+    neighbor_filter: dict[Literal["$in", "$nin"], list[str | int | float | bool]] = {
+        "$in": neighbor_ids
+    }
     raw = vs.get(
-        where={"chunk_id": {"$in": neighbor_ids}},
+        where={"chunk_id": neighbor_filter},
         include=["documents", "metadatas"],
     )
     lookup: dict[int, Document] = {}
@@ -649,7 +670,9 @@ def engine_fingerprint(*, model: str | None = None, top_k: int = TOP_K) -> str:
         "chunk_overlap": CHUNK_OVERLAP,
         "neighbor_window": NEIGHBOR_WINDOW,
         "markdown_section_split_version": 1,
-        "quality_verifier_version": 3,
+        # 4: the deterministic checks stopped requiring a citation on a canonical
+        # reservation sentence, so the same answer can now pass where it used to fail.
+        "quality_verifier_version": 4,
         "structured_retrieval_version": 1,
         "system_prompt": SYSTEM_PROMPT,
         "engine_version": 7,

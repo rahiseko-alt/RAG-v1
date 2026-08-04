@@ -4,10 +4,13 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, TypeGuard
 
 from src.coverage_loop import (
     AgentAnswer,
+    CorpusChunk,
+    CorpusProbe,
+    CorpusProber,
     ExternalAnswerer,
     FactChecker,
     LLMCoverageQuestionGenerator,
@@ -16,6 +19,8 @@ from src.coverage_loop import (
     MissingExternalAnswerer,
     ProvidedFactChecker,
     CoverageQuestionGenerator,
+    RetrievedChunk,
+    build_corpus_probe,
     run_coverage_loop,
 )
 from src.ingest import load_and_chunk
@@ -28,6 +33,7 @@ from src.observability import (
 )
 from src.rag import ask as rag_ask
 from src.rag import (
+    RAGState,
     bm25_rescue_search,
     engine_fingerprint,
     expand_with_neighbor_chunks,
@@ -46,6 +52,156 @@ from .store import WorkbenchConflictError, WorkbenchStore, sha256_file
 from .verifier import CANONICAL_ABSTENTION, AnswerMode, OnlineVerifier, public_verification
 
 
+def _coverage_candidate_section(candidate: dict[str, Any]) -> str:
+    """Mechanically render an approved coverage candidate as a Markdown section.
+
+    No LLM: the addition is D's `fact_check.missing_knowledge` (what to add, in D's own
+    words) if present, else A's answer text verbatim — plus A's cited evidence, listed
+    as-is. This is a structured append, not a rewrite of the surrounding document.
+    """
+    fact_check = candidate.get("fact_check") or {}
+    external_answer = candidate.get("external_answer") or {}
+    body = str(fact_check.get("missing_knowledge") or external_answer.get("answer") or "").strip()
+    evidence = external_answer.get("evidence") or []
+    evidence_lines = [
+        "- " + " ".join(
+            part
+            for part in (
+                str(item.get("url") or "").strip(),
+                f"（{item.get('source_type')}）" if item.get("source_type") else "",
+            )
+            if part
+        )
+        for item in evidence
+        if isinstance(item, dict)
+    ] or ["- (出典情報なし)"]
+    return (
+        f"## 追加候補（coverage-loop候補 {candidate['id']}）\n\n"
+        f"**質問**: {candidate['question']}\n\n"
+        f"{body}\n\n"
+        "**出典**:\n" + "\n".join(evidence_lines) + "\n"
+    )
+
+
+def _is_real_number(value: Any) -> TypeGuard[int | float]:
+    """True for an int/float score. `bool` is an int subclass, so exclude it explicitly."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _is_positive_rank(value: Any) -> TypeGuard[int]:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 1
+
+
+def retrieved_chunks_from_sources(sources: list[dict[str, Any]] | None) -> list[RetrievedChunk]:
+    """Normalize `answer_question`'s public sources into coverage-loop retrieval evidence.
+
+    Design-doc step 7: a coverage-loop B-answer must carry the chunks its retriever
+    actually surfaced, so D can tell `missing_knowledge` (nothing relevant was
+    retrievable) apart from `retrieval_failure` / `generation_failure` (something
+    relevant was retrieved but ranked too low or ignored). Without this, D only sees
+    B's final text and has to guess, which is exactly the false-positive path the
+    failure taxonomy exists to close.
+
+    This runs on the *public* source dicts (the ones already returned to callers and
+    persisted with the run), not on private evidence, so nothing new is exposed and
+    the ledger row stays free of full chunk text.
+    """
+    chunks: list[RetrievedChunk] = []
+    for index, source in enumerate(sources or [], start=1):
+        raw_chunk_id = source.get("chunk_id")
+        raw_rank = source.get("rank")
+        raw_score = source.get("score")
+        page = source.get("page")
+        origin = str(source.get("source") or "").strip()
+        # Locator only — the passage itself stays in `sources[*].snippet`.
+        citation = f"{origin} p.{page}" if origin and page not in (None, "") else origin
+        chunks.append(
+            RetrievedChunk(
+                # `chunk_id` is an opaque 0-based counter (`src/ingest`), so a falsy
+                # test would blank out the first chunk of every document — which is
+                # also the one retrieval surfaces most often.
+                chunk_id="" if raw_chunk_id is None else str(raw_chunk_id),
+                score=float(raw_score) if _is_real_number(raw_score) else None,
+                citation=citation,
+                # `rank` is 1-based and doubles as the `[N]` citation marker, so a 0
+                # or a stray bool must not pass through as a rank.
+                rank=raw_rank if _is_positive_rank(raw_rank) else index,
+            )
+        )
+    return chunks
+
+
+class RevisionCorpusProber:
+    """Probe a revision's *whole* chunk set, not the subset retrieval surfaced.
+
+    Reads the revision's own immutable source snapshot and chunks it with the same
+    `load_and_chunk` the index was built from, so a chunk id in the probe means the
+    same chunk id as in B's `retrieved_chunks`. Chunking is done once per prober and
+    reused, since a coverage-loop run probes every question against the same corpus.
+
+    Note this deliberately goes to the source rather than to the vector store: the
+    probe's value is telling D about chunks retrieval *never returned*, so it must not
+    be built from a retrieval result.
+    """
+
+    def __init__(self, source_path: Path) -> None:
+        self.source_path = source_path
+        self._corpus: list[CorpusChunk] | None = None
+
+    def corpus(self) -> list[CorpusChunk]:
+        if self._corpus is None:
+            self._corpus = [
+                CorpusChunk(
+                    chunk_id=str(document.metadata.get("chunk_id", index)),
+                    text=str(document.page_content),
+                )
+                for index, document in enumerate(load_and_chunk(self.source_path))
+            ]
+        return self._corpus
+
+    def probe(
+        self,
+        *,
+        question: str,
+        external_answer: AgentAnswer,
+        knowledge_answer: AgentAnswer,
+    ) -> CorpusProbe | None:
+        return build_corpus_probe(
+            question=question,
+            external_answer=external_answer,
+            knowledge_answer=knowledge_answer,
+            corpus=self.corpus(),
+        )
+
+    def surfaced_texts(self, *, knowledge_answer: AgentAnswer) -> list[dict[str, Any]]:
+        """Resolve B's retrieved chunk ids back to full chunk text, for the judge.
+
+        Looked up from the corpus by chunk id rather than carried on the answer, so this
+        works identically for a live B-answer and an injected one — an injected answer
+        records which chunks were retrieved, not their contents.
+        """
+        by_id = {chunk.chunk_id: chunk.text for chunk in self.corpus()}
+        texts: list[dict[str, Any]] = []
+        for chunk in knowledge_answer.retrieved_chunks:
+            text = by_id.get(str(chunk.chunk_id))
+            texts.append(
+                {
+                    "rank": chunk.rank,
+                    "chunk_id": chunk.chunk_id,
+                    "citation": chunk.citation,
+                    # Unresolvable ids are reported, not dropped. Silently skipping them
+                    # made an empty list indistinguishable from "no chunk answered the
+                    # question", so D would complete step 1 on nothing and fall through
+                    # to the weak lexical evidence — the very failure the step order was
+                    # added to prevent. Structured-knowledge hits carry no chunk_id, and
+                    # a revision whose chunking drifted from its index resolves none.
+                    "text": text,
+                    "unresolved": text is None,
+                }
+            )
+        return texts
+
+
 class QualityWorkbench:
     """Coordinate revision-specific engines, verification, audit, and persistence."""
 
@@ -55,12 +211,15 @@ class QualityWorkbench:
         *,
         verifier: OnlineVerifier | None = None,
         rag_factory: Callable[..., tuple[Any, Any, int]] = make_rag,
-        ask_fn: Callable[..., dict[str, Any]] = rag_ask,
+        # RAGState is a TypedDict, which is not assignable to `dict[str, Any]`, so the
+        # previous annotation rejected the real `rag.ask` it defaults to.
+        ask_fn: Callable[..., RAGState] = rag_ask,
         structured_store: StructuredKnowledgeStore | None = None,
         structured_extractor: StructuredExtractor | None = None,
         coverage_question_generator: CoverageQuestionGenerator | None = None,
         coverage_external_answerer: ExternalAnswerer | None = None,
         coverage_fact_checker: FactChecker | None = None,
+        coverage_corpus_prober: CorpusProber | None = None,
     ) -> None:
         self.store = store
         self.verifier = verifier or OnlineVerifier()
@@ -76,6 +235,7 @@ class QualityWorkbench:
         self.coverage_question_generator = coverage_question_generator
         self.coverage_external_answerer = coverage_external_answerer
         self.coverage_fact_checker = coverage_fact_checker
+        self.coverage_corpus_prober = coverage_corpus_prober
         self._rag_cache: dict[tuple[str, str], tuple[Any, Any, int]] = {}
 
     def clear_rag_cache(self) -> None:
@@ -185,6 +345,7 @@ class QualityWorkbench:
         job_id: str | None = None,
         run_id: str | None = None,
         answer_mode: AnswerMode = "strict",
+        include_blocked_candidate: bool = False,
     ) -> dict[str, Any]:
         revision = (
             self.store.get_revision(revision_id)
@@ -293,7 +454,7 @@ class QualityWorkbench:
             trace_url=audit.trace_url,
             job_id=job_id,
         )
-        return {
+        result: dict[str, Any] = {
             "run_id": run_id,
             "revision": revision,
             "answer_mode": answer_mode,
@@ -313,6 +474,14 @@ class QualityWorkbench:
                 "trace_url": audit.trace_url,
             },
         }
+        if include_blocked_candidate:
+            # Opt-in, and never set on the API path: `answer` is None when the gate
+            # blocks, which is correct for delivery but blinds the coverage loop's judge
+            # exactly when it most needs to see B's text. Without it, D has to classify
+            # why B failed while being shown nothing B wrote — the 30-question run
+            # measured 25 of 30 answers arriving that way.
+            result["candidate_answer"] = candidate
+        return result
 
     def create_revision(
         self,
@@ -348,6 +517,59 @@ class QualityWorkbench:
             label=label,
             engine_fingerprint=self.fingerprint(),
             config=config,
+        )
+
+    def implement_coverage_candidate(self, candidate_id: str) -> dict[str, Any]:
+        """Turn an `auto_approved` coverage candidate into a knowledge-revision draft.
+
+        Phase 2, step "auto_approved -> implemented" (design doc: "auto_approved の候補
+        の fact_check.missing_knowledge を元に... 改訂ドラフトを生成する。LLMで文章生成
+        しない"). The new revision's content is the active revision's current source
+        text with a mechanically-structured section appended — D's suggested addition
+        plus A's cited evidence, verbatim. No model call, so this works with no API key
+        configured, same as the rest of the coverage loop.
+        """
+        candidate = self.store.get_coverage_candidate(candidate_id)
+        if candidate["status"] != "auto_approved":
+            raise WorkbenchConflictError(
+                f"coverage candidate must be auto_approved to implement, was {candidate['status']}"
+            )
+        active = self.store.get_active_revision()
+        source_text = Path(str(active["source_path"])).read_text(encoding="utf-8")
+        content = source_text.rstrip("\n") + "\n\n" + _coverage_candidate_section(candidate)
+        # Stamped into the revision's own config so `mark_coverage_candidate_implemented`
+        # can verify the link itself, rather than trusting a caller-supplied revision_id
+        # (2026-08-03 adversarial review found an unrelated already-validated revision
+        # could otherwise be substituted in and ridden through verification/activation).
+        revision = self.create_revision(
+            source_path=None,
+            content=content,
+            label=f"coverage-candidate:{candidate_id[:8]}",
+            config={"coverage_candidate_id": candidate_id},
+        )
+        return self.store.mark_coverage_candidate_implemented(
+            candidate_id, revision_id=str(revision["id"])
+        )
+
+    def activate_coverage_candidate(
+        self, candidate_id: str, *, reason: str, operator: str | None = None
+    ) -> dict[str, Any]:
+        """Promote a `verified` coverage candidate to `active`.
+
+        Thin wrapper that supplies `engine_fingerprint`/`structured_digest` the same way
+        the plain `/workbench/revisions/{id}/approve` endpoint does, so any future API
+        route for this is built on the strict path by construction rather than relying
+        on every caller to remember both arguments (see `WorkbenchStore.
+        activate_coverage_candidate`'s docstring for what was missed before this existed).
+        """
+        candidate = self.store.get_coverage_candidate(candidate_id)
+        revision_id = candidate.get("implemented_revision_id")
+        return self.store.activate_coverage_candidate(
+            candidate_id,
+            reason=reason,
+            engine_fingerprint=self.fingerprint(),
+            structured_digest=self.structured_digest(str(revision_id)) if revision_id else None,
+            operator=operator,
         )
 
     def extract_revision_structured_records(
@@ -467,6 +689,7 @@ class QualityWorkbench:
         answer_mode: AnswerMode = "standard",
         allow_llm_agents: bool = False,
         run_knowledge_answerer: bool = False,
+        persist: bool = True,
     ) -> dict[str, Any]:
         """Find questions where external truth exists but local knowledge fails."""
         revision = self.store.get_revision(revision_id)
@@ -513,6 +736,7 @@ class QualityWorkbench:
                     revision_id=str(revision["id"]),
                     trace_tags=["coverage-loop"],
                     answer_mode=answer_mode,
+                    include_blocked_candidate=True,
                 )
             except Exception as exc:
                 return AgentAnswer(
@@ -521,12 +745,27 @@ class QualityWorkbench:
                     status="error",
                     notes=safe_error_message(exc),
                 )
+            sources = list(outcome.get("sources") or [])
+            blocked_reason = str(outcome.get("blocked_reason") or "")
+            delivered = outcome.get("answer")
+            blocked_candidate = outcome.get("candidate_answer")
             return AgentAnswer(
                 role="knowledge",
-                answer=outcome.get("answer"),
+                # The blocked text stands in when the gate withheld delivery. `status`
+                # still says `blocked`, so nothing here makes a withheld answer look
+                # shipped — it only stops D from having to judge an empty string.
+                answer=delivered if delivered is not None else blocked_candidate,
                 status=str(outcome.get("delivery_status") or "unknown"),
-                sources=list(outcome.get("sources") or []),
-                notes=str(outcome.get("blocked_reason") or ""),
+                sources=sources,
+                notes=(
+                    f"{blocked_reason} (gate withheld this text from delivery)"
+                    if delivered is None and blocked_candidate
+                    else blocked_reason
+                ),
+                # Recorded even when the quality gate blocked the answer (`answer`
+                # is None then): "B produced nothing" and "B retrieved nothing" are
+                # different failures, and only the retrieval evidence separates them.
+                retrieved_chunks=retrieved_chunks_from_sources(sources),
             )
 
         result = run_coverage_loop(
@@ -550,8 +789,32 @@ class QualityWorkbench:
             ),
             knowledge_answerer=knowledge_answerer,
             answer_mode=answer_mode,
+            # Runs on injected loops too: it needs no model, and an injected run is
+            # precisely where D would otherwise have no corpus-side evidence at all.
+            corpus_prober=(
+                self.coverage_corpus_prober
+                or RevisionCorpusProber(Path(str(revision["source_path"])))
+            ),
         )
-        return result.model_dump()
+        result_dict = result.model_dump()
+        for item in result_dict["items"]:
+            # Judge-only channel: D needed the full chunk text to rule out
+            # generation_failure, but neither the ledger nor the API response may carry
+            # a second copy of the corpus. Dropped here, after judging, before both.
+            # Both answers are the same model, so both carry the field — stripping only
+            # the knowledge side left a caller free to push unbounded text into the
+            # ledger through `external_answers`, which measured 18KB in one item.
+            item["knowledge_answer"].pop("surfaced_texts", None)
+            item["external_answer"].pop("surfaced_texts", None)
+        if persist:
+            saved = self.store.save_coverage_loop_items(str(revision["id"]), result_dict["items"])
+            saved_by_question = {candidate["question"]: candidate for candidate in saved}
+            for item in result_dict["items"]:
+                candidate = saved_by_question.get(item["question"])
+                if candidate is not None:
+                    item["candidate_id"] = candidate["id"]
+                    item["ledger_status"] = candidate["status"]
+        return result_dict
 
     def create_job(
         self,
