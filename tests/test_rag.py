@@ -135,24 +135,37 @@ def test_bm25_rescue_adds_entity_chunk_when_vector_search_misses_it():
     )
 
 
-def test_query_terms_match_across_spacing_width_and_case_variants():
-    """表記が違うだけの質問と本文が、検索語の一致まで到達すること。
+def test_rerank_matches_documents_written_in_a_different_width_and_spacing():
+    """表記が違うだけの本文が、再ランクで実際に一致として扱われること。
 
     正規化関数単体のテスト（tests/test_text_normalize.py）は等価性しか見ておらず、
-    それが `_query_terms` と本文照合まで実際に効いているかは別問題なので、
-    ここは**検索語が本文に一致すること**を直接確かめる。
+    それが検索に効いているかは別問題。さらに、テスト側で本文を正規化してから
+    突き合わせると**本文側の正規化が消えても通る**ため、ここは生の
+    `Document.page_content` を渡して `rerank_retrieved_documents` に正規化させる。
+
+    本文だけを全角・空白ありにしてあるので、本文側の正規化が無ければ語が一致せず、
+    ベクトル類似度が高い無関係チャンクに負ける。
     """
     from src.knowledge_config import LexicalProfile
-    from src.text_normalize import normalize_for_matching
 
-    profile = LexicalProfile()
-    # 質問は空白あり・全角、本文は詰め・半角。正規化が無ければ一致しない組み合わせ。
-    terms = rag._query_terms("ＣＯＶＩＤ-19 では 500 mg を投与しますか", profile=profile)
-    text = normalize_for_matching("covid-19の患者には500mgを投与する")
+    monkeypatch_profile = LexicalProfile()
+    variant = Document(
+        page_content="ＣＯＶＩＤ-19 の患者には 500 mg を投与する。",
+        metadata={"chunk_id": 1},
+    )
+    unrelated = Document(page_content="無関係な内容です。", metadata={"chunk_id": 2})
 
-    matched = [term for term in terms if term in text]
-    assert "500mg" in matched, f"単位前の空白が吸収されていない: {terms}"
-    assert "covid-19" in matched, f"全角・大小文字が吸収されていない: {terms}"
+    scored_variant = rag._lexical_rerank_score(
+        "covid-19 の 500mg について", variant, 0.50, profile=monkeypatch_profile
+    )
+    scored_unrelated = rag._lexical_rerank_score(
+        "covid-19 の 500mg について", unrelated, 0.95, profile=monkeypatch_profile
+    )
+
+    # 無関係チャンクの方がベクトル類似度は高い。本文側の正規化が効いて初めて逆転する。
+    assert scored_variant > scored_unrelated, (
+        f"本文側の正規化が効いていない: variant={scored_variant} unrelated={scored_unrelated}"
+    )
 
 
 def test_rerank_promotes_answer_pattern_over_generic_term_match():
