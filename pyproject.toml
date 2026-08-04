@@ -24,7 +24,7 @@ dependencies = [
     "scikit-learn==1.9.0",
     "sentence-transformers==5.6.0",
     "torch==2.12.1",
-    "uvicorn==0.49.0",
+    "uvicorn==0.52.0",
 ]
 
 [project.optional-dependencies]
@@ -45,7 +45,7 @@ dev = [
 medguide-rag = "src.rag.cli:main"
 
 [build-system]
-requires = ["hatchling>=1.28"]
+requires = ["hatchling>=1.31.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
