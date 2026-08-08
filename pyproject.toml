@@ -35,7 +35,7 @@ notebook = [
 ]
 dev = [
     "httpx==0.28.1",
-    "mypy==1.20.0",
+    "mypy==2.3.0",
     "pytest==9.1.1",
     "pytest-playwright==0.8.0",
     "ruff==0.14.9",
